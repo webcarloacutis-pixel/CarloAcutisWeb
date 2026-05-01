@@ -16,3 +16,4 @@ coverage/
 **/front_tree.txt
 **/missing_*.txt
 **/tatus -sb
+tools/
