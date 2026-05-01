@@ -1,0 +1,24 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
+# backups/scripts
+*.bak
+*.bak*
+patch_*.py
+
+# local backups / dumps
+*.bak.*
+*_backup_*/
+audit_*.txt
+*.log
+
+.env
+.env
+.env.*
+.env
+dist/
+data/translation-cache.json
+tmp_check_slugs.cjs

@@ -1,0 +1,18 @@
+node_modules/
+.next/
+dist/
+coverage/
+.env
+.env.*
+*.log
+*.tsbuildinfo
+**/cookies*.txt
+**/dump*.sql
+**/*audit*.txt
+**/*trace*.txt
+**/*backup*/
+**/*_backup_*/
+**/*.bak*
+**/front_tree.txt
+**/missing_*.txt
+**/tatus -sb

@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Saint {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  country   String?
+
+  title     String?
+  feastDay  String?
+  imageUrl  String?
+  biography String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  miracles      Miracle[]
+  translations  SaintTranslation[]
+  continent String?
+  lat       Float?
+  lng       Float?
+}
+
+
+model Miracle {
+  id        String   @id @default(cuid())
+  saintId   String
+  title     String
+  type      String?  // ej: "Curación", "Eucarístico", "Aparición"
+  date      String?  // por ahora string (luego lo pasamos a Date si quieres)
+  location  String?
+  witnesses String?
+  approved  Boolean  @default(false)
+  details   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  saint     Saint    @relation(fields: [saintId], references: [id], onDelete: Cascade)
+
+  translations MiracleTranslation[]
+
+  @@index([saintId])
+}
+
+model Prayer {
+  translations PrayerTranslation[]
+
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  category  String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  saintName String?
+  occasion  String?
+}
+
+
+
+model SaintTranslation {
+  id        String  @id @default(cuid())
+  saintId   String
+  lang      String  // "es" | "en" | "hi" ...
+
+  name      String?
+  title     String?
+  biography String? @db.Text
+
+  saint     Saint   @relation(fields: [saintId], references: [id], onDelete: Cascade)
+
+  @@unique([saintId, lang], name: "saintId_lang")
+  @@index([lang])
+}
+
+model MiracleTranslation {
+  id        String  @id @default(cuid())
+  miracleId String
+  lang      String
+
+  title     String?
+  type      String?
+  date      String?
+  location  String?
+  witnesses String?
+  details   String?
+
+  miracle   Miracle @relation(fields: [miracleId], references: [id], onDelete: Cascade)
+
+  @@unique([miracleId, lang], name: "miracleId_lang")
+  @@index([lang])
+}
+
+model PrayerTranslation {
+  id       String @id @default(cuid())
+  prayerId String
+  lang     String
+
+  title    String?
+  content  String?
+  category String?
+  saintName String?
+  occasion  String?
+
+  prayer   Prayer @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+
+  @@unique([prayerId, lang], name: "prayerId_lang")
+  @@index([lang])
+}
+
+////////////////////////////////////////////////////////////
+// USERS + CHAT (SQL)
+////////////////////////////////////////////////////////////
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}

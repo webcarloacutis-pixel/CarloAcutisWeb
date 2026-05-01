@@ -1,0 +1,12 @@
+[
+  {"slug":"test-san-francisco","name":"San Francisco (test)","country":"Italia","title":"Santo","feastDay":"10/04","imageUrl":"","biography":"Humildad, caridad, servicio a los pobres.","continent":"Europa","lat":41.9,"lng":12.5},
+  {"slug":"test-santa-teresa","name":"Santa Teresa (test)","country":"España","title":"Santa","feastDay":"10/15","imageUrl":"","biography":"Oración, fortaleza interior, disciplina.","continent":"Europa","lat":40.4,"lng":-3.7},
+  {"slug":"test-san-jose","name":"San José (test)","country":"Israel","title":"Santo","feastDay":"03/19","imageUrl":"","biography":"Trabajo, paciencia, obediencia, familia.","continent":"Asia","lat":31.8,"lng":35.2},
+  {"slug":"test-san-pedro","name":"San Pedro (test)","country":"Israel","title":"Santo","feastDay":"06/29","imageUrl":"","biography":"Liderazgo, arrepentimiento, valentía.","continent":"Asia","lat":31.8,"lng":35.2},
+  {"slug":"test-san-pablo","name":"San Pablo (test)","country":"Italia","title":"Santo","feastDay":"06/29","imageUrl":"","biography":"Conversión, misión, predicación, disciplina.","continent":"Europa","lat":41.9,"lng":12.5},
+  {"slug":"test-san-agustin","name":"San Agustín (test)","country":"Argelia","title":"Santo","feastDay":"08/28","imageUrl":"","biography":"Búsqueda de la verdad, conversión, estudio.","continent":"Africa","lat":36.7,"lng":3.2},
+  {"slug":"test-santa-clara","name":"Santa Clara (test)","country":"Italia","title":"Santa","feastDay":"08/11","imageUrl":"","biography":"Pobreza, sencillez, caridad.","continent":"Europa","lat":43.1,"lng":12.6},
+  {"slug":"test-san-ignacio","name":"San Ignacio (test)","country":"España","title":"Santo","feastDay":"07/31","imageUrl":"","biography":"Discernimiento, misión, disciplina espiritual.","continent":"Europa","lat":43.3,"lng":-2.0},
+  {"slug":"test-san-juan","name":"San Juan (test)","country":"Israel","title":"Santo","feastDay":"12/27","imageUrl":"","biography":"Amor, fidelidad, contemplación.","continent":"Asia","lat":31.8,"lng":35.2},
+  {"slug":"test-santa-rita","name":"Santa Rita (test)","country":"Italia","title":"Santa","feastDay":"05/22","imageUrl":"","biography":"Perdón, paciencia, reconciliación.","continent":"Europa","lat":43.1,"lng":12.6}
+]

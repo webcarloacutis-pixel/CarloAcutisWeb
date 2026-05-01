@@ -1,0 +1,133 @@
+export interface Prayer {
+  id: string
+  title: string
+  saint: string
+  text: string
+  occasion: string
+  intention?: string
+  category: string
+  popularity: number
+}
+
+export const prayersData: Prayer[] = [
+  {
+    id: "1",
+    title: "Oración por la Paz",
+    saint: "San Francisco de Asís",
+    text: "Señor, haz de mí un instrumento de tu paz. Donde haya odio, que yo lleve el amor. Donde haya ofensa, que yo lleve el perdón. Donde haya discordia, que yo lleve la unión. Donde haya duda, que yo lleve la fe. Donde haya error, que yo lleve la verdad. Donde haya desesperación, que yo lleve la esperanza. Donde haya tristeza, que yo lleve la alegría. Donde haya tinieblas, que yo lleve la luz. Oh Maestro, que yo no busque tanto ser consolado, sino consolar; ser comprendido, sino comprender; ser amado, sino amar. Porque es dando que se recibe; es perdonando que se es perdonado; es muriendo que se resucita a la vida eterna.",
+    occasion: "Paz y reconciliación",
+    intention: "Para ser instrumentos de paz en el mundo",
+    category: "Paz",
+    popularity: 98,
+  },
+  {
+    id: "2",
+    title: "Nada te Turbe",
+    saint: "Santa Teresa de Jesús",
+    text: "Nada te turbe, nada te espante, todo se pasa, Dios no se muda. La paciencia todo lo alcanza; quien a Dios tiene nada le falta: sólo Dios basta.",
+    occasion: "Tranquilidad y confianza",
+    intention: "Para encontrar paz en medio de las dificultades",
+    category: "Confianza",
+    popularity: 95,
+  },
+  {
+    id: "3",
+    title: "Suscipe",
+    saint: "San Ignacio de Loyola",
+    text: "Toma, Señor, y recibe toda mi libertad, mi memoria, mi entendimiento y toda mi voluntad, todo mi haber y mi poseer; tú me lo diste, a ti, Señor, lo torno. Todo es tuyo, dispón a toda tu voluntad. Dame tu amor y gracia, que esta me basta.",
+    occasion: "Entrega total a Dios",
+    intention: "Para ofrecer completamente nuestra vida a Dios",
+    category: "Entrega",
+    popularity: 92,
+  },
+  {
+    id: "4",
+    title: "Oración del Amor",
+    saint: "Santa Teresita del Niño Jesús",
+    text: "Oh Jesús mío, yo sé bien que el amor se paga sólo con amor, por eso he buscado, he encontrado el medio de aliviar mi corazón devolviéndote amor por amor. Jesús, mi Amado, en cada latido de mi corazón quiero renovarte el ofrecimiento de mi vida.",
+    occasion: "Amor a Jesús",
+    intention: "Para crecer en el amor a Jesucristo",
+    category: "Amor",
+    popularity: 89,
+  },
+  {
+    id: "5",
+    title: "Oración por los Pobres",
+    saint: "Santa Teresa de Calcuta",
+    text: "Señor, cuando tenga hambre, dame alguien que necesite comida; cuando tenga sed, dame alguien que precise agua; cuando sienta frío, dame alguien que necesite calor. Cuando sufra, dame alguien que necesite consuelo; cuando mi cruz parezca pesada, déjame compartir la cruz del otro.",
+    occasion: "Servicio a los necesitados",
+    intention: "Para servir a los más pobres y necesitados",
+    category: "Caridad",
+    popularity: 87,
+  },
+  {
+    id: "6",
+    title: "Oración por la Familia",
+    saint: "San Juan Pablo II",
+    text: "Oh San Juan Pablo II, bendice a las familias del mundo entero. Bendice a cada familia. Tú que fuiste hijo, ayuda a nuestros padres en su misión educativa, ayuda a nuestros hijos a crecer en edad, sabiduría y gracia, ayuda a redescubrir en la familia el santuario de la vida.",
+    occasion: "Protección de la familia",
+    intention: "Para la protección y unidad de las familias",
+    category: "Familia",
+    popularity: 85,
+  },
+  {
+    id: "7",
+    title: "Oración por los Enfermos",
+    saint: "San Camilo de Lelis",
+    text: "Señor Jesús, que durante tu vida terrena mostraste especial predilección por los enfermos y afligidos, concédenos, por intercesión de San Camilo, la gracia de asistir con amor y dedicación a quienes sufren, viendo en ellos tu rostro adorable.",
+    occasion: "Sanación y consuelo",
+    intention: "Para la sanación de los enfermos",
+    category: "Sanación",
+    popularity: 83,
+  },
+  {
+    id: "8",
+    title: "Oración por la Sabiduría",
+    saint: "Santo Tomás de Aquino",
+    text: "Creador inefable, que de los tesoros de tu sabiduría estableciste tres jerarquías de ángeles y las colocaste en admirable orden sobre el cielo empíreo, y distribuiste con elegancia las partes del universo, te suplicamos que nos ilumines, a nosotros que nos decimos tus hijos.",
+    occasion: "Sabiduría y conocimiento",
+    intention: "Para obtener sabiduría divina en los estudios",
+    category: "Sabiduría",
+    popularity: 81,
+  },
+  {
+    id: "9",
+    title: "Oración por la Pureza",
+    saint: "San Luis Gonzaga",
+    text: "Oh San Luis Gonzaga, adorno angelical de la juventud, te ruego me alcances de Dios una pureza inviolable de mente y cuerpo. Enséñame a imitar tu pureza angelical, para que pueda servir a Dios con corazón limpio y alma pura.",
+    occasion: "Pureza y castidad",
+    intention: "Para mantener la pureza de corazón",
+    category: "Pureza",
+    popularity: 79,
+  },
+  {
+    id: "10",
+    title: "Oración por los Viajeros",
+    saint: "San Cristóbal",
+    text: "San Cristóbal, protector de los viajeros, que llevaste a Cristo a través del río, te pedimos que nos acompañes en nuestros viajes. Protégenos de todo peligro y concédenos llegar sanos y salvos a nuestro destino.",
+    occasion: "Protección en viajes",
+    intention: "Para la protección durante los viajes",
+    category: "Protección",
+    popularity: 77,
+  },
+  {
+    id: "11",
+    title: "Oración por la Esperanza",
+    saint: "San Judas Tadeo",
+    text: "Oh glorioso San Judas Tadeo, apóstol fiel y amigo de Jesús, el nombre del traidor ha sido causa de que fueras olvidado por muchos, pero la Iglesia te honra y te invoca como patrón de los casos difíciles y desesperados. Ruega por mí que soy tan miserable.",
+    occasion: "Casos difíciles y desesperados",
+    intention: "Para encontrar esperanza en situaciones difíciles",
+    category: "Esperanza",
+    popularity: 88,
+  },
+  {
+    id: "12",
+    title: "Oración Mariana",
+    saint: "San Luis María Grignion de Montfort",
+    text: "Oh María, mi Reina y mi Madre, me entrego enteramente a ti, y en prueba de mi filial afecto te consagro en este día mis ojos, mis oídos, mi boca, mi corazón, mi persona entera. Ya que soy tuyo, oh Madre admirable, consérvame y defiéndeme como cosa y posesión tuya.",
+    occasion: "Consagración a María",
+    intention: "Para consagrarse totalmente a la Virgen María",
+    category: "Mariano",
+    popularity: 86,
+  },
+]
