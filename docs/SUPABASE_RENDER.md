@@ -83,3 +83,21 @@ La incidencia histórica ACUTIS-013 permanece abierta. npm propone retroceder Pr
 La preparación del esquema se bloquea también si encuentra objetos desconocidos existentes. Las restricciones de PUBLIC, anon y authenticated se aplican antes de insertar contenido. La prueba administrativa que crea una copia temporal exige además el origen local explícito http://127.0.0.1:3150.
 
 La revisión del historial remoto detectó una contraseña administrativa literal antigua en carlo-front/lib/auth.tsx. El estado reparado elimina esa autenticación del navegador, pero la historia pública conserva el valor. No reutilice esa contraseña: rote cualquier credencial que la hubiera usado antes de producción. La publicación saneada no pretende limpiar ni reescribir la historia remota.
+
+## Migración real verificada — 16 de septiembre de 2026
+
+Se ejecutó la transferencia al proyecto autorizado: 79 Saint (76 personas y 3 arcángeles), 7 Miracle, 1 Prayer y 79 CatalogImport. La segunda pasada reutilizó las 166 filas sin inserciones, duplicaciones ni diferencias. Se conservaron las exclusiones de la copia de prueba y las sesiones locales. No se generó contenido editorial nuevo.
+
+Las 79 imágenes WebP existentes se copiaron al bucket público acutis-catalog. Se verificaron MIME, tamaño y SHA-256 de cada objeto tanto mediante descarga pública sin claves como a través de la web. La identidad del destino y la conexión cliente–Session Pooler se comprobaron con TLS 1.3 y verify-full; la CA se obtuvo por HTTPS desde la URL utilizada por el panel oficial de Supabase. La observación pg_stat_ssl corresponde al enlace interno pooler–PostgreSQL y no debe confundirse con el TLS del cliente.
+
+Antes de escribir se inventarió y respaldó el destino PostgreSQL 17.6 con pg_dump 17.11, snapshot consistente y comprobación completa del archivo. No existían tablas de aplicación, usuarios de Auth ni objetos de Storage. El dump remoto se decodificó íntegramente a SQL; no se ensayó su restauración de extensiones gestionadas por Supabase. El respaldo del origen sí fue restaurado y verificado previamente, y sus 17 tablas continúan intactas.
+
+Las comparaciones de filas fijan extra_float_digits=3: la configuración inicial del destino redondeaba la salida JSON aunque los bits almacenados de las coordenadas fueran exactos. Se confirmó la igualdad binaria y se verificó la corrección en una base local desechable. No se introdujeron tolerancias ni cambios de coordenadas. Los MIME ausentes se completaron a partir de la firma RIFF/WEBP y los hashes respaldados; los bytes no cambiaron.
+
+El rol acutis_app tiene lectura/escritura de aplicación, sin CREATE, privilegios administrativos ni acceso a _prisma_migrations. anon y authenticated no pueden leer acutis; Data API rechaza el esquema con PGRST106. El archivo privado generado para el runtime excluye la clave privilegiada de Storage.
+
+La web servida desde el worktree saneado, conectada al Supabase real, pasó 85 pruebas de navegador: todas las fichas e imágenes, campos administrativos, paginación, búsqueda, filtros, mapa, milagros, oraciones y versículos. Las verificaciones administrativas cierran su propia sesión. Un reinicio de Next y Express conservó los datos y el funcionamiento de login/logout. Se usó HTTP exclusivamente en loopback para la prueba local; esto no prueba cookies HTTPS, ingreso, memoria ni capacidad en Render.
+
+Las pruebas que crean/editar/eliminan copias se mantuvieron en la base local desechable. Las nuevas pruebas catalog-live-readonly.spec.ts solo leen el contenido del snapshot existente. Los resultados privados, credenciales, dumps y manifiestos permanecen fuera de Git.
+
+La migración no cierra ACUTIS-013 ni la revisión de credenciales históricas. Render continúa preparado, sin despliegue ni contratación. La publicación requiere comprobar Auto-Deploy y previews de los servicios conectados; el YAML no acredita su estado remoto.

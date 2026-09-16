@@ -80,6 +80,8 @@ def target_rows(conn):
     result={}
     with conn.cursor() as cur:
         cur.execute("SET TIME ZONE 'UTC'")
+        # Supabase may default to 0, which rounds JSON float output despite exact stored bits.
+        cur.execute("SET extra_float_digits=3")
         cur.execute('SET statement_timeout=15000')
         cur.execute('SELECT tablename FROM pg_tables WHERE schemaname=%s',(SCHEMA,))
         names={r[0] for r in cur.fetchall()}
@@ -177,7 +179,8 @@ def prepare_role(config, private, local=False):
                 cur.execute(sql.SQL('ALTER DEFAULT PRIVILEGES IN SCHEMA {} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {}').format(sql.Identifier(SCHEMA),sql.Identifier(role)))
                 # _prisma_migrations stays maintenance-only. No DDL grants are given.
     finally: conn.close()
-    runtime={**config,'user':role+('.'+PROJECT if config['host'].endswith('.pooler.supabase.com') else ''),'password':password}
+    runtime={key:config[key] for key in ['projectRef','host','port','dbname','sslrootcert'] if key in config}
+    runtime.update(user=role+('.'+PROJECT if config['host'].endswith('.pooler.supabase.com') else ''),password=password)
     save(secret_file,runtime)
     runtime_conn=psycopg2.connect(**connect_config(runtime,local))
     try:
@@ -228,7 +231,7 @@ def transfer_storage(config, manifest, evidence_root, private, execute):
         bucket=json.loads(body);assert bucket.get('public') is True, 'BUCKET_VISIBILITY_CONFLICT'
     records=[]
     for item in manifest['objects']:
-        assert item['sourceVisibility']=='public' and item['mime']=='image/webp'
+        assert item['sourceVisibility']=='public' and item['mime']=='image/webp', 'EXISTING_WEBP_MIME_REQUIRED'
         local=(evidence_root/item['backup']).resolve()
         assert local.is_relative_to(evidence_root.resolve()), 'BACKUP_PATH_ESCAPE'
         data=local.read_bytes();assert digest(data)==item['sha256'] and len(data)==item['bytes']

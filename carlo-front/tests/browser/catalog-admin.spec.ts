@@ -24,6 +24,7 @@ async function editor(page:Page,slug:string,name:string){
 }
 test('all imported records are readable and editable in the existing administration',async({page},info)=>{
  await login(page);const checked:string[]=[];
+ try {
  for(const entry of entries){
   const dialog=await editor(page,entry.slug,entry.name);
   for(const key of ['slug','name','title','feastDay','country','continent','imageUrl','birthYear','deathYear','canonizationYear','birthPlace','birthCountryCode','birthContinent','birthLat','birthLng','birthPrecision','lat','lng','biography']){
@@ -41,6 +42,10 @@ test('all imported records are readable and editable in the existing administrat
   await dialog.getByRole('button',{name:'Cancelar',exact:true}).click();checked.push(entry.identityKey);
  }
  await info.attach('admin-catalog-identities',{body:JSON.stringify({checked,count:checked.length}),contentType:'application/json'});
+ } finally {
+  const logout=await page.request.post('/api/auth/admin/logout',{headers:{Origin:origin}});
+  expect(logout.status()).toBe(200);
+ }
 });
 test('a controlled copy can be edited, reloaded and deleted; anonymous writes are denied',async({page,request},info)=>{
  test.setTimeout(60000);
