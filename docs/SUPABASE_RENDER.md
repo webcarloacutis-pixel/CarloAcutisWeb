@@ -101,3 +101,7 @@ La web servida desde el worktree saneado, conectada al Supabase real, pasó 85 p
 Las pruebas que crean/editar/eliminan copias se mantuvieron en la base local desechable. Las nuevas pruebas catalog-live-readonly.spec.ts solo leen el contenido del snapshot existente. Los resultados privados, credenciales, dumps y manifiestos permanecen fuera de Git.
 
 La migración no cierra ACUTIS-013 ni la revisión de credenciales históricas. Render continúa preparado, sin despliegue ni contratación. La publicación requiere comprobar Auto-Deploy y previews de los servicios conectados; el YAML no acredita su estado remoto.
+
+### Comprobación adicional antes de publicar cambios del Blueprint
+
+Si Render tiene un Blueprint conectado a esta rama, abra Blueprints → Blueprint → Settings y configure Auto Sync = No antes de publicar cambios de render.yaml. Auto-Deploy Off controla los despliegues del servicio; Auto Sync controla la aplicación del Blueprint y puede crear recursos nuevos. No pulse Manual Sync, Apply ni Deploy durante esta preparación. Si no hay Blueprint conectado, registre esa ausencia. Revise además Auto-Deploy y las previews de cada servicio conectado. Referencia: [desactivar sincronización automática](https://render.com/docs/infrastructure-as-code#disabling-automatic-sync).
