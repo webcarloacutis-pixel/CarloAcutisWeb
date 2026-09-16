@@ -1,53 +1,84 @@
+# Prepared only. Do not create services or deploy without the owner approving Render costs.
+# Fresh names avoid changing the type/region of an existing service implicitly.
 services:
-  - type: web
-    name: carloacutisweb-back
+  - type: pserv
+    name: acutis-api-production
     runtime: node
     rootDir: carlo-back
-    plan: free
+    region: ohio
+    plan: 1c-2g
+    numInstances: 1
+    repo: https://github.com/webcarloacutis-pixel/CarloAcutisWeb
     branch: main
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start:prod
-    healthCheckPath: /health
-    autoDeployTrigger: commit
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --include=dev && npm run build && npm run typecheck && npm run lint
+    startCommand: npm start
+    maxShutdownDelaySeconds: 45
     envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "10000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PROVIDER
+        value: supabase
       - key: DATABASE_URL
-        fromDatabase:
-          name: carloacutisweb-db
-          property: connectionString
+        sync: false
+      - key: DB_CONNECTION_LIMIT
+        value: "5"
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_KEY
         generateValue: true
       - key: FRONTEND_ORIGIN
-        value: https://carloacutisweb-front.onrender.com
-      - key: OPENAI_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
+      - key: TRUST_PROXY_HOPS
+        value: "0"
+      - key: AI_ENABLED
+        value: "false"
+      - key: OPENAI_TIMEOUT_MS
+        value: "25000"
+      - key: AI_MAX_CONCURRENCY
+        value: "2"
+      - key: AI_DAILY_REQUEST_LIMIT
+        value: "100"
 
   - type: web
-    name: carloacutisweb-front
+    name: acutis-front-production
     runtime: node
     rootDir: carlo-front
-    plan: free
+    region: ohio
+    plan: 1c-2g
+    numInstances: 1
+    repo: https://github.com/webcarloacutis-pixel/CarloAcutisWeb
     branch: main
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
-    autoDeployTrigger: commit
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --include=dev && npm run typecheck && npm run lint && NODE_ENV=test npm test && npm run build
+    startCommand: npm start -- --hostname 0.0.0.0
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 45
     envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
       - key: NODE_ENV
         value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://carloacutisweb-back.onrender.com
-      - key: NEXT_PUBLIC_BACKEND_URL
-        value: https://carloacutisweb-back.onrender.com
+      - key: BACKEND_HOSTPORT
+        fromService:
+          type: pserv
+          name: acutis-api-production
+          property: hostport
       - key: NEXT_PUBLIC_SITE_URL
-        value: https://carloacutisweb-front.onrender.com
-
-databases:
-  - name: carloacutisweb-db
-    plan: free
-    databaseName: carloacutisweb
-    user: carloacutisweb
+        sync: false
+      - key: FORWARD_TRUSTED_IP
+        value: "false"
+      - key: NEXT_PUBLIC_MAP_TILES_ENABLED
+        value: "true"
+      - key: ANALYTICS_ENABLED
+        value: "false"
+      - key: CATALOG_STORAGE_PROVIDER
+        value: supabase
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

@@ -106,7 +106,7 @@ export function FeaturedSections() {
                     variant={section.featured ? "default" : "outline"}
                     className={`w-full ${section.featured ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800" : "bg-transparent"}`}
                   >
-                    <Link href={section.href}>
+                    <Link prefetch={false} href={section.href}>
                       {section.featured ? t("featured.discoverNow") : t("featured.explore")}
                     </Link>
                   </Button>

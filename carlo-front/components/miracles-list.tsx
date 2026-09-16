@@ -1,5 +1,8 @@
 "use client";
 import { T } from "@/components/t";
+import { apiUrl } from "@/lib/api-url";
+import { fetchPublicCollection } from "@/lib/public-collection";
+import { normalizeText } from "@/lib/content-filters";
 
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -53,58 +56,34 @@ export function MiraclesList() {
   const [saints, setSaints] = useState<SaintApi[]>([])
   const [allMiracles, setAllMiracles] = useState<MiracleUi[]>([])
 
-  const baseUrl = ''
 
   useEffect(() => {
     let mounted = true
+    const controller = new AbortController()
 
     async function load() {
       try {
         setLoading(true)
         setError(null)
 
-        const saintsRes = await fetch(`${baseUrl}/saints`, { cache: "no-store" })
-        if (!saintsRes.ok) throw new Error(`Error /saints (${saintsRes.status})`)
-        const saintsData = (await saintsRes.json()) as SaintApi[]
+        const [saintsData, miraclesData] = await Promise.all([
+          fetchPublicCollection<SaintApi>(apiUrl("/saints"), { signal: controller.signal, cache: "no-store" }),
+          fetchPublicCollection<MiracleApi>(apiUrl("/miracles"), { signal: controller.signal, cache: "no-store" }),
+        ])
         if (!mounted) return
         setSaints(saintsData)
-
-        const chunks = await Promise.all(
-          saintsData.map(async (s) => {
-            const res = await fetch(`${baseUrl}/saints/${encodeURIComponent(s.id)}/miracles`, { cache: "no-store" })
-            if (!res.ok) return []
-            const api = (await res.json()) as MiracleApi[]
-            const arr = Array.isArray(api) ? api : []
-
-            return arr.map((m) => {
-              const witnesses = (m.witnesses || "")
-                .split(",")
-                .map((x) => x.trim())
-                .filter(Boolean)
-
-              return {
-                id: m.id,
-                saintId: m.saintId,
-                title: m.title || "Milagro",
-                description: m.details || "",
-                type: (m.type || "").toString(),
-                date: m.date ?? null,
-                location: m.location ?? null,
-                witnesses,
-                verified: !!m.approved,
-                createdAt: (m as any).createdAt || new Date().toISOString(),
-                saintName: s.name,
-                saintSlug: s.slug,
-              } satisfies MiracleUi
-            })
-          })
-        )
-
+        const byId = new Map(saintsData.map((saint) => [saint.id, saint]))
+        setAllMiracles(miraclesData.map((miracle) => ({
+          id: miracle.id, saintId: miracle.saintId, title: miracle.title || "Milagro",
+          description: miracle.details || "", type: miracle.type || "", date: miracle.date,
+          location: miracle.location, witnesses: (miracle.witnesses || "").split(",").map((item) => item.trim()).filter(Boolean),
+          verified: miracle.approved, createdAt: miracle.createdAt,
+          saintName: byId.get(miracle.saintId)?.name || "Santo sin información",
+          saintSlug: byId.get(miracle.saintId)?.slug || "",
+        })))
+      } catch {
         if (!mounted) return
-        setAllMiracles(chunks.flat())
-      } catch (e: any) {
-        if (!mounted) return
-        setError(e?.message ? String(e.message) : "Error cargando milagros")
+        setError("No se pudieron cargar los milagros. Vuelve a intentarlo.")
       } finally {
         if (!mounted) return
         setLoading(false)
@@ -114,17 +93,18 @@ export function MiraclesList() {
     load()
     return () => {
       mounted = false
+      controller.abort()
     }
-  }, [baseUrl])
+  }, [])
 
   const filteredMiracles = useMemo(() => {
-    const q = searchTerm.toLowerCase()
+    const q = normalizeText(searchTerm)
 
     const filtered = allMiracles.filter((miracle) => {
       const matchesSearch =
-        (miracle.title || "").toLowerCase().includes(q) ||
-        (miracle.description || "").toLowerCase().includes(q) ||
-        (miracle.saintName || "").toLowerCase().includes(q)
+        normalizeText(miracle.title).includes(q) ||
+        normalizeText(miracle.description).includes(q) ||
+        normalizeText(miracle.saintName).includes(q)
 
       const matchesSaint = selectedSaint === "Todos los santos" || miracle.saintName === selectedSaint
       const matchesVerified = !verifiedOnly || miracle.verified
@@ -162,7 +142,7 @@ export function MiraclesList() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Buscar milagros..."
+                placeholder="Buscar milagros..." aria-label="Buscar milagros" maxLength={200}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -170,7 +150,7 @@ export function MiraclesList() {
             </div>
 
             <Select value={selectedSaint} onValueChange={setSelectedSaint}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Filtrar milagros por santo">
                 <SelectValue placeholder="Todos los santos" />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +164,7 @@ export function MiraclesList() {
             </Select>
 
             <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Filtrar milagros por tipo">
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
@@ -199,12 +179,13 @@ export function MiraclesList() {
 
             <Button
               variant={verifiedOnly ? "default" : "outline"}
+              aria-pressed={verifiedOnly}
               onClick={() => setVerifiedOnly(!verifiedOnly)}
               className="justify-start"
               disabled={loading}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              Solo Verificados
+              Solo aprobados en el catálogo
             </Button>
 
             <Button
@@ -217,13 +198,13 @@ export function MiraclesList() {
               }}
               disabled={loading}
             >
-              <T k="saints.clearFilters" />
+              <T k="saints.filters.clear" />
             </Button>
           </div>
 
           <div className="mt-4 flex items-center gap-2">
             <Badge variant="secondary">{filteredMiracles.length} milagros encontrados</Badge>
-            <Badge variant="outline">{filteredMiracles.filter((m) => m.verified).length} verificados</Badge>
+            <Badge variant="outline">{filteredMiracles.filter((m) => m.verified).length} aprobados en el catálogo</Badge>
           </div>
 
           {loading ? <p className="mt-3 text-sm text-muted-foreground">Cargando milagros...</p> : null}
@@ -231,12 +212,12 @@ export function MiraclesList() {
         </CardContent>
       </Card>
 
-      {!loading && filteredMiracles.length === 0 ? (
+      {!loading && !error && filteredMiracles.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-playfair text-xl font-semibold mb-2">No se encontraron milagros</h3>
-            <p className="text-muted-foreground">Intenta ajustar los filtros de bÃºsqueda</p>
+            <p className="text-muted-foreground">Intenta ajustar los filtros de búsqueda</p>
           </CardContent>
         </Card>
       ) : (
@@ -251,7 +232,7 @@ export function MiraclesList() {
                   </CardTitle>
                   <p className="text-muted-foreground">
                     Atribuido a{" "}
-                    <Link href={`/santos/${miracle.saintSlug}`} className="text-primary hover:underline font-medium">
+                    <Link prefetch={false} href={miracle.saintSlug ? "/santos/" + encodeURIComponent(miracle.saintSlug) : "/santos"} className="text-primary hover:underline font-medium">
                       {miracle.saintName}
                     </Link>
                   </p>
@@ -262,7 +243,7 @@ export function MiraclesList() {
                       {miracle.type}
                     </Badge>
                   ) : null}
-                  {miracle.verified && <Badge variant="secondary">Verificado por la Iglesia</Badge>}
+                  {miracle.verified && <Badge variant="secondary">Aprobado en el catálogo</Badge>}
                 </div>
               </div>
             </CardHeader>
@@ -310,4 +291,3 @@ export function MiraclesList() {
     </div>
   )
 }
-

@@ -69,7 +69,7 @@ export function SaintMatcherResults({
                   </div>
                 </div>
 
-                <Link
+                <Link prefetch={false}
                   href={`/santos/${m.slug}`}
                   className="inline-flex items-center text-sm font-medium text-amber-700 hover:text-amber-800"
                 >

@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, error: authError } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,9 +27,9 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError("")
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const success = login(password)
+
+    const success = await login(password)
 
     if (success) {
       router.push("/admin")
@@ -65,6 +65,8 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Ingresa la clave sagrada"
                   className="pr-10 border-amber-200 focus:border-amber-400"
+                  autoComplete="current-password"
+                  maxLength={256}
                   required
                 />
                 <Button
@@ -72,6 +74,7 @@ export default function AdminLoginPage() {
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  aria-label={showPassword ? "Ocultar clave" : "Mostrar clave"}
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -83,9 +86,9 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {error && (
+            {(error || authError) && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{authError || error}</AlertDescription>
               </Alert>
             )}
 

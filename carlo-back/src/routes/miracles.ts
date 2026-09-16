@@ -1,49 +1,25 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import { requireAdminKey } from "../lib/admin-key";
-
+import { miracleData } from "../lib/content-validation";
+import { id } from "../lib/validation";
+import { pageArgs, publicCache, sendPage } from "../lib/pagination";
 const router = Router();
-const prisma = new PrismaClient();
-
-router.get("/", async (_req, res) => {
-  try {
-    const miracles = await prisma.miracle.findMany({
-      orderBy: { createdAt: "desc" } as any,
-    });
-    return res.json(miracles);
-  } catch (e: any) {
-    return res.status(500).json({
-      error: "MIRACLES_LIST_FAILED",
-      detail: String(e?.message ?? e),
-    });
-  }
+router.get("/", async (req, res) => {
+  const { limit, query } = pageArgs(req);
+  const where = { approved: true };
+  const [rows, total] = await prisma.$transaction([prisma.miracle.findMany({ ...query, where }), prisma.miracle.count({ where })]);
+  publicCache(req, res); res.json(sendPage(res, rows, total, limit));
 });
-
+router.get("/all", requireAdminKey, async (req, res) => {
+  const { limit, query } = pageArgs(req);
+  const [rows, total] = await prisma.$transaction([prisma.miracle.findMany(query), prisma.miracle.count()]);
+  res.set("Cache-Control", "private, no-store"); res.json(sendPage(res, rows, total, limit));
+});
 router.patch("/:id", requireAdminKey, async (req, res) => {
-  try {
-    const updated = await prisma.miracle.update({
-      where: { id: req.params.id },
-      data: req.body,
-    });
-    return res.json(updated);
-  } catch (e: any) {
-    return res.status(500).json({
-      error: "MIRACLE_UPDATE_FAILED",
-      detail: String(e?.message ?? e),
-    });
-  }
+  res.json(await prisma.miracle.update({ where: { id: id(req.params.id) }, data: miracleData(req.body, true) }));
 });
-
 router.delete("/:id", requireAdminKey, async (req, res) => {
-  try {
-    await prisma.miracle.delete({ where: { id: req.params.id } });
-    return res.json({ ok: true });
-  } catch (e: any) {
-    return res.status(500).json({
-      error: "MIRACLE_DELETE_FAILED",
-      detail: String(e?.message ?? e),
-    });
-  }
+  await prisma.miracle.delete({ where: { id: id(req.params.id) } }); res.json({ ok: true });
 });
-
 export default router;

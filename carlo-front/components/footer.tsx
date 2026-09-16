@@ -14,7 +14,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo y descripción */}
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center space-x-2 mb-4">
+            <Link prefetch={false} href="/" className="flex items-center space-x-2 mb-4">
               <Cross className="h-8 w-8 text-primary" />
               <span className="font-playfair text-xl font-bold text-foreground">Santos y Milagros</span>
             </Link>
@@ -26,16 +26,16 @@ export function Footer() {
             <h3 className="font-playfair font-semibold text-foreground mb-4"><T k="footer.explore" /></h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/santos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.saints" /></Link>
+                <Link prefetch={false} href="/santos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.saints" /></Link>
               </li>
               <li>
-                <Link href="/mapa" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.worldMap" /></Link>
+                <Link prefetch={false} href="/mapa" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.worldMap" /></Link>
               </li>
               <li>
-                <Link href="/oraciones" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.prayers" /></Link>
+                <Link prefetch={false} href="/oraciones" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.prayers" /></Link>
               </li>
               <li>
-                <Link href="/versiculos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.verses" /></Link>
+                <Link prefetch={false} href="/versiculos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.verses" /></Link>
               </li>
             </ul>
           </div>
@@ -45,13 +45,13 @@ export function Footer() {
             <h3 className="font-playfair font-semibold text-foreground mb-4"><T k="footer.resources" /></h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/eucaristia" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.eucharist" /></Link>
+                <Link prefetch={false} href="/eucaristia" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.eucharist" /></Link>
               </li>
               <li>
-                <Link href="/simbolos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.symbols" /></Link>
+                <Link prefetch={false} href="/simbolos" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.symbols" /></Link>
               </li>
               <li>
-                <Link href="/milagros" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.miracles" /></Link>
+                <Link prefetch={false} href="/milagros" className="text-muted-foreground hover:text-primary transition-colors"><T k="footer.miracles" /></Link>
               </li>
             </ul>
           </div>

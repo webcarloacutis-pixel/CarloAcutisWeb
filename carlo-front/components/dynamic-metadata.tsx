@@ -4,27 +4,10 @@ import { useLanguage } from "@/contexts/language-context"
 import { useEffect } from "react"
 
 export function DynamicMetadata() {
-  const { t, language } = useLanguage()
-
+  const { language } = useLanguage()
   useEffect(() => {
-    // Update document title
-    document.title = t("metadata.title")
-
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]')
-    if (metaDescription) {
-      metaDescription.setAttribute("content", t("metadata.description"))
-    }
-
-    // Update meta keywords
-    const metaKeywords = document.querySelector('meta[name="keywords"]')
-    if (metaKeywords) {
-      metaKeywords.setAttribute("content", t("metadata.keywords"))
-    }
-
-    // Update document language
+    // Route metadata belongs to Next. Missing translation keys must not replace it.
     document.documentElement.lang = language
-  }, [t, language])
-
+  }, [language])
   return null
 }

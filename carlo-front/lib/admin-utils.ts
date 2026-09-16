@@ -1,8 +1,6 @@
+import { fetchPublicCollection } from "./public-collection"
+import { apiUrl } from "./api-url"
 
-function withAdminKey(headers: Record<string, string>) {
-  const k = process.env.NEXT_PUBLIC_ADMIN_KEY;
-  return k ? { ...headers, "x-admin-key": k } : headers;
-}
 
 export type SaintFormData = {
   id?: string;
@@ -39,11 +37,7 @@ export function validateSaintData(saint: SaintFormData): { isValid: boolean; err
   return { isValid: errors.length === 0, errors };
 }
 
-function getBaseUrl() {
-  const env = process.env.NEXT_PUBLIC_API_URL;
-  const url = (env && String(env).trim()) ? String(env).trim() : "http://localhost:3001";
-  return url.replace(/\/+$/, "");
-}
+function getBaseUrl() { return apiUrl("/").replace(/\/+$/, "") }
 
 export async function saveSaint(
   saint: SaintFormData
@@ -74,14 +68,13 @@ export async function saveSaint(
 
     const res = await fetch(url, {
       method,
-      headers: withAdminKey({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       credentials: "include",
     });
 
     if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      return { success: false, message: `Error guardando santo (${res.status}). ${txt}` };
+      return { success: false, message: `Error guardando santo (${res.status}).` };
     }
 
     const data = (await res.json().catch(() => null)) as any;
@@ -100,8 +93,7 @@ export async function deleteSaint(saintId: string): Promise<{ success: boolean; 
     });
 
     if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      return { success: false, message: `Error eliminando santo (${res.status}). ${txt}` };
+      return { success: false, message: `Error eliminando santo (${res.status}).` };
     }
 
     return { success: true, message: "Santo eliminado." };
@@ -173,9 +165,7 @@ export function mapApiToFormMiracle(input: MiracleApi): MiracleFormData {
 
 export async function getMiraclesBySaintId(saintId: string): Promise<MiracleFormData[]> {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/saints/${saintId}/miracles`, { cache: "no-store", credentials: "include" });
-    if (!res.ok) return [];
-  const data = (await res.json()) as MiracleApi[];
+  const data = await fetchPublicCollection<MiracleApi>(`${baseUrl}/saints/${encodeURIComponent(saintId)}/miracles/all`, {cache:"no-store", credentials:"include"})
   return data.map(mapApiToFormMiracle);
 }
 
@@ -185,16 +175,12 @@ export async function createMiracle(saintId: string, formData: MiracleFormData):
 
   const res = await fetch(`${baseUrl}/saints/${saintId}/miracles`, {
     method: "POST",
-    headers: withAdminKey({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     credentials: "include",
   });
 
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      console.error("createMiracle failed", res.status, txt);
-      return { ...formData, id: "", saintId };
-    }
+    if (!res.ok) throw new Error(`No se pudo crear el milagro (${res.status}).`);
   const created = (await res.json()) as MiracleApi;
   return mapApiToFormMiracle(created);
 }
@@ -230,24 +216,20 @@ export async function updateMiracle(
 
   const res = await fetch(`${baseUrl}/miracles/${miracleId}`, {
     method: "PATCH",
-    headers: withAdminKey({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(payload),
   });
 
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      console.error("updateMiracle failed", res.status, txt);
-      return { ...formData, id: formData.id || miracleId };
-    }
+    if (!res.ok) throw new Error(`No se pudo actualizar el milagro (${res.status}).`);
 
-  return res.json();
+  return mapApiToFormMiracle(await res.json());
 }
 
 export async function deleteMiracle(miracleId: string): Promise<void> {
   const baseUrl = getBaseUrl();
   const res = await fetch(`${baseUrl}/miracles/${miracleId}`, { method: "DELETE", credentials: "include" });
-  if (!res.ok) { const txt = await res.text().catch(() => ""); console.error("admin-utils request failed", res.status, txt); return null as any; }
+  if (!res.ok) throw new Error(`No se pudo eliminar el milagro (${res.status}).`);
 }
 
 // ===============================
@@ -273,30 +255,23 @@ type PrayerApi = {
 }
 
 export async function getPrayers(): Promise<PrayerApi[]> {
-  const baseUrl = getBaseUrl()
-  const res = await fetch(`${baseUrl}/prayers`, { cache: "no-store" })
-  if (!res.ok) throw new Error(`Error cargando oraciones (${res.status})`)
-  return res.json()
+  return fetchPublicCollection<PrayerApi>(apiUrl("/prayers/all"),{cache:"no-store",credentials:"include"})
 }
 
 export async function getApprovedPrayers(): Promise<PrayerApi[]> {
-  const baseUrl = getBaseUrl()
-  const res = await fetch(`${baseUrl}/prayers/approved`, { cache: "no-store" })
-  if (!res.ok) throw new Error(`Error cargando oraciones aprobadas (${res.status})`)
-  return res.json()
+  return fetchPublicCollection<PrayerApi>(apiUrl("/prayers/approved"),{cache:"no-store",credentials:"include"})
 }
 
 export async function createPrayer(formData: PrayerFormData): Promise<PrayerApi> {
   const baseUrl = getBaseUrl()
   const res = await fetch(`${baseUrl}/prayers`, {
     method: "POST",
-    headers: withAdminKey({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(formData),
   })
   if (!res.ok) {
-    const txt = await res.text().catch(() => "")
-    throw new Error(`Error creando oraciÃ³n (${res.status}). ${txt}`)
+    throw new Error(`Error creando oraciÃ³n (${res.status}).`)
   }
   return res.json()
 }
@@ -305,13 +280,12 @@ export async function updatePrayer(prayerId: string, formData: Partial<PrayerFor
   const baseUrl = getBaseUrl()
   const res = await fetch(`${baseUrl}/prayers/${prayerId}`, {
     method: "PATCH",
-    headers: withAdminKey({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(formData),
   })
   if (!res.ok) {
-    const txt = await res.text().catch(() => "")
-    throw new Error(`Error editando oraciÃ³n (${res.status}). ${txt}`)
+    throw new Error(`Error editando oraciÃ³n (${res.status}).`)
   }
   return res.json()
 }
@@ -323,8 +297,6 @@ export async function deletePrayer(prayerId: string): Promise<void> {
     credentials: "include",
   })
   if (!res.ok) {
-    const txt = await res.text().catch(() => "")
-    throw new Error(`Error eliminando oraciÃ³n (${res.status}). ${txt}`)
+    throw new Error(`Error eliminando oraciÃ³n (${res.status}).`)
   }
 }
-

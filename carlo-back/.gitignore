@@ -22,3 +22,8 @@ audit_*.txt
 dist/
 data/translation-cache.json
 tmp_check_slugs.cjs
+
+!.env.example
+
+# Sanitized maintenance template only
+!.env.maintenance.example

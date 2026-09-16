@@ -39,9 +39,8 @@ export function AdminPrayersList() {
 
   const reload = async () => {
     try {
-      setLoading(true)
-      setError(null)
       const data = await getPrayers()
+      setError(null)
       setItems(data)
     } catch (e: any) {
       setError(e?.message ? String(e.message) : "Error cargando oraciones")
@@ -51,7 +50,11 @@ export function AdminPrayersList() {
   }
 
   useEffect(() => {
-    reload()
+    let active=true
+    getPrayers().then(data=>{if(active){setItems(data);setError(null)}})
+      .catch(()=>{if(active)setError('No se pudieron cargar las oraciones.')})
+      .finally(()=>{if(active)setLoading(false)})
+    return ()=>{active=false}
   }, [])
 
   const filtered = useMemo(() => {

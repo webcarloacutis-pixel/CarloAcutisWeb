@@ -1,62 +1,45 @@
 "use client"
-
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-
-interface AuthContextType {
-  isAuthenticated: boolean
-  login: (_password: string) => boolean
-  logout: () => void
-  loading: boolean
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-const ADMIN_PASSWORD = "SantoAdmin2024!"
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const authStatus = localStorage.getItem("catholic_admin_auth")
-    const authTime = localStorage.getItem("catholic_admin_time")
-
-    if (authStatus === "true" && authTime) {
-      const loginTime = Number.parseInt(authTime)
-      const currentTime = Date.now()
-      if (currentTime - loginTime < 8 * 60 * 60 * 1000) {
-        setIsAuthenticated(true)
-      } else {
-        localStorage.removeItem("catholic_admin_auth")
-        localStorage.removeItem("catholic_admin_time")
-      }
-    }
-    setLoading(false)
-  }, [])
-
-  const login = (password: string): boolean => {
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true)
-      localStorage.setItem("catholic_admin_auth", "true")
-      localStorage.setItem("catholic_admin_time", Date.now().toString())
-      return true
-    }
-    return false
+import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { apiUrl } from './api-url'
+interface AuthState { isAuthenticated:boolean; loading:boolean; error:string; login:(password:string)=>Promise<boolean>; logout:()=>Promise<boolean> }
+const AuthContext=createContext<AuthState|null>(null)
+export function AuthProvider({children}:{children:ReactNode}) {
+  const [isAuthenticated,setAuthenticated]=useState(false)
+  const [loading,setLoading]=useState(true)
+  const [error,setError]=useState('')
+  const epoch=useRef(0)
+  const active=useRef<AbortController|null>(null)
+  const busy=useRef(false)
+  useEffect(()=>{
+    const version=++epoch.current
+    const controller=new AbortController();active.current=controller
+    try { localStorage.removeItem('catholic_admin_auth');localStorage.removeItem('catholic_admin_time') } catch { /* Storage is optional. */ }
+    void fetch(apiUrl('/auth/admin/me'),{credentials:'include',cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])})
+      .then(response=>{if(version===epoch.current)setAuthenticated(response.ok)})
+      .catch(()=>{if(version===epoch.current && !controller.signal.aborted)setError('No se pudo comprobar el acceso administrativo.')})
+      .finally(()=>{if(version===epoch.current)setLoading(false)})
+    // Cancel the latest operation, including one started after this initial probe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return ()=>{epoch.current++;active.current?.abort()}
+  },[])
+  async function mutate(path:string,password?:string) {
+    // Cookie-changing operations run one at a time; stale session probes cannot win.
+    if(busy.current)return false
+    busy.current=true
+    const version=++epoch.current
+    active.current?.abort()
+    const controller=new AbortController();active.current=controller
+    setLoading(true);setError('')
+    try {
+      const response=await fetch(apiUrl(path),{method:'POST',credentials:'include',cache:'no-store',
+        ...(password===undefined?{}:{headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}),
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])})
+      if(version!==epoch.current)return false
+      if(!response.ok){setError(response.status===429?'Demasiados intentos. Espera antes de reintentar.':'No se pudo completar el acceso administrativo.');return false}
+      setAuthenticated(password!==undefined);return true
+    } catch {if(version===epoch.current)setError(password===undefined?'No se pudo cerrar la sesión. Reintenta.':'No se pudo conectar con el servicio.');return false}
+    finally {busy.current=false;if(version===epoch.current)setLoading(false)}
   }
-
-  const logout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem("catholic_admin_auth")
-    localStorage.removeItem("catholic_admin_time")
-  }
-
-  return <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{isAuthenticated,loading,error,login:password=>mutate('/auth/admin/login',password),logout:()=>mutate('/auth/admin/logout')}}>{children}</AuthContext.Provider>
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
+export function useAuth(){const state=useContext(AuthContext);if(!state)throw new Error('AuthProvider required');return state}

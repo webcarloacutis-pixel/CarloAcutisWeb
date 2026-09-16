@@ -1,77 +1,34 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-
-import { notFound } from "next/navigation";
-import { SaintDetail } from "@/components/saint-detail";
-import type { Saint } from "@/components/saint-detail";
-import { apiUrl } from "@/lib/api-url";
-
-
-type MiracleApi = {
-  id: string;
-  title: string;
-  details: string | null;
-  date: string | null;
-  location: string | null;
-  approved: boolean;
-};
-
-async function getMiraclesBySaintId(saintId: string) {
-  const res = await fetch(
-    apiUrl("/saints/" + encodeURIComponent(saintId) + "/miracles"),
-    { cache: "no-store" }
-  );
-
-  if (!res.ok) return [];
-
-  const api = (await res.json()) as MiracleApi[];
-
-  return (Array.isArray(api) ? api : []).map((m) => ({
-    id: m.id,
-    title: m.title ?? "Milagro",
-    description: m.details ?? "",
-    date: m.date ?? null,
-    location: m.location ?? null,
-    verified: !!m.approved,
-  }));
-}
-
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+import { notFound } from "next/navigation"
+import { SaintDetail } from "@/components/saint-detail"
+import type { Saint } from "@/components/saint-detail"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+import { apiUrl } from "@/lib/api-url"
+import { fetchPublicCollection } from "@/lib/public-collection"
+type MiracleApi = { id: string; title: string; details: string | null; date: string | null; location: string | null; approved: boolean }
+type PrayerApi = { id: string; title: string; content: string; saintName: string | null; occasion: string | null; approved: boolean }
 async function getSaint(slug: string): Promise<Saint> {
-  const res = await fetch(apiUrl("/saints/" + encodeURIComponent(slug)), {
-    cache: "no-store",
-  });
-
-  if (res.status === 404) notFound();
-  if (!res.ok) throw new Error(`Error al traer santo: ${res.status}`);
-
-  const api = (await res.json()) as any;
-  const miracles = api?.id ? await getMiraclesBySaintId(String(api.id)) : [];
-
+  const response = await fetch(apiUrl("/saints/" + encodeURIComponent(slug)), { cache: "no-store", signal: AbortSignal.timeout(15000) })
+  if (response.status === 404) notFound()
+  if (!response.ok) throw new Error("No se pudo cargar el santo.")
+  const api = await response.json()
+  const [miracles, prayers] = await Promise.all([
+    fetchPublicCollection<MiracleApi>(apiUrl("/saints/" + encodeURIComponent(api.id) + "/miracles"), { cache: "no-store" }),
+    fetchPublicCollection<PrayerApi>(apiUrl("/prayers/approved"), { cache: "no-store" }),
+  ])
   return {
-    id: api.id ?? slug,
-    slug: api.slug ?? slug,
-    name: api.name ?? "Santo",
-    country: api.country ?? null,
-    title: api.title ?? null,
-    feastDay: api.feastDay ?? null,
-    birthYear: api.birthYear ?? null,
-    canonizationYear: api.canonizationYear ?? null,
-    biography: api.biography ?? null,
-    image: api.imageUrl ?? api.image ?? null,
+    ...api,
+    image: api.imageUrl || api.image || null,
     patronOf: Array.isArray(api.patronOf) ? api.patronOf : [],
     symbols: Array.isArray(api.symbols) ? api.symbols : [],
-    prayers: Array.isArray(api.prayers) ? api.prayers : [],
-    miracles,
-  };
+    prayers: prayers.filter(prayer => prayer.approved && prayer.saintName?.trim().toLocaleLowerCase("es") === api.name.trim().toLocaleLowerCase("es")).map(prayer => ({ id: prayer.id, title: prayer.title, text: prayer.content, occasion: prayer.occasion })),
+    miracles: miracles.map((miracle) => ({ id: miracle.id, title: miracle.title, description: miracle.details || "", date: miracle.date, location: miracle.location, verified: miracle.approved })),
+  }
 }
-
-export default async function SaintPage({ params }: { params: { slug: string } }) {
-  const saint = await getSaint(params.slug);
-
-  return (
-    <div className="min-h-screen bg-background">
-      <SaintDetail saint={saint} />
-    </div>
-  );
+export default async function SaintPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const saint = await getSaint(slug)
+  return <div className="min-h-screen bg-background"><Header /><main><SaintDetail saint={saint} /></main><Footer /></div>
 }

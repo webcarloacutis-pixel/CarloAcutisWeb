@@ -6,7 +6,6 @@ import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
 import { useLanguage } from "@/contexts/language-context"
 
 export function ScriptureSearch() {
@@ -50,12 +49,12 @@ export function ScriptureSearch() {
           <CardHeader>
             <CardTitle className="text-center font-playfair"><T k="scriptureSearch.cardTitle" /></CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent><form action="/versiculos">
             <div className="relative">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input
-                  type="text"
+                  type="search" name="busqueda" aria-label={t("scriptureSearch.placeholder")} maxLength={200}
                   placeholder={t("scriptureSearch.placeholder")}
                   value={searchTerm}
                   onChange={(e) => handleInputChange(e.target.value)}
@@ -64,9 +63,9 @@ export function ScriptureSearch() {
               </div>
 
               {suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-md mt-1 shadow-lg z-10">
+                <div className="bg-card border border-border rounded-md mt-2 shadow-sm">
                   {suggestions.map((suggestion, index) => (
-                    <button
+                    <button type="button"
                       key={index}
                       className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-muted-foreground"
                       onClick={() => {
@@ -81,10 +80,10 @@ export function ScriptureSearch() {
               )}
             </div>
 
-            <Button asChild className="w-full mt-4" size="lg">
-              <Link href={`/versiculos?busqueda=${encodeURIComponent(searchTerm)}`}><T k="scriptureSearch.searchButton" /></Link>
+            <Button type="submit" className="w-full mt-4" size="lg">
+              <T k="scriptureSearch.searchButton" />
             </Button>
-          </CardContent>
+          </form></CardContent>
         </Card>
       </div>
     </section>

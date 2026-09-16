@@ -10,25 +10,49 @@ import { ChatSidebar } from "@/components/chat-sidebar"
 import { AuthModal } from "@/components/auth-modal"
 import { Send, Sparkles, User, Cross, BookOpen, Heart, Compass, ArrowDown, Menu } from "lucide-react"
 
+const EMPTY_MESSAGES: ChatMessage[] = []
+const conversationKey = (account?: string, conversation?: string) => (account || "anonymous") + ":" + (conversation || "draft")
+
 export function AIChatFullscreen() {
   const { t, language } = useLanguage()
-  const { isAuthenticated, currentConversation, createConversation, updateConversation } = useUser()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
+  const { user, isAuthenticated, currentConversation, createConversation, updateConversation, error: historyError } = useUser()
+  const viewKey = conversationKey(user?.id, currentConversation?.id)
+  const [localMessages, setLocalMessages] = useState<{ key: string; messages: ChatMessage[] } | null>(null)
+  const messages = localMessages?.key === viewKey ? localMessages.messages : currentConversation?.messages || EMPTY_MESSAGES
+  const [inputState, setInputState] = useState({ key: viewKey, value: "" })
+  const input = inputState.key === viewKey ? inputState.value : ""
+  const setInput = (value: string) => setInputState({ key: viewKey, value })
+  const [typingKey, setTypingKey] = useState<string | null>(null)
+  const isTyping = typingKey === viewKey
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMobileSidebar, setShowMobileSidebar] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-
-  // Sincronizar mensajes con la conversación actual
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  const historyButtonRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    if (currentConversation) {
-      setMessages((prev) => (prev.length ? prev : currentConversation.messages))
-    } else {
-      setMessages([])
+    if (!showMobileSidebar) return
+    const historyButton = historyButtonRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    sidebarRef.current?.querySelector<HTMLElement>('button[aria-label="Cerrar historial"]')?.focus()
+    const closeOrTrap = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setShowMobileSidebar(false); return }
+      if (event.key !== "Tab") return
+      const focusable = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href], [tabindex="0"]') || []).filter((element) => element.getClientRects().length)
+      const first = focusable[0], last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
     }
-  }, [currentConversation])
+    document.addEventListener("keydown", closeOrTrap)
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOrTrap); historyButton?.focus() }
+  }, [showMobileSidebar])
+
+  const activeRequest = useRef<{ key: string; controller: AbortController } | null>(null)
+  useEffect(() => {
+    return () => { if (activeRequest.current?.key === viewKey) activeRequest.current.controller.abort() }
+  }, [viewKey])
+  useEffect(() => () => activeRequest.current?.controller.abort(), [])
 
   // Traducciones para las preguntas rápidas
   const quickQuestionsTranslations: Record<
@@ -200,75 +224,51 @@ export function AIChatFullscreen() {
     inputRef.current?.focus()
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim()) return
-
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!input.trim() || isTyping) return
+    const submitted = input.trim()
+    const controller = new AbortController()
+    activeRequest.current?.controller.abort()
+    activeRequest.current = { key: viewKey, controller }
+    setTypingKey(viewKey)
+    let targetKey = viewKey
     let convId = currentConversation?.id
-    if (!convId && isAuthenticated) {
-      const newConv = createConversation()
-      convId = newConv.id
-    }
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    }
-
-    const newMessages = [...messages, userMessage]
-    setMessages(newMessages)
-    setInput("")
-    setIsTyping(true)
-
-    if (convId && isAuthenticated) {
-      updateConversation(convId, newMessages)
-    }
-
     try {
-      const { answer } = await postAiChat({
-        message: userMessage.content,
-        lang: language || "es",
-      })
-
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: answer,
-        timestamp: new Date(),
+      if (!convId && isAuthenticated) {
+        const conversation = await createConversation()
+        if (controller.signal.aborted || !conversation) return
+        convId = conversation.id
+        targetKey = conversationKey(user?.id, convId)
+        if (activeRequest.current?.controller === controller) activeRequest.current.key = targetKey
       }
-
-      const updatedMessages = [...newMessages, assistantMessage]
-      setMessages(updatedMessages)
-
+      if (controller.signal.aborted) return
+      const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: submitted, timestamp: new Date() }
+      const newMessages = [...messages, userMessage]
+      setLocalMessages({ key: targetKey, messages: newMessages })
+      setInputState({ key: targetKey, value: "" })
+      setTypingKey(targetKey)
       if (convId && isAuthenticated) {
-        updateConversation(convId, updatedMessages)
+        const saved = await updateConversation(convId, newMessages)
+        if (controller.signal.aborted || !saved) return
       }
-    } catch (e: any) {
-          console.error("AI UI error (fullscreen):", e);
-const msg =
-        e?.status === 429
-          ? "Estoy recibiendo muchas solicitudes ahora mismo. Intenta de nuevo en unos segundos."
-          : "Tuve un problema respondiendo. Intenta de nuevo."
-
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: msg,
-        timestamp: new Date(),
-      }
-
-      const updatedMessages = [...newMessages, assistantMessage]
-      setMessages(updatedMessages)
-
-      if (convId && isAuthenticated) {
-        updateConversation(convId, updatedMessages)
+      try {
+        const { answer } = await postAiChat({ message: submitted, lang: language || "es" }, controller.signal)
+        if (controller.signal.aborted) return
+        const updated = [...newMessages, { id: crypto.randomUUID(), role: "assistant" as const, content: answer, timestamp: new Date() }]
+        setLocalMessages({ key: targetKey, messages: updated })
+        if (convId && isAuthenticated) await updateConversation(convId, updated)
+      } catch (error: unknown) {
+        if (controller.signal.aborted) return
+        const status = (error as { status?: number })?.status
+        setLocalMessages({ key: targetKey, messages: [...newMessages, {
+          id: crypto.randomUUID(), role: "assistant", content: status === 429 ? "Hay demasiadas solicitudes. Espera antes de reintentar." : "No se pudo obtener una respuesta. Reintenta más tarde.", timestamp: new Date(),
+        }] })
       }
     } finally {
-      setIsTyping(false)
+      if (activeRequest.current?.controller === controller) setTypingKey(null)
     }
-}
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -288,19 +288,20 @@ const msg =
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setShowMobileSidebar(false)} />
       )}
 
+      {historyError && <p role="alert" className="px-4 py-2 text-red-700">{historyError}</p>}
       <section className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-80px)] flex bg-gradient-to-b from-background via-background to-muted/20 relative">
-        <div
+        <div ref={sidebarRef} id="chat-history" role={showMobileSidebar ? "dialog" : undefined} aria-modal={showMobileSidebar || undefined} aria-label="Historial de conversaciones"
           className={`
           fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
           transform transition-transform duration-300 ease-in-out
-          ${showMobileSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${showMobileSidebar ? "block translate-x-0" : "hidden lg:block"}
         `}
         >
-          <ChatSidebar onOpenAuth={() => setShowAuthModal(true)} />
+          <ChatSidebar onOpenAuth={() => setShowAuthModal(true)} onClose={() => setShowMobileSidebar(false)} />
         </div>
 
         {/* Área principal del chat */}
-        <div className="flex-1 flex flex-col relative w-full">
+        <div className="flex-1 flex flex-col relative w-full min-w-0">
           {/* Fondo decorativo - oculto en móvil para mejor rendimiento */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
             <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
@@ -309,7 +310,7 @@ const msg =
 
           <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-3 sm:px-4 md:px-6 relative z-10">
             <div className="lg:hidden flex items-center pt-3">
-              <Button variant="ghost" size="sm" onClick={() => setShowMobileSidebar(true)} className="p-2">
+              <Button variant="ghost" size="sm" ref={historyButtonRef} aria-controls="chat-history" aria-label="Abrir historial" aria-expanded={showMobileSidebar} onClick={() => setShowMobileSidebar(true)} className="p-2">
                 <Menu className="w-5 h-5" />
               </Button>
             </div>
@@ -409,7 +410,7 @@ const msg =
                             : "bg-card border border-border rounded-bl-sm sm:rounded-bl-md"
                         }`}
                       >
-                        <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                       </div>
                       {message.role === "user" && (
                         <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -449,6 +450,8 @@ const msg =
                 <form onSubmit={handleSubmit} className="relative">
                   <div className="flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-card border border-border rounded-xl sm:rounded-2xl shadow-lg focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5 transition-all">
                     <textarea
+                      aria-label="Mensaje para la IA"
+                      maxLength={4000}
                       ref={inputRef}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -459,6 +462,7 @@ const msg =
                       style={{ minHeight: "40px" }}
                     />
                     <Button
+                      aria-label="Enviar mensaje"
                       type="submit"
                       size="icon"
                       disabled={!input.trim() || isTyping}
@@ -480,7 +484,7 @@ const msg =
                 onClick={scrollToContent}
                 className="flex flex-col items-center gap-0.5 sm:gap-1 text-muted-foreground/60 hover:text-primary transition-colors group"
               >
-                <span className="text-[10px] sm:text-xs">{t("common.exploreMore") || "Explorar más"}</span>
+                <span className="text-[10px] sm:text-xs">{t("featured.explore")}</span>
                 <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
               </button>
             </div>

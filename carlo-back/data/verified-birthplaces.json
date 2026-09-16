@@ -1,0 +1,44 @@
+[
+  {
+    "slug": "test-san-francisco",
+    "deathYear": 1226,
+    "birthPlace": "Asís",
+    "birthCountryCode": "IT",
+    "birthContinent": "europe",
+    "birthLat": 43.071111,
+    "birthLng": 12.614722,
+    "birthPrecision": "city",
+    "birthSources": [
+      "https://www.vatican.va/content/benedict-xvi/es/audiences/2010/documents/hf_ben-xvi_aud_20100127.html",
+      "https://whc.unesco.org/en/list/990/maps/"
+    ]
+  },
+  {
+    "slug": "test-santa-clara",
+    "deathYear": 1253,
+    "birthPlace": "Asís",
+    "birthCountryCode": "IT",
+    "birthContinent": "europe",
+    "birthLat": 43.071111,
+    "birthLng": 12.614722,
+    "birthPrecision": "city",
+    "birthSources": [
+      "https://www.vatican.va/content/john-paul-ii/es/speeches/2003/august/documents/hf_jp-ii_spe_20030811_santa-chiara.html",
+      "https://whc.unesco.org/en/list/990/maps/"
+    ]
+  },
+  {
+    "slug": "test-santa-teresa",
+    "deathYear": 1582,
+    "birthPlace": "Ávila",
+    "birthCountryCode": "ES",
+    "birthContinent": "europe",
+    "birthLat": 40.656389,
+    "birthLng": -4.7,
+    "birthPrecision": "city",
+    "birthSources": [
+      "https://www.vatican.va/content/benedict-xvi/es/audiences/2011/documents/hf_ben-xvi_aud_20110202.html",
+      "https://whc.unesco.org/en/list/348/maps/"
+    ]
+  }
+]

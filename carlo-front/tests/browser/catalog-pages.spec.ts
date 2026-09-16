@@ -1,0 +1,19 @@
+import {test,expect} from '@playwright/test';
+import {catalogEntries as entries} from './catalog-data';
+for(const entry of entries)test(`catalog ${entry.identityKey}: persisted biography, public route and decoded image`,async({page,request},testInfo)=>{
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.route('**/*',route=>['localhost','127.0.0.1'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
+ const api=await request.get('/api/saints/'+entry.slug);expect(api.status()).toBe(200);const saint=await api.json();
+ expect(saint.biography).toBe(entry.biography);expect(saint.editorial).toEqual(entry.editorial);expect(saint.imageUrl).toBe(entry.imageUrl);
+ const response=await page.goto('/santos/'+entry.slug);expect(response?.status()).toBe(200);
+ await expect(page.getByRole('heading',{level:1,name:entry.name,exact:true})).toBeVisible();
+ const image=page.getByRole('img',{name:entry.editorial.image!.alt,exact:true});await expect(image).toBeVisible();
+ const dimensions=await image.evaluate(async node=>{const image=node as HTMLImageElement;await image.decode();return{width:image.naturalWidth,height:image.naturalHeight,source:image.currentSrc};});
+ expect(dimensions.width).toBeGreaterThanOrEqual(160);expect(dimensions.height).toBeGreaterThanOrEqual(160);expect(dimensions.source).toContain(entry.imageUrl);
+ await expect(page.getByText('Fuentes y notas',{exact:true})).toBeVisible();
+ for(const source of entry.editorial.sources)expect(await page.locator('a').evaluateAll((nodes,url)=>nodes.some(node=>node.getAttribute('href')===url),source.url)).toBe(true);
+ expect(await page.locator('main').innerText()).toContain(entry.biography.replace(/\s+/g,' ').slice(0,90));
+ for(const prayer of entry.prayers)await expect(page.locator('main').getByText('"'+prayer.content+'"',{exact:true})).toBeVisible();
+ expect(errors).toEqual([]);
+ if(entry.identityKey==='owner-2026-001')await page.screenshot({path:testInfo.outputPath('editorial-public-first.png'),fullPage:true});
+});

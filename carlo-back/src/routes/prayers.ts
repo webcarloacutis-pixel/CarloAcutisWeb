@@ -1,65 +1,32 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import { requireAdminKey } from "../lib/admin-key";
-
+import { prayerData } from "../lib/content-validation";
+import { id } from "../lib/validation";
+import { pageArgs, publicCache, sendPage } from "../lib/pagination";
 const router = Router();
-const prisma = new PrismaClient();
-
-// GET /prayers/approved (alias)
-// GET /api/prayers/approved (porque el router está montado en ambos prefijos)
-router.get("/approved", async (req, res) => {
-  try {
-    const prayers = await prisma.prayer.findMany({
-      where: { approved: true },
-    });
-    return res.json(prayers);
-  } catch (e: any) {
-    return res.status(500).json({ error: "PRAYERS_APPROVED_FAILED", detail: String(e?.message ?? e) });
-  }
+router.get(["/", "/approved"], async (req, res) => {
+  const { limit, query } = pageArgs(req);
+  const where = { approved: true };
+  const [rows, total] = await prisma.$transaction([prisma.prayer.findMany({ ...query, where }), prisma.prayer.count({ where })]);
+  publicCache(req, res); res.json(sendPage(res, rows, total, limit));
 });
-
-router.get("/", async (_req, res) => {
-  try {
-    const rows = await prisma.prayer.findMany({
-      where: { approved: true },
-      orderBy: { createdAt: "desc" } as any,
-    });
-    res.json(rows);
-  } catch (e: any) {
-    res.status(500).json({ error: "PRAYERS_LIST_FAILED", detail: String(e?.message || e) });
-  }
+router.get("/all", requireAdminKey, async (req, res) => {
+  const { limit, query } = pageArgs(req);
+  const [rows, total] = await prisma.$transaction([prisma.prayer.findMany(query), prisma.prayer.count()]);
+  res.json(sendPage(res, rows, total, limit));
 });
-
-router.get("/all", requireAdminKey, async (_req, res) => {
-  try {
-    const rows = await prisma.prayer.findMany({
-      orderBy: { createdAt: "desc" } as any,
-    });
-    res.json(rows);
-  } catch (e: any) {
-    res.status(500).json({ error: "PRAYERS_LIST_ALL_FAILED", detail: String(e?.message || e) });
-  }
-});
-
 router.post("/", requireAdminKey, async (req, res) => {
-  try {
-    const created = await prisma.prayer.create({ data: req.body });
-    res.status(201).json(created);
-  } catch (e: any) {
-    res.status(500).json({ error: "PRAYER_CREATE_FAILED", detail: String(e?.message || e) });
-  }
+  res.status(201).json(await prisma.prayer.create({ data: prayerData(req.body) }));
 });
-
 router.patch("/:id/approve", requireAdminKey, async (req, res) => {
-  try {
-    const updated = await prisma.prayer.update({
-      where: { id: req.params.id },
-      data: { approved: true },
-    });
-    res.json(updated);
-  } catch (e: any) {
-    res.status(500).json({ error: "PRAYER_APPROVE_FAILED", detail: String(e?.message || e) });
-  }
+  res.json(await prisma.prayer.update({ where: { id: id(req.params.id) }, data: { approved: true } }));
 });
-
+router.patch("/:id", requireAdminKey, async (req, res) => {
+  res.json(await prisma.prayer.update({ where: { id: id(req.params.id) }, data: prayerData(req.body, true) }));
+});
+router.delete("/:id", requireAdminKey, async (req, res) => {
+  await prisma.prayer.delete({ where: { id: id(req.params.id) } });
+  res.json({ ok: true });
+});
 export default router;

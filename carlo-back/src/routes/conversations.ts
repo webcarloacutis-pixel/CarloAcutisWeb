@@ -1,182 +1,96 @@
-import { Application, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { Router, type Application } from "express";
 import { prisma } from "../lib/prisma";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
-const COOKIE_NAME = "carlo_token";
-
-function getUserId(req: any): string | null {
-  const token = req.cookies?.[COOKIE_NAME];
-  if (!token) return null;
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as any;
-    return payload?.uid ? String(payload.uid) : null;
-  } catch {
-    return null;
-  }
-}
-
-function requireAuth(req: any, res: Response): string | null {
-  const uid = getUserId(req);
-  if (!uid) {
-    res.status(401).json({ error: "not authenticated" });
-    return null;
-  }
-  return uid;
-}
-
-export function registerConversationsRoute(app: Application) {
-  // LIST conversations (sin mensajes)
-  app.get("/conversations", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const conversations = await prisma.conversation.findMany({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      select: { id: true, title: true, createdAt: true, updatedAt: true },
-    });
-
-    res.json({ conversations });
+import { requireAuth } from "../lib/session";
+import { HttpError } from "../lib/errors";
+import { id, objectBody, text } from "../lib/validation";
+import { pageArgs, sendPage } from "../lib/pagination";
+const summary = { id: true, title: true, createdAt: true, updatedAt: true } as const;
+const messageFields = { id: true, role: true, content: true, createdAt: true } as const;
+export function conversationsRouter() {
+  const router = Router();
+  router.use(requireAuth);
+  router.get("/", async (req, res) => {
+    const { limit, query } = pageArgs(req);
+    const where = { userId: res.locals.userId as string };
+    const [rows, total] = await prisma.$transaction([
+      prisma.conversation.findMany({ where, ...query, select: summary }),
+      prisma.conversation.count({ where }),
+    ]);
+    res.json({ conversations: sendPage(res, rows, total, limit) });
   });
-
-  // CREATE/UPSERT conversation
-  // body: { id?: string, title?: string }
-  app.post("/conversations", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const { id, title } = (req.body ?? {}) as { id?: string; title?: string };
-    const safeTitle = (title && String(title).trim()) || "Nueva conversación";
-
-    if (id) {
-      const conversation = await prisma.conversation.upsert({
-        where: { id: String(id) },
-        create: { id: String(id), title: safeTitle, userId },
-        update: { title: safeTitle },
-        select: { id: true, title: true, createdAt: true, updatedAt: true },
-      });
-      return res.json({ conversation });
-    }
-
-    const conversation = await prisma.conversation.create({
-      data: { title: safeTitle, userId },
-      select: { id: true, title: true, createdAt: true, updatedAt: true },
+  router.post("/", async (req, res) => {
+    const body = objectBody(req.body, ["id", "title"]);
+    const userId = res.locals.userId as string;
+    const conversationId = body.id === undefined ? undefined : id(body.id);
+    const title = text(body.title, 150) || "Nueva conversación";
+    const conversation = await prisma.$transaction(async (tx) => {
+      if (conversationId) {
+        const existing = await tx.conversation.findUnique({ where: { id: conversationId }, select: { userId: true } });
+        if (existing && existing.userId !== userId) throw new HttpError(404, "NOT_FOUND");
+        if (existing) return tx.conversation.update({ where: { id: conversationId, userId }, data: { title }, select: summary });
+      }
+      return tx.conversation.create({ data: { ...(conversationId ? { id: conversationId } : {}), userId, title }, select: summary });
     });
-
     res.json({ conversation });
   });
-
-  // RENAME
-  app.patch("/conversations/:id", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const id = String(req.params.id);
-    const { title } = (req.body ?? {}) as { title?: string };
-    const safeTitle = (title && String(title).trim()) || "Nueva conversación";
-
-    const owned = await prisma.conversation.findFirst({
-      where: { id, userId },
-      select: { id: true },
-    });
-    if (!owned) return res.status(404).json({ error: "not found" });
-
+  router.patch("/:id", async (req, res) => {
+    const body = objectBody(req.body, ["title"]);
+    const title = text(body.title, 150, true)!;
     const conversation = await prisma.conversation.update({
-      where: { id },
-      data: { title: safeTitle },
-      select: { id: true, title: true, createdAt: true, updatedAt: true },
+      where: { id: id(req.params.id), userId: res.locals.userId as string }, data: { title }, select: summary,
     });
-
     res.json({ conversation });
   });
-
-  // DELETE conversation (y sus mensajes)
-  app.delete("/conversations/:id", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const id = String(req.params.id);
-    const owned = await prisma.conversation.findFirst({
-      where: { id, userId },
-      select: { id: true },
-    });
-    if (!owned) return res.status(404).json({ error: "not found" });
-
-    await prisma.message.deleteMany({ where: { conversationId: id } });
-    await prisma.conversation.delete({ where: { id } });
-
+  router.delete("/:id", async (req, res) => {
+    // Ownership is part of the write predicate; DB cascade removes messages atomically.
+    const result = await prisma.conversation.deleteMany({ where: { id: id(req.params.id), userId: res.locals.userId as string } });
+    if (result.count !== 1) throw new HttpError(404, "NOT_FOUND");
     res.json({ ok: true });
   });
-
-  // LIST messages
-  app.get("/conversations/:id/messages", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const id = String(req.params.id);
-    const owned = await prisma.conversation.findFirst({
-      where: { id, userId },
-      select: { id: true },
-    });
-    if (!owned) return res.status(404).json({ error: "not found" });
-
-    const messages = await prisma.message.findMany({
-      where: { conversationId: id },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, role: true, content: true, createdAt: true },
-    });
-
-    res.json({ messages });
+  router.get("/:id/messages", async (req, res) => {
+    const conversationId = id(req.params.id);
+    const userId = res.locals.userId as string;
+    const owned = await prisma.conversation.findFirst({ where: { id: conversationId, userId }, select: { id: true } });
+    if (!owned) throw new HttpError(404, "NOT_FOUND");
+    const { limit, query } = pageArgs(req);
+    const [rows, total] = await prisma.$transaction([
+      prisma.message.findMany({ where: { conversationId, conversation: { userId } }, ...query, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: messageFields }),
+      prisma.message.count({ where: { conversationId, conversation: { userId } } }),
+    ]);
+    res.json({ messages: sendPage(res, rows, total, limit) });
   });
-
-  // CREATE message (auto-crea conversación si no existe)
-  app.post("/conversations/:id/messages", async (req: Request, res: Response) => {
-    const userId = requireAuth(req, res);
-    if (!userId) return;
-
-    const conversationId = String(req.params.id);
-    const { role, content, title } = (req.body ?? {}) as {
-      role?: "user" | "assistant";
-      content?: string;
-      title?: string;
-    };
-
-    if (!role || !content) {
-      return res.status(400).json({ error: "role and content required" });
-    }
-
-    // asegura que la conversación exista y sea del user
-    const conv = await prisma.conversation.findFirst({
-      where: { id: conversationId, userId },
-      select: { id: true },
-    });
-
-    if (!conv) {
-      await prisma.conversation.create({
-        data: {
-          id: conversationId,
-          userId,
-          title: (title && String(title).trim()) || "Nueva conversación",
-        },
+  router.post("/:id/messages", async (req, res) => {
+    const body = objectBody(req.body, ["id", "role", "content", "title"]);
+    const conversationId = id(req.params.id);
+    const userId = res.locals.userId as string;
+    const messageId = body.id === undefined ? undefined : id(body.id);
+    if (body.role !== "user" && body.role !== "assistant") throw new HttpError(400, "INVALID_ROLE");
+    const role = body.role;
+    const content = text(body.content, 16000, true, true)!;
+    const title = text(body.title, 150) || "Nueva conversación";
+    const message = await prisma.$transaction(async (tx) => {
+      const existing = await tx.conversation.findUnique({ where: { id: conversationId }, select: { id: true, userId: true } });
+      if (existing && existing.userId !== userId) throw new HttpError(404, "NOT_FOUND");
+      if (!existing) await tx.conversation.create({ data: { id: conversationId, userId, title } });
+      if (messageId) {
+        const previous = await tx.message.findUnique({ where: { id: messageId } });
+        if (previous) {
+          if (previous.conversationId !== conversationId || previous.role !== role || previous.content !== content) throw new HttpError(409, "MESSAGE_CONFLICT");
+          return { id: previous.id, role: previous.role, content: previous.content, createdAt: previous.createdAt };
+        }
+      }
+      const created = await tx.message.create({
+        data: { ...(messageId ? { id: messageId } : {}), conversationId, role, content }, select: messageFields,
       });
-    }
-
-    const message = await prisma.message.create({
-      data: {
-        conversationId,
-        role: role === "assistant" ? "assistant" : "user",
-        content: String(content),
-      },
-      select: { id: true, role: true, content: true, createdAt: true },
+      await tx.conversation.update({ where: { id: conversationId, userId }, data: { updatedAt: new Date() } });
+      return created;
     });
-
-    // toca updatedAt de la conversación
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
-    });
-
-    res.json({ message });
+    res.status(201).json({ message });
   });
+  return router;
+}
+export function registerConversationsRoute(app: Application) {
+  const router = conversationsRouter();
+  app.use("/conversations", router);
+  app.use("/api/conversations", router);
 }

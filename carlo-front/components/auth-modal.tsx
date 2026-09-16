@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { login, register } = useUser()
+  const { login, register, error: sessionError } = useUser()
   const { language } = useLanguage()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -27,6 +27,25 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     email: "",
     password: "",
   })
+
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!isOpen) return
+    const previous = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    dialogRef.current?.querySelector<HTMLElement>("input")?.focus()
+    function keydown(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); onClose(); return }
+      if (event.key !== "Tab") return
+      const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]') || []).filter(node => node.offsetParent !== null)
+      const first = nodes[0], last = nodes[nodes.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    document.addEventListener("keydown", keydown)
+    return () => { document.body.style.overflow = overflow; document.removeEventListener("keydown", keydown); previous?.focus() }
+  }, [isOpen, onClose])
 
   const translations: Record<
     string,
@@ -311,7 +330,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal - ancho responsive */}
-      <div className="relative w-full max-w-[340px] sm:max-w-md bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" className="relative w-full max-w-[340px] sm:max-w-md bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden">
         {/* Header decorativo - altura responsive */}
         <div className="relative h-24 sm:h-32 bg-gradient-to-br from-primary via-primary/90 to-amber-600 overflow-hidden">
           <div className="absolute inset-0 opacity-10">
@@ -321,10 +340,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
               <Cross className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 opacity-90" />
-              <h2 className="text-base sm:text-xl font-serif font-bold">{isLogin ? t.welcome : t.joinUs}</h2>
+              <h2 id="auth-dialog-title" className="text-base sm:text-xl font-serif font-bold">{isLogin ? t.welcome : t.joinUs}</h2>
             </div>
           </div>
           <button
+            aria-label="Cerrar acceso"
             onClick={onClose}
             className="absolute top-2 sm:top-4 right-2 sm:right-4 p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
           >
@@ -362,9 +382,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           </div>
 
-          {error && (
-            <div className="p-2.5 sm:p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs sm:text-sm text-destructive text-center">
-              {error}
+          {(error || sessionError) && (
+            <div role="alert" className="p-2.5 sm:p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs sm:text-sm text-destructive text-center">
+              {sessionError || error}
             </div>
           )}
 
@@ -378,6 +398,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <User className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
                 <Input
                   id="name"
+                  autoComplete="name"
+                  maxLength={100}
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -397,6 +419,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Mail className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
               <Input
                 id="email"
+                autoComplete="email"
+                maxLength={254}
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -415,6 +439,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Lock className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
               <Input
                 id="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength={isLogin ? 1 : 12}
+                maxLength={72}
                 type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -423,6 +450,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               />
               <button
                 type="button"
+                aria-label={showPassword ? "Ocultar contrase?a" : "Mostrar contrase?a"}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -435,6 +463,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
           </div>
 
+          {!isLogin && <p className="text-xs text-muted-foreground">Usa al menos 12 caracteres (m?ximo 72 bytes).</p>}
           {/* Submit button */}
           <Button
             type="submit"

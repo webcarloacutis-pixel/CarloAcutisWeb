@@ -1,16 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-
-export function requireAdminKey(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+import { activeSession, constantEqual } from "./session";
+export async function requireAdminKey(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.ADMIN_KEY;
-
-  if (!expected) return next();
-
+  if (!expected || expected.length < 32) return res.status(503).json({ error: "ADMIN_NOT_CONFIGURED" });
   const provided = req.header("x-admin-key");
-  if (provided && provided === expected) return next();
-
+  if ((provided && provided.length <= 512 && constantEqual(provided, expected)) || await activeSession(req, "admin")) return next();
   return res.status(401).json({ error: "UNAUTHORIZED" });
 }

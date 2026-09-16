@@ -1,3 +1,5 @@
+import { factStatusLabels, historicalYear, imageKindLabels, type Editorial } from "@/lib/editorial";
+import { countryName } from "@/lib/content-filters";
 import { TranslatedText } from "@/components/translated-text";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Crown, Heart, Sparkles, ArrowLeft } from "lucide-react";
 
 export type Saint = {
+  editorial?: Editorial | null;
   id: string;
   slug: string;
   name: string;
@@ -18,6 +21,9 @@ export type Saint = {
   feastDay?: string | null;
   country?: string | null;
   birthYear?: number | null;
+  deathYear?: number | null;
+  birthCountryCode?: string | null;
+  birthPlace?: string | null;
   canonizationYear?: number | null;
   biography?: string | null;
   patronOf?: string[] | null;
@@ -56,7 +62,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Navegación */}
       <Button asChild variant="ghost" className="mb-6">
-        <Link href="/santos">
+        <Link prefetch={false} href="/santos">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver a Santos
         </Link>
@@ -66,8 +72,9 @@ export function SaintDetail({ saint }: SaintDetailProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <div className="lg:col-span-1">
           <div className="relative h-96 rounded-lg overflow-hidden">
-            <Image src={saint.image || "/placeholder.svg"} alt={saint.name} fill className="object-cover" />
+            <Image src={saint.image || "/placeholder.svg"} alt={saint.editorial?.image?.alt || saint.name} fill className="object-cover" unoptimized />
           </div>
+          {saint.editorial?.image && <p className="mt-2 text-xs text-muted-foreground break-words">{imageKindLabels[saint.editorial.image.kind]}. {saint.editorial.image.attribution}. Versión redimensionada en WebP · <a className="underline" href={saint.editorial.image.sourceUrl} target="_blank" rel="noopener noreferrer">Procedencia</a> · <a className="underline" href={saint.editorial.image.licenseUrl} target="_blank" rel="noopener noreferrer">{saint.editorial.image.license}</a></p>}
         </div>
 
         <div className="lg:col-span-2">
@@ -86,17 +93,14 @@ export function SaintDetail({ saint }: SaintDetailProps) {
 
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-muted-foreground" />
-              <span className="text-muted-foreground">País:</span>
-              <span className="font-medium">{saint.country ?? "—"}</span>
+              <span className="text-muted-foreground">Lugar de nacimiento:</span>
+              <span className="font-medium">{saint.editorial?.birthplaceStatus === "not-applicable" ? "No aplicable" : <>{saint.birthPlace ? saint.birthPlace + ", " : ""}{countryName(saint.birthCountryCode)}{saint.editorial && <> · {factStatusLabels[saint.editorial.birthplaceStatus]}</>}</>}</span>
             </div>
 
-            {saint.birthYear && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Nacimiento:</span>
-                <span className="font-medium">{saint.birthYear}</span>
-              </div>
-            )}
-
+            {saint.editorial ? ([['birthDate','Nacimiento'],['deathDate','Fallecimiento']] as const).map(([key,label])=><div key={key} className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground">{label}:</span><span className="font-medium">{saint.editorial![key].text || factStatusLabels[saint.editorial![key].status]}{saint.editorial![key].text && ` · ${factStatusLabels[saint.editorial![key].status]}`}</span></div>) : <>
+              {saint.birthYear != null && <div>Nacimiento: {historicalYear(saint.birthYear)}</div>}
+              {saint.deathYear != null && <div>Fallecimiento: {historicalYear(saint.deathYear)}</div>}
+            </>}
             {saint.canonizationYear && (
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-muted-foreground" />
@@ -132,11 +136,13 @@ export function SaintDetail({ saint }: SaintDetailProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground leading-relaxed text-pretty">
+          <p className="text-muted-foreground leading-relaxed text-pretty whitespace-pre-wrap break-words">
             <TranslatedText text={saint.biography ?? "Biografía en construcción…"} />
           </p>
         </CardContent>
       </Card>
+
+      {saint.editorial && <Card className="mb-8"><CardHeader><CardTitle className="font-playfair">Fuentes y notas</CardTitle></CardHeader><CardContent className="space-y-4 break-words"><p>{saint.editorial.ecclesialStatus}</p>{saint.editorial.notes && <p className="whitespace-pre-wrap text-muted-foreground">{saint.editorial.notes}</p>}<ul className="space-y-3">{saint.editorial.sources.map((source,index)=><li key={source.url+index}><a className="font-medium underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><p className="text-sm text-muted-foreground">{source.institution} · Consulta: {source.accessedAt}</p><p className="text-sm">{source.claims.join("; ")}</p></li>)}</ul></CardContent></Card>}
 
       {/* Milagros */}
       {miracles.length > 0 && (
@@ -144,7 +150,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
           <CardHeader>
             <CardTitle className="font-playfair flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-secondary" />
-              Milagros Documentados
+              Relatos de milagros
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -152,7 +158,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
               {miracles.map((miracle, index) => (
                 <div key={miracle.id}>
                   <h4 className="font-playfair text-lg font-semibold text-foreground mb-2">{miracle.title}</h4>
-                  <p className="text-muted-foreground mb-3 text-pretty">{miracle.description}</p>
+                  <p className="text-muted-foreground mb-3 text-pretty whitespace-pre-wrap break-words">{miracle.description}</p>
 
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     {miracle.date && (
@@ -167,7 +173,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
                     )}
                     {miracle.verified && (
                       <Badge variant="outline" className="text-xs">
-                        Verificado por la Iglesia
+                        Aprobado en el catálogo
                       </Badge>
                     )}
                   </div>
@@ -200,7 +206,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
                     </p>
                   )}
                   <div className="bg-muted/30 p-4 rounded-lg">
-                    <p className="text-muted-foreground italic leading-relaxed text-pretty">"{prayer.text}"</p>
+                    <p className="text-muted-foreground italic leading-relaxed whitespace-pre-wrap break-words">"{prayer.text}"</p>
                   </div>
                   {index < prayers.length - 1 && <Separator className="mt-6" />}
                 </div>

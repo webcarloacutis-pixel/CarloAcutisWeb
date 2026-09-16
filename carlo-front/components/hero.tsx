@@ -39,7 +39,7 @@ export function Hero() {
             </a>
           </Button>
           <Button asChild variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-            <Link href="/descubre-tu-santo"><T k="hero.discoverSaint" /></Link>
+            <Link prefetch={false} href="/descubre-tu-santo"><T k="hero.discoverSaint" /></Link>
           </Button>
         </div>
 

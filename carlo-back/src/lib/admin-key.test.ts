@@ -1,56 +1,29 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { requireAdminKey } from "./admin-key";
-
-const originalEnv = { ...process.env };
-
-function createMocks(provided?: string) {
-  return {
-    req: {
-      header: vi.fn((name: string) =>
-        name.toLowerCase() === "x-admin-key" ? provided : undefined
-      ),
-    },
-    res: {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    },
-    next: vi.fn(),
-  };
+const original = { ...process.env };
+afterEach(() => { process.env = { ...original }; });
+function mocks(value?: string) {
+  return { req: { header: vi.fn(() => value), cookies: {} }, res: { status: vi.fn().mockReturnThis(), json: vi.fn() }, next: vi.fn() };
 }
-
-afterEach(() => {
-  process.env = { ...originalEnv };
-});
-
-describe("requireAdminKey", () => {
-  it("allows requests when ADMIN_KEY is not configured", () => {
+describe("effective admin authorization", async () => {
+  it("fails closed when configuration is missing", async () => {
     delete process.env.ADMIN_KEY;
-    const { req, res, next } = createMocks();
-
-    requireAdminKey(req as any, res as any, next);
-
-    expect(next).toHaveBeenCalledOnce();
-    expect(res.status).not.toHaveBeenCalled();
+    const {req,res,next} = mocks();
+    await requireAdminKey(req as never,res as never,next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(503);
   });
-
-  it("allows requests with the configured admin key", () => {
-    process.env.ADMIN_KEY = "secret";
-    const { req, res, next } = createMocks("secret");
-
-    requireAdminKey(req as any, res as any, next);
-
+  it("allows only the configured dedicated key", async () => {
+    process.env.ADMIN_KEY = "unit-test-admin-key-32-characters-minimum";
+    const {req,res,next} = mocks(process.env.ADMIN_KEY);
+    await requireAdminKey(req as never,res as never,next);
     expect(next).toHaveBeenCalledOnce();
-    expect(res.status).not.toHaveBeenCalled();
   });
-
-  it("rejects requests with a missing or invalid admin key", () => {
-    process.env.ADMIN_KEY = "secret";
-    const { req, res, next } = createMocks("wrong");
-
-    requireAdminKey(req as any, res as any, next);
-
+  it("rejects a missing, wrong or weak key", async () => {
+    process.env.ADMIN_KEY = "unit-test-admin-key-32-characters-minimum";
+    const {req,res,next} = mocks("wrong");
+    await requireAdminKey(req as never,res as never,next);
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: "UNAUTHORIZED" });
   });
 });

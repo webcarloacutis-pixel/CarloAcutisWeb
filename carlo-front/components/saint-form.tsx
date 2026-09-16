@@ -265,7 +265,7 @@ export function SaintForm({ onClose, saint }: SaintFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="continent"><T k="saints.continent" /> *</Label>
+              <Label htmlFor="continent"><T k="saints.filters.continent" /> *</Label>
               <Select value={formData.continent} onValueChange={(value) => handleInputChange("continent", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar continente" />

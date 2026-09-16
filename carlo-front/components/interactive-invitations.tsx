@@ -123,7 +123,7 @@ export function InteractiveInvitations() {
                         </div>
                       )}
 
-                      <Link href={invitation.href}>
+                      <Link prefetch={false} href={invitation.href}>
                         <Button
                           className={`w-full group-hover:shadow-lg transition-all duration-300 ${
                             isHovered ? "bg-primary hover:bg-primary/90" : ""
@@ -151,11 +151,11 @@ export function InteractiveInvitations() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/descubre-tu-santo">
+              <Link prefetch={false} href="/descubre-tu-santo">
                 <Button size="lg" className="w-full sm:w-auto">
                   <Search className="h-4 w-4 mr-2" /><T k="invitations.discoverSaint" /></Button>
               </Link>
-              <Link href="/mapa">
+              <Link prefetch={false} href="/mapa">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
                   <MapPin className="h-4 w-4 mr-2" /><T k="invitations.exploreMap" /></Button>
               </Link>
@@ -163,19 +163,18 @@ export function InteractiveInvitations() {
           </div>
         </div>
 
-        {/* Stats Section */}
+        {/* Available content sections */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
           {[
-            { numberKey: "1,000+", labelKey: "invitations.stats.saints", icon: Users },
-            { numberKey: "195+", labelKey: "invitations.stats.countries", icon: MapPin },
-            { numberKey: "50+", labelKey: "invitations.stats.emotions", icon: Heart },
-            { numberKey: "365", labelKey: "invitations.stats.inspiration", icon: BookOpen },
+            { labelKey: "invitations.stats.saints", icon: Users },
+            { labelKey: "invitations.stats.countries", icon: MapPin },
+            { labelKey: "invitations.stats.emotions", icon: Heart },
+            { labelKey: "invitations.stats.inspiration", icon: BookOpen },
           ].map((stat, index) => {
             const Icon = stat.icon
             return (
               <div key={index} className="text-center p-4 bg-card/50 rounded-lg border">
                 <Icon className="h-6 w-6 text-primary mx-auto mb-2" />
-                <div className="font-playfair text-2xl font-bold text-foreground">{stat.numberKey}</div>
                 <div className="text-sm text-muted-foreground">{t(stat.labelKey)}</div>
               </div>
             )

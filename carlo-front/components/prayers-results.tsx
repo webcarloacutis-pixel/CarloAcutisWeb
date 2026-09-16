@@ -22,7 +22,7 @@ export function PrayersResults({ prayers }: { prayers: Prayer[] }) {
   return (
     <div className="space-y-4">
       {prayers.map((p) => (
-        <Card key={p.id} className="bg-white/70">
+        <Card key={p.id} className="min-w-0">
           <CardHeader className="space-y-2">
             <CardTitle className="text-lg">{p.title}</CardTitle>
 
@@ -34,7 +34,7 @@ export function PrayersResults({ prayers }: { prayers: Prayer[] }) {
           </CardHeader>
 
           <CardContent>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
               {p.content}
             </p>
           </CardContent>

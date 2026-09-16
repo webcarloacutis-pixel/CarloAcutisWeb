@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Playfair_Display, Inter } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+import { VisitAnalytics } from "@/components/visit-analytics"
 import { Suspense } from "react"
 import { LanguageProvider } from "@/contexts/language-context"
 import { UserProvider } from "@/contexts/user-context"
@@ -40,7 +40,7 @@ export default function RootLayout({
             <DynamicMetadata />
             <Suspense fallback={null}>
               {children}
-              <Analytics />
+              <VisitAnalytics />
             </Suspense>
           </LanguageProvider>
         </UserProvider>

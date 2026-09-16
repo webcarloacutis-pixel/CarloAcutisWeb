@@ -105,7 +105,7 @@ export function EucharistSteps() {
                   </ul>
                 </div>
               </CardContent>
-              {index < eucharistSteps.length - 1 && <Separator className="mx-6" />}
+              {index < eucharistSteps.length - 1 && <Separator className="mx-6 w-auto" />}
             </Card>
           )
         })}

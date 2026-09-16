@@ -17,3 +17,24 @@ coverage/
 **/missing_*.txt
 **/tatus -sb
 tools/
+
+# Isolated audit tools and private test credentials/artifacts
+.tools/
+.audit/acutis-production/local/
+.audit/acutis-production/__pycache__/
+!.env.example
+!.env.maintenance.example
+
+.audit/acutis-closure/local/
+
+.audit/acutis-closure/**/__pycache__/
+
+# Private existing-content migration evidence and backups
+.audit/acutis-migration-existing/
+
+# Local audit outputs and operator credentials are always private.
+.audit/
+
+# Generated Python operator caches
+__pycache__/
+*.py[cod]

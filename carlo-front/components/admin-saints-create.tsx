@@ -41,7 +41,7 @@ export function AdminSaintsCreate() {
         throw new Error(text || `Error ${res.status}`);
       }
 
-      setMsg("âœ… Santo creado.");
+      setMsg("✓ Santo creado.");
       setSlug("");
       setName("");
       setCountry("");
@@ -49,7 +49,7 @@ export function AdminSaintsCreate() {
       // refresca lo que estÃ© mostrando lista en el admin
       router.refresh();
     } catch (e: any) {
-      setMsg(`âŒ ${e?.message ?? "Error creando santo"}`);
+      setMsg(`Error: ${e?.message ?? "Error creando santo"}`);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export function AdminSaintsCreate() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="country">PaÃ­s</Label>
+          <Label htmlFor="country">País</Label>
           <Input
             id="country"
             placeholder="ej: Italia"
@@ -100,4 +100,3 @@ export function AdminSaintsCreate() {
     </Card>
   );
 }
-

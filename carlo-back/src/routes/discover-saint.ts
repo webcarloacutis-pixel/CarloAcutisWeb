@@ -1,72 +1,27 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { normalize, objectBody, strings, text } from "../lib/validation";
 const router = Router();
-
 router.post("/", async (req, res) => {
-  try {
-    const about = String(req.body?.about || "");
-    const qualities = Array.isArray(req.body?.qualities) ? req.body.qualities.map(String) : [];
-    const growthAreas = Array.isArray(req.body?.growthAreas) ? req.body.growthAreas.map(String) : [];
-
-    const terms = [
-      ...qualities,
-      ...growthAreas,
-      ...about
-        .toLowerCase()
-        .replace(/[^a-záéíóúñü0-9\s]/gi, " ")
-        .split(/\s+/)
-        .filter(Boolean),
-    ]
-      .map((t) => String(t).toLowerCase().trim())
-      .filter((t) => t.length >= 3);
-
-    const saints = await prisma.saint.findMany({
-      where: {
-        NOT: { slug: { startsWith: "test-" } },
-      },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        biography: true,
-        country: true,
-        title: true,
-      },
-      take: 500,
-    });
-
-    const matches = saints
-      .map((s) => {
-        const name = (s.name || "").toLowerCase();
-        const country = (s.country || "").toLowerCase();
-        const title = (s.title || "").toLowerCase();
-        const bio = (s.biography || "").toLowerCase();
-
-        let score = 0;
-        for (const t of terms) {
-          if (name.includes(t)) score += 4;
-          if (title.includes(t)) score += 3;
-          if (country.includes(t)) score += 2;
-          if (bio.includes(t)) score += 1;
-        }
-
-        return { id: s.id, slug: s.slug, name: s.name, score };
-      })
-      .filter((m) => m.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
-
-    const summary = matches.length
-      ? "Elegimos estos santos por afinidad con tus cualidades y áreas de crecimiento. Lee su historia y elige el que más resuene contigo hoy."
-      : "No encontramos coincidencias claras. Intenta escribir más sobre ti o seleccionar algunas cualidades y áreas de crecimiento.";
-
-    return res.json({ summary, matches });
-  } catch (e: any) {
-    console.error("discover-saint failed:", e);
-    return res.status(500).json({ error: "discover-saint failed", message: e?.message || String(e) });
-  }
+  const body = objectBody(req.body, ["about", "qualities", "growthAreas"]);
+  const about = text(body.about, 2000) || "";
+  const qualities = strings(body.qualities, 20, 100);
+  const growthAreas = strings(body.growthAreas, 20, 100);
+  const terms = Array.from(new Set([...qualities,...growthAreas,...about.split(/\s+/)].map(normalize).filter((value) => value.length >= 3))).slice(0,40);
+  const fields = [{column:'"name"',weight:4},{column:'"title"',weight:3},{column:'"country"',weight:2},{column:'"biography"',weight:1}];
+  const parts = terms.flatMap((term) => fields.map(({column,weight}) => Prisma.sql`CASE WHEN POSITION(${term} IN translate(lower(COALESCE(${Prisma.raw(column)},'')), 'áéíóúñü', 'aeiounu')) > 0 THEN ${weight} ELSE 0 END`));
+  // Score the complete catalog in one parameterized query, returning only five matches.
+  // Column names above are server constants, never client input.
+  const matches = parts.length === 0 ? [] : await prisma.$queryRaw<Array<{id:string;slug:string;name:string;score:number}>>(Prisma.sql`
+    SELECT "id","slug","name","score" FROM (
+      SELECT "id","slug","name", (${Prisma.join(parts," + ")})::integer AS "score"
+      FROM "Saint" WHERE "slug" NOT LIKE 'test-%'
+    ) AS ranked WHERE "score" > 0 ORDER BY "score" DESC, "name" ASC LIMIT 5
+  `);
+  const summary = matches.length
+    ? "Elegimos estos santos por afinidad textual con tus cualidades y áreas de crecimiento. Lee su historia y elige el que más resuene contigo hoy."
+    : "No encontramos coincidencias claras. Intenta escribir más sobre ti o seleccionar algunas cualidades y áreas de crecimiento.";
+  res.json({summary,matches});
 });
-
 export default router;

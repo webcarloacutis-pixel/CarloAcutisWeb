@@ -48,7 +48,7 @@ export function EucharistPrayers() {
               </Badge>
             </CardHeader>
             <CardContent>
-              <blockquote className="text-muted-foreground italic leading-relaxed text-pretty">
+              <blockquote className="text-muted-foreground italic leading-relaxed whitespace-pre-wrap break-words">
                 "{prayer.text}"
               </blockquote>
             </CardContent>

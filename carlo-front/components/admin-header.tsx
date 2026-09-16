@@ -6,16 +6,16 @@ import { LogOut, Shield, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export function AdminHeader() {
-  const { logout } = useAuth()
+  const { logout, error } = useAuth()
   const router = useRouter()
 
-  const handleLogout = () => {
-    logout()
-    router.push("/")
+  const handleLogout = async () => {
+    if (await logout()) router.push("/sanctum/portal")
   }
 
   return (
     <header className="bg-white border-b border-amber-200 px-6 py-4">
+      {error && <p role="alert">{error}</p>}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Shield className="w-6 h-6 text-amber-600" />

@@ -26,6 +26,24 @@ model Saint {
   continent String?
   lat       Float?
   lng       Float?
+  birthYear       Int?
+  canonizationYear Int?
+  patronOf String[] @default([])
+  symbols String[] @default([])
+  editorial Json?
+  catalogImport CatalogImport?
+  deathYear       Int?
+  birthCountryCode String?
+  birthContinent String?
+  birthPlace String?
+  birthLat Float?
+  birthLng Float?
+  birthPrecision String?
+  birthSources Json?
+
+  @@index([birthContinent, birthCountryCode])
+  @@index([deathYear])
+
 }
 
 
@@ -62,6 +80,7 @@ model Prayer {
   updatedAt DateTime @updatedAt
   saintName String?
   occasion  String?
+  @@index([approved, id])
 }
 
 
@@ -110,6 +129,7 @@ model PrayerTranslation {
   saintName String?
   occasion  String?
 
+
   prayer   Prayer @relation(fields: [prayerId], references: [id], onDelete: Cascade)
 
   @@unique([prayerId, lang], name: "prayerId_lang")
@@ -128,6 +148,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   conversations Conversation[]
+  sessions AuthSession[]
 }
 
 model Conversation {
@@ -139,6 +160,7 @@ model Conversation {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages Message[]
+  @@index([userId, updatedAt])
 }
 
 model Message {
@@ -151,4 +173,72 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
+  @@index([conversationId, createdAt, id])
+}
+
+model ApiQuota {
+  key String @id
+  count Int @default(0)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+model AiLease {
+  id String @id
+  owner String?
+  expiresAt DateTime
+}
+model TranslationCache {
+  id String @id
+  translated String @db.Text
+  model String
+  targetLang String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+model PopularityEstimate {
+  id String @id @default(cuid())
+  contentType String
+  contentId String
+  score Int?
+  generatedAt DateTime?
+  model String?
+  methodologyVersion String?
+  inputHash String?
+  leaseUntil DateTime?
+  leaseOwner String?
+  @@unique([contentType, contentId])
+}
+
+model AuthSession {
+  id String @id @default(cuid())
+  userId String?
+  kind String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AiRequest {
+  id String @id
+  inputHash String
+  response String? @db.Text
+  model String?
+  leaseOwner String
+  leaseUntil DateTime
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+// Internal import provenance; never accepted as an admin/public payload.
+model CatalogImport {
+  identityKey String @id
+  saintId String? @unique
+  importedHash String
+  snapshot Json
+  importedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  saint Saint? @relation(fields: [saintId], references: [id], onDelete: SetNull)
 }

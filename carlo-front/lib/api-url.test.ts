@@ -10,22 +10,22 @@ afterEach(() => {
 });
 
 describe("apiUrl", () => {
-  it("uses NEXT_PUBLIC_API_URL and normalizes slashes", () => {
-    process.env.NEXT_PUBLIC_API_URL = "https://api.example.com/";
-
-    expect(apiUrl("saints")).toBe("https://api.example.com/saints");
-    expect(apiUrl("/prayers")).toBe("https://api.example.com/prayers");
-  });
-
-  it("falls back to the browser origin when no API URL is configured", () => {
-    delete process.env.NEXT_PUBLIC_API_URL;
-    vi.stubGlobal("window", {
-      location: { origin: "https://front.example.com/" },
-    });
-
-    expect(apiUrl("/health")).toBe("https://front.example.com/health");
-  });
-});
+  it("requires an explicit server backend and ignores legacy public destinations", () => {
+    process.env.NEXT_PUBLIC_API_URL = "https://ignored.example.com"
+    process.env.BACKEND_URL = "http://127.0.0.1:4100/"
+    expect(apiUrl("saints")).toBe("http://127.0.0.1:4100/saints")
+    delete process.env.BACKEND_URL
+    expect(() => apiUrl("/prayers")).toThrow("BACKEND_URL")
+  })
+  it("keeps browser requests on the same origin", () => {
+    vi.stubGlobal("window", {location: {origin: "https://front.example.com"}})
+    process.env.NEXT_PUBLIC_API_URL="https://ignored.example.com"
+    expect(apiUrl("/health")).toBe("/api/health")
+    expect(apiUrl("/api/saints")).toBe("/api/saints")
+    expect(() => apiUrl("https://evil.test")).toThrow()
+    expect(() => apiUrl("../admin")).toThrow()
+  })
+})
 
 describe("getSiteUrl", () => {
   it("prefers NEXT_PUBLIC_SITE_URL", () => {

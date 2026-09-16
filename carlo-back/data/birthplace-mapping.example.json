@@ -1,0 +1,17 @@
+[
+  {
+    "sourceSlug": "test-san-francisco",
+    "targetSlug": "san-francisco-de-asis",
+    "expectedName": "San Francisco de Asís"
+  },
+  {
+    "sourceSlug": "test-santa-clara",
+    "targetSlug": "santa-clara-de-asis",
+    "expectedName": "Santa Clara de Asís"
+  },
+  {
+    "sourceSlug": "test-santa-teresa",
+    "targetSlug": "santa-teresa-de-jesus",
+    "expectedName": "Santa Teresa de Jesús"
+  }
+]

@@ -1,3 +1,5 @@
+import { scriptureData } from "@/lib/scripture-data"
+import { categoryKey, filterScripture } from "@/lib/content-filters"
 import { T } from "@/components/t";
 
 import Link from "next/link"
@@ -12,7 +14,6 @@ const emotionalCategories = [
     color: "text-secondary",
     emotions: ["miedo", "ansiedad", "preocupación", "estrés"],
     description: "Encuentra paz y protección en las promesas de Dios",
-    verseCount: 15,
   },
   {
     title: "Tristeza y Dolor",
@@ -20,7 +21,6 @@ const emotionalCategories = [
     color: "text-accent",
     emotions: ["tristeza", "dolor", "duelo", "soledad"],
     description: "Consuelo divino para los momentos más difíciles",
-    verseCount: 18,
   },
   {
     title: "Esperanza y Alegría",
@@ -28,7 +28,6 @@ const emotionalCategories = [
     color: "text-primary",
     emotions: ["esperanza", "alegría", "felicidad", "gratitud"],
     description: "Celebra las bendiciones y mantén viva la esperanza",
-    verseCount: 22,
   },
   {
     title: "Fe y Confianza",
@@ -36,7 +35,6 @@ const emotionalCategories = [
     color: "text-secondary",
     emotions: ["fe", "confianza", "duda", "fortaleza"],
     description: "Fortalece tu fe y confía en el plan de Dios",
-    verseCount: 20,
   },
   {
     title: "Paz y Tranquilidad",
@@ -44,7 +42,6 @@ const emotionalCategories = [
     color: "text-accent",
     emotions: ["paz", "tranquilidad", "calma", "serenidad"],
     description: "Encuentra la paz que sobrepasa todo entendimiento",
-    verseCount: 16,
   },
   {
     title: "Fortaleza y Valor",
@@ -52,7 +49,6 @@ const emotionalCategories = [
     color: "text-primary",
     emotions: ["fortaleza", "valor", "perseverancia", "resistencia"],
     description: "Recibe fuerzas para enfrentar cualquier desafío",
-    verseCount: 14,
   },
 ]
 
@@ -70,7 +66,7 @@ export function EmotionalCategories() {
         {emotionalCategories.map((category, index) => {
           const IconComponent = category.icon
           return (
-            <Card key={index} className="group hover:shadow-lg transition-all duration-300 cursor-pointer">
+            <Card key={index} className="group hover:shadow-lg transition-all duration-300 ">
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto mb-4 p-3 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
                   <IconComponent className={`h-8 w-8 ${category.color}`} />
@@ -89,9 +85,9 @@ export function EmotionalCategories() {
                   </div>
 
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-3">{category.verseCount} versículos disponibles</p>
-                    <Link
-                      href={`/versiculos?categoria=${category.title.toLowerCase().replace(/\s+/g, "-")}`}
+                    <p className="text-sm text-muted-foreground mb-3">{filterScripture(scriptureData, "", category.title).length} versículos disponibles</p>
+                    <Link prefetch={false}
+                      href={"/versiculos?" + new URLSearchParams({ categoria: categoryKey(category.title) })}
                       className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"
                     >
                       <T k="footer.explore" /> Versículos

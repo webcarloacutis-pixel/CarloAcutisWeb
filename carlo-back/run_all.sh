@@ -1,5 +1,7 @@
-# pega el script, guarda (Ctrl+O, Enter), cierra (Ctrl+X)
-chmod +x run_all.sh
-./run_all.sh
-
-
+#!/usr/bin/env sh
+set -eu
+npm run typecheck
+npm run lint
+npm test
+npm run build
+exec npm start

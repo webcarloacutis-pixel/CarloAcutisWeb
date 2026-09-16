@@ -1,19 +1,11 @@
-"use client";
-
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-
+"use client"
+import { useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 export function ScrollToResults() {
-  const sp = useSearchParams();
-
+  const params = useSearchParams()
   useEffect(() => {
-    const s = sp?.toString() || "";
-    if (!s) return;
-
-    // Si hay cualquier filtro, bajamos a resultados
-    const el = document.getElementById("resultados");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [sp]);
-
-  return null;
+    if (!["q", "query", "busqueda", "santo", "saint", "ocasion", "occasion", "categoria", "category"].some((key) => params.get(key))) return
+    document.getElementById("resultados")?.scrollIntoView({ behavior: "auto", block: "start" })
+  }, [params])
+  return null
 }

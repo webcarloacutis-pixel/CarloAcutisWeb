@@ -1,5 +1,8 @@
 "use client"
 
+import { apiUrl } from "@/lib/api-url"
+import { fetchPublicCollection } from "@/lib/public-collection"
+import { mapApiToFormMiracle, type MiracleApi } from "@/lib/admin-utils"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -58,7 +61,7 @@ export function AdminMiraclesList() {
   const [savingEdit, setSavingEdit] = useState(false)
 
 
-  const baseUrl = ''
+  const baseUrl = '/api'
 
   const resetCreateForm = useCallback(() => {
     setTitle("")
@@ -69,47 +72,27 @@ export function AdminMiraclesList() {
     setWitnessesText("")
   }, [])
 
+  const loadRows = useCallback(async () => {
+    const [saintsData,miraclesData] = await Promise.all([
+      fetchPublicCollection<SaintApi>(apiUrl('/saints'),{cache:'no-store',credentials:'include'}),
+      fetchPublicCollection<MiracleApi>(apiUrl('/miracles/all'),{cache:'no-store',credentials:'include'}),
+    ])
+    const names = new Map(saintsData.map(saint=>[saint.id,saint]))
+    return {saints:saintsData,miracles:miraclesData.map(miracle=>({...mapApiToFormMiracle(miracle),saintName:names.get(miracle.saintId)?.name||'Santo',saintSlug:names.get(miracle.saintId)?.slug||'',saintId:miracle.saintId}))}
+  }, [])
   const reload = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const saintsRes = await fetch(`${baseUrl}/saints`, { cache: "no-store" })
-      if (!saintsRes.ok) throw new Error(`Error /saints (${saintsRes.status})`)
-      const saintsData = (await saintsRes.json()) as SaintApi[]
-      setSaints(saintsData)
-
-      const chunks = await Promise.all(
-        saintsData.map(async (s) => {
-          const miracles = await getMiraclesBySaintId(s.id)
-          return miracles.map((m) => ({
-            ...m,
-            saintName: s.name,
-            saintSlug: s.slug,
-            saintId: s.id,
-          }))
-        })
-      )
-
-      setAllMiracles(chunks.flat())
-    } catch (e: any) {
-      setError(e?.message ? String(e.message) : "Error cargando milagros")
-    } finally {
-      setLoading(false)
-    }
-  }, [baseUrl])
-
-  useEffect(() => {
-    reload()
-  }, [reload])
-
-  useEffect(() => {
-    if (createOpen) {
-      const first = saints[0]?.id || ""
-      setCreateSaintId(first)
-      resetCreateForm()
-    }
-  }, [createOpen, saints, resetCreateForm])
+    setLoading(true)
+    try { const data=await loadRows();setSaints(data.saints);setAllMiracles(data.miracles);setError(null) }
+    catch {setError('No se pudieron cargar los milagros.')}
+    finally {setLoading(false)}
+  },[loadRows])
+  useEffect(()=>{
+    let active=true
+    loadRows().then(data=>{if(active){setSaints(data.saints);setAllMiracles(data.miracles);setError(null)}})
+      .catch(()=>{if(active)setError('No se pudieron cargar los milagros.')})
+      .finally(()=>{if(active)setLoading(false)})
+    return ()=>{active=false}
+  },[loadRows])
 
   const filteredMiracles = useMemo(() => {
     const q = searchTerm.toLowerCase()
@@ -147,7 +130,7 @@ export function AdminMiraclesList() {
         date: mDate.trim(),
         location: mLocation.trim(),
         witnesses: witnessesArr,
-        verified: false,
+        verified: createVerified,
       })
 
       setCreateOpen(false)
@@ -195,7 +178,7 @@ export function AdminMiraclesList() {
         date: editDate.trim(),
         location: editLocation.trim(),
         witnesses: witnessesArr,
-        verified: false,
+        verified: createVerified,
       } as any)
 
       setEditOpen(false)
@@ -236,7 +219,7 @@ async function onDelete(miracleId: string, miracleTitle: string) {
           <h2 className="font-playfair text-3xl font-bold">GestiÃ³n de Milagros</h2>
           <p className="text-muted-foreground">Administre todos los milagros documentados</p>
         </div>
-<Button className="bg-primary" onClick={() => setCreateOpen(true)}>
+<Button className="bg-primary" onClick={() => {setCreateSaintId(saints[0]?.id || ""); resetCreateForm(); setCreateVerified(false); setCreateOpen(true)}}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Milagro
         </Button>
@@ -522,4 +505,3 @@ async function onDelete(miracleId: string, miracleTitle: string) {
     </div>
   )
 }
-

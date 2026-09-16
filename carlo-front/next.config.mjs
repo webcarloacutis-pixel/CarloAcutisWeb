@@ -1,26 +1,18 @@
-﻿/** @type {import('next').NextConfig} */
+import { catalogStorageRewrites } from "./lib/catalog-storage.mjs";
+/** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   async rewrites() {
-    const BACKEND =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "https://njnpudxawz.us-east-1.awsapprunner.com";
-
-    return [
-      { source: "/api/:path*", destination: BACKEND + "/api/:path*" },
-      { source: "/ai/:path*", destination: BACKEND + "/ai/:path*" },
-
-      { source: "/auth/:path*", destination: BACKEND + "/auth/:path*" },
-      { source: "/conversations/:path*", destination: BACKEND + "/conversations/:path*" },
-
-      { source: "/discover-saint", destination: BACKEND + "/discover-saint" },
-      { source: "/descubrir-saint", destination: BACKEND + "/descubrir-saint" },
-
-      { source: "/saints/:path*", destination: BACKEND + "/saints/:path*" },
-      { source: "/prayers/:path*", destination: BACKEND + "/prayers/:path*" },
-      { source: "/miracles/:path*", destination: BACKEND + "/miracles/:path*" },
-
-      { source: "/health", destination: BACKEND + "/health" },
-    ];
+    return {beforeFiles: catalogStorageRewrites(), afterFiles: ['ai','auth','conversations','discover-saint','descubrir-saint','saints','prayers','miracles','health','popularity'].map(route => ({source:`/${route}/:path*`,destination:`/api/${route}/:path*`})), fallback: []}
   },
-};
-
-export default nextConfig;
+  async headers() {
+    return [{source:'/:path*',headers:[
+      {key:'X-Content-Type-Options',value:'nosniff'},
+      {key:'X-Frame-Options',value:'DENY'},
+      {key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},
+      {key:'Permissions-Policy',value:'camera=(), microphone=(), geolocation=()'},
+      {key:'Content-Security-Policy',value:"frame-ancestors 'none'; base-uri 'self'; object-src 'none'"},
+    ]}]
+  },
+}
+export default nextConfig

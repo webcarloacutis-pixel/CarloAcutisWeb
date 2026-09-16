@@ -1,4 +1,6 @@
-﻿export const dynamic = "force-dynamic";
+import { fetchPublicCollection } from "@/lib/public-collection"
+import { apiUrl } from "@/lib/api-url"
+export const dynamic = "force-dynamic";
 
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { AdminHeader } from "@/components/admin-header";
@@ -14,13 +16,7 @@ type Saint = {
 };
 
 async function getSaints(): Promise<Saint[]> {
-  const baseUrl = (process.env.NEXT_PUBLIC_API_URL?.trim() || "");
-  if (!baseUrl) throw new Error("NEXT_PUBLIC_API_URL no estÃ¡ definido en .env.local");
-
-  const res = await fetch(`${baseUrl}/saints`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Error cargando santos: ${res.status}`);
-
-  return res.json();
+  return fetchPublicCollection<Saint>(apiUrl("/saints"), {cache:"no-store"})
 }
 
 export default async function AdminPage() {
@@ -36,4 +32,3 @@ export default async function AdminPage() {
     </div>
   );
 }
-

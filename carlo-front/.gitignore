@@ -58,3 +58,5 @@ api_search_report_*.txt
 cd
 
 import-missing-report.txt
+
+!.env.example
