@@ -1,3 +1,4 @@
+import { createReadinessCheck } from "./lib/readiness-diagnostics";
 import express, { type RequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -29,6 +30,11 @@ const csrf: RequestHandler = (req, res, next) => {
 };
 export function createApp() {
   const app = express();
+  const checkReadiness = createReadinessCheck(() => ({
+    connect: () => prisma.$connect(),
+    readyQuery: () => prisma.$queryRaw`SELECT 1`,
+    schemaQuery: () => prisma.$queryRaw`SELECT 1 FROM "acutis"."Saint" LIMIT 1`,
+  }));
   app.disable("x-powered-by");
   app.set("trust proxy", proxyTrust());
   app.use(helmet());
@@ -54,7 +60,11 @@ export function createApp() {
   registerAiTranslateRoute(app);
   registerPopularityRoute(app);
   app.get("/health", (_req, res) => res.json({ ok: true }));
-  app.get("/ready", async (_req, res) => { await prisma.$queryRaw`SELECT 1`; res.json({ ok: true }); });
+  app.get("/ready", async (_req, res) => {
+    const diagnostic = await checkReadiness();
+    if (diagnostic.ready) { res.json({ ok: true }); return; }
+    res.status(503).json({ error: "DATABASE_NOT_READY", failureStage: diagnostic.failureStage, safeCode: diagnostic.safeCode });
+  });
   app.get("/", (_req, res) => res.json({ service: "Acutis API", health: "/health" }));
   app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });
   app.use(errorHandler);
