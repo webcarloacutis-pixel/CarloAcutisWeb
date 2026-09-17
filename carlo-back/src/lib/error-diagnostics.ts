@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 
-const certificatePath = "/etc/secrets/supabase-prod-ca-2021.crt";
+import { supabaseCertificatePath as certificatePath, databaseUrlWithVersionedCa } from "./supabase-certificate";
 
 function safeParameter(params: URLSearchParams, key: string, allowed: readonly string[]) {
   const values = params.getAll(key);
@@ -31,7 +31,7 @@ export function safeErrorDiagnostics() {
   let sslcertMatchesExpectedPath = false;
   if (databaseUrlDefined) {
     try {
-      const params = new URL(process.env.DATABASE_URL!).searchParams;
+      const params = new URL(databaseUrlWithVersionedCa(process.env.DATABASE_URL!)).searchParams;
       // Allowlist values so secrets accidentally pasted into options cannot be logged.
       sslmode = safeParameter(params, "sslmode", ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]);
       sslaccept = safeParameter(params, "sslaccept", ["strict", "accept_invalid_certs"]);

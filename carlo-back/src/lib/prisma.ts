@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { databaseUrlWithPool } from "./database-config";
 // Exactly one Prisma client per application process, with an enforced pool budget.
-const url = process.env.DATABASE_URL ? databaseUrlWithPool(process.env.DATABASE_URL) : undefined;
+export const runtimeDatabaseUrl = process.env.DATABASE_URL ? databaseUrlWithPool(process.env.DATABASE_URL) : undefined;
 export const prisma = new PrismaClient({
   log: [],
-  ...(url ? { datasources: { db: { url } } } : {}),
+  ...(runtimeDatabaseUrl ? { datasources: { db: { url: runtimeDatabaseUrl } } } : {}),
   transactionOptions: { maxWait: 5000, timeout: 10000 },
 });

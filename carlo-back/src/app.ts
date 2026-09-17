@@ -14,7 +14,7 @@ import { registerAiTranslateRoute } from "./routes/ai-translate";
 import { errorHandler } from "./lib/errors";
 import { rateLimit } from "./lib/rate-limit";
 import { proxyTrust } from "./lib/client-address";
-import { prisma } from "./lib/prisma";
+import { prisma, runtimeDatabaseUrl } from "./lib/prisma";
 import { registerPopularityRoute } from "./routes/popularity";
 const csrf: RequestHandler = (req, res, next) => {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) { next(); return; }
@@ -34,7 +34,7 @@ export function createApp() {
     connect: () => prisma.$connect(),
     readyQuery: () => prisma.$queryRaw`SELECT 1`,
     schemaQuery: () => prisma.$queryRaw`SELECT 1 FROM "acutis"."Saint" LIMIT 1`,
-  }));
+  }), { env: { ...process.env, DATABASE_URL: runtimeDatabaseUrl } });
   app.disable("x-powered-by");
   app.set("trust proxy", proxyTrust());
   app.use(helmet());

@@ -4,9 +4,10 @@ import type { Socket } from "node:net";
 import { validateSupabaseRuntime } from "./supabase-config";
 import { resolveDatabaseHost, connectDatabaseTcp, probePostgresTls } from "./readiness-transport";
 
-export const expectedCertificatePath = "/etc/secrets/supabase-prod-ca-2021.crt";
-// Fingerprint of the verified X509 DER certificate, not the PEM file's SHA-256.
-export const expectedCertificateFingerprint256 = "80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA";
+import { supabaseCertificatePath, supabaseCertificateFingerprint256 } from "./supabase-certificate";
+
+export const expectedCertificatePath = supabaseCertificatePath;
+export const expectedCertificateFingerprint256 = supabaseCertificateFingerprint256;
 export type ReadinessStage = "ENV_CONFIGURATION" | "CERTIFICATE_FILE" | "X509_PARSE" | "DNS_RESOLUTION" |
   "TCP_CONNECTION" | "TLS_HANDSHAKE" | "TLS_HOSTNAME_VERIFICATION" | "PRISMA_INITIALIZATION" |
   "DATABASE_AUTHENTICATION" | "DATABASE_CONNECTION" | "SCHEMA_ACCESS" | "READY_QUERY";

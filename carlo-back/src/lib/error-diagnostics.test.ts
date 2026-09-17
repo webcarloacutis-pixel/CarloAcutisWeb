@@ -6,7 +6,7 @@ import { safeErrorDiagnostics } from "./error-diagnostics";
 import { errorHandler } from "./errors";
 
 vi.mock("node:fs", () => ({ existsSync: vi.fn(), readFileSync: vi.fn() }));
-const certificatePath = "/etc/secrets/supabase-prod-ca-2021.crt";
+import { supabaseCertificatePath as certificatePath } from "./supabase-certificate";
 const secret = "fixture-private-do-not-log";
 const certificate = Buffer.from(`fixture certificate bytes ${secret}\r\n`, "utf8");
 const hash = createHash("sha256").update(certificate).digest("hex");
