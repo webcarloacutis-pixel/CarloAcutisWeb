@@ -14,6 +14,6 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
   if (status === 413) { res.status(413).json({ error: "BODY_TOO_LARGE" }); return; }
   if (error instanceof SyntaxError && status === 400) { res.status(400).json({ error: "INVALID_JSON" }); return; }
   // Never log request bodies, cookies, provider errors, SQL or stack traces.
-  console.error("REQUEST_FAILED", safeErrorDiagnostics(error));
+  console.error("REQUEST_FAILED", safeErrorDiagnostics());
   res.status(500).json({ error: "INTERNAL_ERROR" });
 };
