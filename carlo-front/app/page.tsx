@@ -7,7 +7,9 @@ import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    // Translations can resize sections below the chat. Keep the browser from
+    // moving the document to preserve one of those automatic scroll anchors.
+    <div className="min-h-screen bg-background" style={{ overflowAnchor: "none" }}>
       <Header />
       <main>
         <AIChatFullscreen />

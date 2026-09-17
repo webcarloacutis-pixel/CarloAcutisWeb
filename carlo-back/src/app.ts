@@ -16,6 +16,7 @@ import { rateLimit } from "./lib/rate-limit";
 import { proxyTrust } from "./lib/client-address";
 import { prisma, runtimeDatabaseUrl } from "./lib/prisma";
 import { registerPopularityRoute } from "./routes/popularity";
+import { aiObservation } from "./lib/ai-observation";
 const csrf: RequestHandler = (req, res, next) => {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) { next(); return; }
   const origin = req.get("origin");
@@ -44,6 +45,7 @@ export function createApp() {
   }));
   app.use((_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   app.use(cookieParser());
+  app.use(["/ai", "/api/ai"], aiObservation);
   app.use(csrf);
   app.use(express.json({ limit: "128kb", strict: true }));
   const authAbuse = rateLimit(20, 15 * 60 * 1000);

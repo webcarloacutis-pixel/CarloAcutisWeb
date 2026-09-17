@@ -5,7 +5,7 @@ export class HttpError extends Error {
 }
 export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
   if (res.headersSent) return;
-  if (error instanceof HttpError) { res.status(error.status).json({ error: error.code }); return; }
+  if (error instanceof HttpError) { res.locals.aiCode = error.code; res.status(error.status).json({ error: error.code, ...(res.locals.requestId ? {requestId: res.locals.requestId} : {}) }); return; }
   const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   const status = typeof error === "object" && error !== null && "status" in error ? Number(error.status) : 0;
   if (code === "P2002") { res.status(409).json({ error: "ALREADY_EXISTS" }); return; }

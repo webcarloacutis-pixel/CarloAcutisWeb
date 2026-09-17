@@ -42,7 +42,20 @@ router.post("/logout", async (req, res) => {
   res.json({ ok: true });
 });
 router.post("/admin/login", async (req, res) => {
-  const body = objectBody(req.body, ["password"]);
+  const body = objectBody(req.body, ["email", "password"]);
+  if (body.email !== undefined) {
+    const { email, password } = credentials(body);
+    const user = await prisma.user.findUnique({ where: { email } });
+    const dummy = "$2b$12$C6UzMDM.H6dfI/f/IKxGhuYNTCYjuTWYDvfdZZKVUFxaISAbJi6G6";
+    const matches = await bcrypt.compare(password, user?.passwordHash ?? dummy);
+    if (!user || !matches || !user.isAdmin) throw new HttpError(401, "INVALID_CREDENTIALS");
+    // The signed cookie identifies a revocable session. Every admin request also
+    // rechecks the database permission; a browser-supplied role is never trusted.
+    await revokeSession(req, "admin");
+    await setSession(res, "admin", user.id);
+    res.json({ authenticated: true });
+    return;
+  }
   const password = text(body.password, 512, true, true)!;
   const expected = process.env.ADMIN_KEY;
   if (!expected || expected.length < 32) throw new HttpError(503, "ADMIN_NOT_CONFIGURED");

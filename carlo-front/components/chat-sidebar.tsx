@@ -26,161 +26,14 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
     logout,
 
   } = useUser()
-  const { language, t: translate } = useLanguage()
+  const { t: translate } = useLanguage()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [saving, setSaving] = useState(false)
 
-  const translations: Record<
-    string,
-    {
-      newChat: string
-      history: string
-      login: string
-      loginPrompt: string
-      noConversations: string
-      deleteConfirm: string
-      logout: string
-    }
-  > = {
-    es: {
-      newChat: "Nueva conversación",
-      history: "Historial",
-      login: "Iniciar sesión",
-      loginPrompt: "Inicia sesión para guardar tu historial",
-      noConversations: "No hay conversaciones",
-      deleteConfirm: "¿Eliminar?",
-      logout: "Cerrar sesión",
-    },
-    en: {
-      newChat: "New chat",
-      history: "History",
-      login: "Sign in",
-      loginPrompt: "Sign in to save your history",
-      noConversations: "No conversations",
-      deleteConfirm: "Delete?",
-      logout: "Sign out",
-    },
-    fr: {
-      newChat: "Nouvelle conversation",
-      history: "Historique",
-      login: "Connexion",
-      loginPrompt: "Connectez-vous pour sauvegarder",
-      noConversations: "Aucune conversation",
-      deleteConfirm: "Supprimer?",
-      logout: "Déconnexion",
-    },
-    pt: {
-      newChat: "Nova conversa",
-      history: "Histórico",
-      login: "Entrar",
-      loginPrompt: "Entre para salvar seu histórico",
-      noConversations: "Sem conversas",
-      deleteConfirm: "Excluir?",
-      logout: "Sair",
-    },
-    de: {
-      newChat: "Neuer Chat",
-      history: "Verlauf",
-      login: "Anmelden",
-      loginPrompt: "Melden Sie sich an, um zu speichern",
-      noConversations: "Keine Gespräche",
-      deleteConfirm: "Löschen?",
-      logout: "Abmelden",
-    },
-    it: {
-      newChat: "Nuova chat",
-      history: "Cronologia",
-      login: "Accedi",
-      loginPrompt: "Accedi per salvare la cronologia",
-      noConversations: "Nessuna conversazione",
-      deleteConfirm: "Eliminare?",
-      logout: "Esci",
-    },
-    zh: {
-      newChat: "新对话",
-      history: "历史记录",
-      login: "登录",
-      loginPrompt: "登录以保存历史记录",
-      noConversations: "没有对话",
-      deleteConfirm: "删除？",
-      logout: "退出",
-    },
-    ja: {
-      newChat: "新しいチャット",
-      history: "履歴",
-      login: "ログイン",
-      loginPrompt: "履歴を保存するにはログイン",
-      noConversations: "会話がありません",
-      deleteConfirm: "削除？",
-      logout: "ログアウト",
-    },
-    ko: {
-      newChat: "새 대화",
-      history: "기록",
-      login: "로그인",
-      loginPrompt: "기록을 저장하려면 로그인",
-      noConversations: "대화 없음",
-      deleteConfirm: "삭제?",
-      logout: "로그아웃",
-    },
-    ar: {
-      newChat: "محادثة جديدة",
-      history: "السجل",
-      login: "تسجيل الدخول",
-      loginPrompt: "سجل لحفظ السجل",
-      noConversations: "لا توجد محادثات",
-      deleteConfirm: "حذف؟",
-      logout: "تسجيل الخروج",
-    },
-    hi: {
-      newChat: "नई बातचीत",
-      history: "इतिहास",
-      login: "लॉग इन",
-      loginPrompt: "इतिहास सहेजने के लिए लॉग इन करें",
-      noConversations: "कोई बातचीत नहीं",
-      deleteConfirm: "हटाएं?",
-      logout: "लॉग आउट",
-    },
-    ru: {
-      newChat: "Новый чат",
-      history: "История",
-      login: "Войти",
-      loginPrompt: "Войдите, чтобы сохранить историю",
-      noConversations: "Нет разговоров",
-      deleteConfirm: "Удалить?",
-      logout: "Выйти",
-    },
-    tr: {
-      newChat: "Yeni sohbet",
-      history: "Geçmiş",
-      login: "Giriş yap",
-      loginPrompt: "Geçmişi kaydetmek için giriş yapın",
-      noConversations: "Sohbet yok",
-      deleteConfirm: "Sil?",
-      logout: "Çıkış",
-    },
-    vi: {
-      newChat: "Cuộc trò chuyện mới",
-      history: "Lịch sử",
-      login: "Đăng nhập",
-      loginPrompt: "Đăng nhập để lưu lịch sử",
-      noConversations: "Không có cuộc trò chuyện",
-      deleteConfirm: "Xóa?",
-      logout: "Đăng xuất",
-    },
-    pl: {
-      newChat: "Nowa rozmowa",
-      history: "Historia",
-      login: "Zaloguj się",
-      loginPrompt: "Zaloguj się, aby zapisać historię",
-      noConversations: "Brak rozmów",
-      deleteConfirm: "Usunąć?",
-      logout: "Wyloguj",
-    },
+  const t = {
+    newChat: translate("chat.sidebar.newChat"), history: translate("chat.sidebar.history"), login: translate("chat.sidebar.login"), loginPrompt: translate("chat.sidebar.loginPrompt"), noConversations: translate("chat.sidebar.noConversations"), logout: translate("chat.sidebar.logout"),
   }
-
-  const t = translations[language] || translations.es
 
   const handleStartEdit = (id: string, title: string) => {
     setEditingId(id)
@@ -211,7 +64,7 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
         }} className="flex-1 bg-gradient-to-r from-primary to-amber-600 text-xs sm:text-sm h-10">
           <Plus className="w-4 h-4 mr-2" aria-hidden="true" />{t.newChat}
         </Button>
-        {onClose && <Button type="button" variant="ghost" size="icon" className="lg:hidden shrink-0" aria-label="Cerrar historial" onClick={onClose}><X className="h-5 w-5" aria-hidden="true" /></Button>}
+        {onClose && <Button type="button" variant="ghost" size="icon" className="lg:hidden shrink-0" data-chat-close aria-label={translate("chat.closeHistory")} onClick={onClose}><X className="h-5 w-5" aria-hidden="true" /></Button>}
       </div>
       <div className="flex-1 overflow-y-auto" aria-busy={loading}>
         {loading && <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{translate("common.loading")}</p>}
@@ -222,7 +75,7 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
           <ul className="space-y-1 mt-2">{conversations.map((conv) => <li key={conv.id} className={`group relative flex items-center gap-2 p-2 rounded-lg ${currentConversation?.id === conv.id ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}>
             <MessageSquare className="w-4 h-4 shrink-0" aria-hidden="true" />
             {editingId === conv.id ? <form className="flex-1 flex items-center gap-1 min-w-0" onSubmit={(event) => { event.preventDefault(); void handleSaveEdit(conv.id) }}>
-              <input aria-label="Título de la conversación" type="text" value={editTitle} maxLength={150} onChange={(event) => setEditTitle(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") handleCancelEdit() }} className="flex-1 min-w-0 bg-transparent border-b border-primary text-sm" autoFocus />
+              <input aria-label={translate("chat.sidebar.newChat")} type="text" value={editTitle} maxLength={150} onChange={(event) => setEditTitle(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") handleCancelEdit() }} className="flex-1 min-w-0 bg-transparent border-b border-primary text-sm" autoFocus />
               <Button type="submit" variant="ghost" size="icon" aria-label={translate("common.save")} disabled={saving || !editTitle.trim()}><Check className="h-4 w-4" aria-hidden="true" /></Button>
               <Button type="button" variant="ghost" size="icon" aria-label={translate("common.cancel")} onClick={handleCancelEdit} disabled={saving}><X className="h-4 w-4" aria-hidden="true" /></Button>
             </form> : <>
@@ -241,7 +94,7 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
       {isAuthenticated && user && <div className="p-3 border-t border-border">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center text-white text-sm shrink-0">{(user.name?.trim() || user.email || "?").charAt(0).toUpperCase()}</div>
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{user.name?.trim() || "Cuenta"}</p><p className="text-xs text-muted-foreground truncate">{user.email}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{user.name?.trim() || user.email}</p><p className="text-xs text-muted-foreground truncate">{user.email}</p></div>
           <Button variant="ghost" size="icon" onClick={() => { void logout() }} aria-label={t.logout}><LogOut className="w-4 h-4" aria-hidden="true" /></Button>
         </div>
       </div>}

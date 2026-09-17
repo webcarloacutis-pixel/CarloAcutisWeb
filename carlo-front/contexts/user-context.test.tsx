@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react'
+import { LanguageProvider } from './language-context'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UserProvider, useUser, type ChatMessage } from './user-context'
@@ -21,7 +22,7 @@ function setup(override?:(url:string,init:RequestInit)=>Promise<Response>|undefi
     return Promise.resolve(response({ok:true}))
   })
   vi.stubGlobal('fetch',fetcher)
-  return {fetcher,...renderHook(()=>useUser(),{wrapper:UserProvider})}
+  return {fetcher,...renderHook(()=>useUser(),{wrapper:({children})=><LanguageProvider><UserProvider>{children}</UserProvider></LanguageProvider>})}
 }
 async function login(result:{current:ReturnType<typeof useUser>}){
   await waitFor(()=>expect(result.current.loading).toBe(false))
@@ -87,7 +88,7 @@ describe('private history request ordering and persistence',()=>{
     const {result}=setup(url=>url.startsWith('/api/conversations?')?Promise.resolve(response({},503)):undefined)
     await login(result)
     expect(result.current.isAuthenticated).toBe(true)
-    expect(result.current.error).toContain('no se pudo cargar el historial')
+    expect(result.current.error.toLowerCase()).toContain('no se pudo cargar el historial')
     expect(result.current.loading).toBe(false)
   })
   it('finishes loading when authentication expires while hydrating history',async()=>{

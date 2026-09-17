@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Shield } from "lucide-react"
 
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -29,7 +30,7 @@ export default function AdminLoginPage() {
 
 
 
-    const success = await login(password)
+    const success = await login(password, email)
 
     if (success) {
       router.push("/admin")
@@ -54,8 +55,12 @@ export default function AdminLoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <label htmlFor="admin-email" className="text-sm font-medium text-amber-900">Email</label>
+              <Input id="admin-email" type="email" autoComplete="username" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} required />
+            </div>
+            <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium text-amber-900">
-                Clave de Acceso
+                Contraseña
               </label>
               <div className="relative">
                 <Input
@@ -63,7 +68,7 @@ export default function AdminLoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Ingresa la clave sagrada"
+                  placeholder="Ingresa tu contraseña"
                   className="pr-10 border-amber-200 focus:border-amber-400"
                   autoComplete="current-password"
                   maxLength={256}

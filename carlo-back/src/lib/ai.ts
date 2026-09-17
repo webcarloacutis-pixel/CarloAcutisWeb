@@ -3,6 +3,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { prisma } from "./prisma";
 import { intSetting } from "./config";
 import { HttpError } from "./errors";
+import { classifyAiProviderError, ensureAiConfigured } from "./ai-errors";
 export interface AiCompletionInput {
   system: string;
   user: string;
@@ -53,7 +54,7 @@ export async function withAiCapacity<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 export async function runAiCompletion(input: AiCompletionInput): Promise<{ text: string; model: string }> {
-  if (process.env.AI_ENABLED !== "true" || !process.env.OPENAI_API_KEY) throw new HttpError(503, "AI_NOT_CONFIGURED");
+  ensureAiConfigured();
   if (!Number.isInteger(input.maxTokens) || input.maxTokens < 1 || input.maxTokens > 2048 || input.user.length > 32000 || input.system.length > 10000) throw new HttpError(400, "INVALID_AI_REQUEST");
   const model = input.model || aiModel();
   const timeout = intSetting("OPENAI_TIMEOUT_MS", 25000, 1000, 30000);
@@ -66,7 +67,7 @@ export async function runAiCompletion(input: AiCompletionInput): Promise<{ text:
     input.signal?.addEventListener("abort", abort, { once: true });
     const timer = setTimeout(abort, timeout);
     try {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout });
+      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!.trim(), maxRetries: 0, timeout, logLevel: "off" });
       for (let attempt = 0; ; attempt += 1) {
         try {
           const completion = await client.chat.completions.create({
@@ -75,12 +76,12 @@ export async function runAiCompletion(input: AiCompletionInput): Promise<{ text:
           }, { signal: controller.signal, maxRetries: 0 });
           const choice = completion.choices?.[0];
           const result = choice?.message?.content?.trim();
-          if (!result || choice.finish_reason !== "stop") throw new HttpError(502, "AI_INCOMPLETE_RESPONSE");
+          if (!result || choice.finish_reason !== "stop") throw new HttpError(502, "AI_RESPONSE_INVALID");
           return { text: result, model: completion.model || model };
         } catch (error: unknown) {
           if (controller.signal.aborted) throw new HttpError(504, "AI_TIMEOUT");
-          const status = typeof error === "object" && error !== null && "status" in error ? Number(error.status) : 0;
-          if (status === 429 && attempt < (input.maxRetries ?? 0)) {
+          const classified = classifyAiProviderError(error);
+          if (classified.code === "AI_RATE_LIMIT" && attempt < (input.maxRetries ?? 0)) {
             await new Promise<void>((resolve, reject) => {
               const onAbort = () => { clearTimeout(delay); reject(new HttpError(504, "AI_TIMEOUT")); };
               const delay = setTimeout(() => { controller.signal.removeEventListener("abort", onAbort); resolve(); }, 300);
@@ -89,8 +90,7 @@ export async function runAiCompletion(input: AiCompletionInput): Promise<{ text:
             await consumeQuota("provider:daily", intSetting("AI_DAILY_REQUEST_LIMIT", 100, 1, 10000), 86400000);
             continue;
           }
-          if (error instanceof HttpError) throw error;
-          throw new HttpError(status === 429 ? 429 : 502, status === 429 ? "AI_PROVIDER_BUSY" : "AI_PROVIDER_FAILED");
+          throw classified;
         }
       }
     } finally {

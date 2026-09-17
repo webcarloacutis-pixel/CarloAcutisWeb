@@ -35,15 +35,15 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`font-sans ${playfair.variable} ${inter.variable} antialiased`}>
-        <UserProvider>
-          <LanguageProvider>
+        <LanguageProvider>
+          <UserProvider>
             <DynamicMetadata />
             <Suspense fallback={null}>
               {children}
               <VisitAnalytics />
             </Suspense>
-          </LanguageProvider>
-        </UserProvider>
+          </UserProvider>
+        </LanguageProvider>
       </body>
     </html>
   )

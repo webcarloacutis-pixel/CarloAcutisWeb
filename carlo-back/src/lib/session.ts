@@ -21,7 +21,7 @@ export function cookieOptions(): CookieOptions {
 }
 export async function setSession(res: Response, kind: "user" | "admin", uid?: string) {
   const admin = kind === "admin";
-  const keyVersion = admin ? createHash("sha256").update(process.env.ADMIN_KEY || "").digest("hex") : undefined;
+  const keyVersion = admin && !uid ? createHash("sha256").update(process.env.ADMIN_KEY || "").digest("hex") : undefined;
   const sessionId = randomUUID();
   const duration = (admin ? 8 * 60 * 60 : 7 * 24 * 60 * 60) * 1000;
   await prisma.authSession.create({ data: { id: sessionId, kind, userId: uid ?? null, expiresAt: new Date(Date.now() + duration) } });
@@ -37,10 +37,11 @@ export function readSession(req: Request, kind: "user" | "admin"): JwtPayload | 
     const payload = jwt.verify(token, secret(), { algorithms: ["HS256"], issuer, audience: "carlo-web" });
     if (typeof payload === "string" || payload.kind !== kind || typeof payload.jti !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(payload.jti)) return null;
     if (kind === "user" && (typeof payload.uid !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(payload.uid))) return null;
-    if (kind === "admin") {
+    if (kind === "admin" && payload.uid === undefined) {
       const key = process.env.ADMIN_KEY;
       if (!key || typeof payload.keyVersion !== "string" || !constantEqual(payload.keyVersion, createHash("sha256").update(key).digest("hex"))) return null;
     }
+    if (kind === "admin" && payload.uid !== undefined && (typeof payload.uid !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(payload.uid))) return null;
     return payload;
   } catch { return null; }
 }
@@ -48,7 +49,11 @@ export async function activeSession(req: Request, kind: "user" | "admin") {
   const payload = readSession(req, kind);
   if (!payload) return null;
   const session = await prisma.authSession.findUnique({ where: { id: payload.jti } });
-  if (!session || session.kind !== kind || session.expiresAt.getTime() <= Date.now() || (kind === "user" && session.userId !== payload.uid)) return null;
+  if (!session || session.kind !== kind || session.expiresAt.getTime() <= Date.now() || session.userId !== (payload.uid ?? null)) return null;
+  if (kind === "admin" && payload.uid) {
+    const account = await prisma.user.findUnique({ where: { id: payload.uid }, select: { isAdmin: true } });
+    if (!account?.isAdmin) return null;
+  }
   return payload;
 }
 export async function revokeSession(req: Request, kind: "user" | "admin") {

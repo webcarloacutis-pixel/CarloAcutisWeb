@@ -5,12 +5,13 @@ import { AIChatFullscreen } from "./ai-chat-fullscreen"
 import { postAiChat } from "@/lib/ai-client"
 import type { ChatMessage } from "@/contexts/user-context"
 const state = vi.hoisted(() => ({
+  language: "es",
   user: { id: "account-a", name: "", email: "synthetic@example.invalid" } as { id: string; name: string; email: string } | null,
   currentConversation: null as { id: string; messages: ChatMessage[] } | null,
   createConversation: vi.fn(), updateConversation: vi.fn(),
 }))
 vi.mock("@/contexts/user-context", () => ({ useUser: () => ({ ...state, isAuthenticated: Boolean(state.user) }) }))
-vi.mock("@/contexts/language-context", () => ({ useLanguage: () => ({ language: "es", t: (key: string) => key }) }))
+vi.mock("@/contexts/language-context", async () => { const {translations}=await import("@/lib/translations"); return {useLanguage:()=>({language:state.language,t:(key:string)=>translations[state.language]?.[key]??key})} })
 vi.mock("@/components/chat-sidebar", () => ({ ChatSidebar: () => <div>History test boundary</div> }))
 vi.mock("@/components/auth-modal", () => ({ AuthModal: () => null }))
 vi.mock("@/lib/ai-client", () => ({ postAiChat: vi.fn() }))
@@ -24,6 +25,7 @@ function submit(text = "Synthetic question") {
   fireEvent.click(screen.getByLabelText("Enviar mensaje"))
 }
 beforeEach(() => {
+  state.language = "es"
   state.user = { id: "account-a", name: "", email: "synthetic@example.invalid" }
   state.currentConversation = { id: "conversation-a", messages: [] }
   state.createConversation.mockReset()
@@ -32,6 +34,30 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
 })
 afterEach(cleanup)
+it("does not scroll on send or reply and does not double-submit", async () => {
+  const pending = deferred<{answer:string}>();vi.mocked(postAiChat).mockReturnValue(pending.promise)
+  render(<AIChatFullscreen />);submit();fireEvent.submit(screen.getByLabelText("Mensaje para la IA").closest("form")!)
+  await waitFor(()=>expect(postAiChat).toHaveBeenCalledOnce())
+  await act(async()=>{pending.resolve({answer:"Synthetic response"});await pending.promise})
+  expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+})
+it("cancels a pending generation on language change and translates existing UI state", async () => {
+  const pending=deferred<{answer:string}>();vi.mocked(postAiChat).mockReturnValue(pending.promise)
+  const view=render(<AIChatFullscreen />);submit("Confirmed original message")
+  await waitFor(()=>expect(postAiChat).toHaveBeenCalledOnce());const signal=vi.mocked(postAiChat).mock.calls[0][1]!
+  state.language="fr";view.rerender(<AIChatFullscreen />)
+  expect(signal.aborted).toBe(true);expect(screen.getByLabelText("Message pour l’IA")).toBeTruthy()
+  expect(screen.getByText("Confirmed original message")).toBeTruthy()
+  await act(async()=>{pending.resolve({answer:"LATE OLD LANGUAGE"});await pending.promise})
+  expect(screen.queryByText("LATE OLD LANGUAGE")).toBeNull();expect(postAiChat).toHaveBeenCalledOnce()
+  expect(screen.getByRole("status").textContent).toContain("langue a changé")
+})
+it("does not submit Enter during IME composition or Shift+Enter", () => {
+  render(<AIChatFullscreen />)
+  const input=screen.getByLabelText("Mensaje para la IA");fireEvent.change(input,{target:{value:"Synthetic"}})
+  fireEvent.keyDown(input,{key:"Enter",isComposing:true,keyCode:229});fireEvent.keyDown(input,{key:"Enter",shiftKey:true})
+  expect(postAiChat).not.toHaveBeenCalled();expect(state.updateConversation).not.toHaveBeenCalled()
+})
 it.each(["conversation", "account"])("does not show or save a late AI response after changing %s", async (changed) => {
   const pending = deferred<{ answer: string }>()
   vi.mocked(postAiChat).mockReturnValueOnce(pending.promise)

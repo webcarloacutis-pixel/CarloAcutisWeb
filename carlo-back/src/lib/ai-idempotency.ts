@@ -30,6 +30,6 @@ export async function withAiIdempotency(id: string, hash: string, work: () => Pr
     where:{id,inputHash:hash,leaseOwner:owner,leaseUntil:{gt:new Date()}},
     data:{response:result.text,model:result.model,leaseUntil:new Date(0)},
   });
-  if (saved.count !== 1) throw new HttpError(409,"AI_REQUEST_LEASE_LOST");
+  if (saved.count !== 1) throw new HttpError(503,"AI_PERSISTENCE_FAILED");
   return result;
 }

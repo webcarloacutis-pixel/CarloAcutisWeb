@@ -11,7 +11,7 @@ describe("effective admin authorization", async () => {
     const {req,res,next} = mocks();
     await requireAdminKey(req as never,res as never,next);
     expect(next).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.status).toHaveBeenCalledWith(401);
   });
   it("allows only the configured dedicated key", async () => {
     process.env.ADMIN_KEY = "unit-test-admin-key-32-characters-minimum";

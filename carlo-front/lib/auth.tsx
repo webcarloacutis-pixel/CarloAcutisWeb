@@ -1,7 +1,7 @@
 "use client"
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { apiUrl } from './api-url'
-interface AuthState { isAuthenticated:boolean; loading:boolean; error:string; login:(password:string)=>Promise<boolean>; logout:()=>Promise<boolean> }
+interface AuthState { isAuthenticated:boolean; loading:boolean; error:string; login:(password:string,email?:string)=>Promise<boolean>; logout:()=>Promise<boolean> }
 const AuthContext=createContext<AuthState|null>(null)
 export function AuthProvider({children}:{children:ReactNode}) {
   const [isAuthenticated,setAuthenticated]=useState(false)
@@ -22,7 +22,7 @@ export function AuthProvider({children}:{children:ReactNode}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return ()=>{epoch.current++;active.current?.abort()}
   },[])
-  async function mutate(path:string,password?:string) {
+  async function mutate(path:string,password?:string,email?:string) {
     // Cookie-changing operations run one at a time; stale session probes cannot win.
     if(busy.current)return false
     busy.current=true
@@ -32,7 +32,7 @@ export function AuthProvider({children}:{children:ReactNode}) {
     setLoading(true);setError('')
     try {
       const response=await fetch(apiUrl(path),{method:'POST',credentials:'include',cache:'no-store',
-        ...(password===undefined?{}:{headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}),
+        ...(password===undefined?{}:{headers:{'Content-Type':'application/json'},body:JSON.stringify({password,...(email===undefined?{}:{email})})}),
         signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])})
       if(version!==epoch.current)return false
       if(!response.ok){setError(response.status===429?'Demasiados intentos. Espera antes de reintentar.':'No se pudo completar el acceso administrativo.');return false}
@@ -40,6 +40,6 @@ export function AuthProvider({children}:{children:ReactNode}) {
     } catch {if(version===epoch.current)setError(password===undefined?'No se pudo cerrar la sesión. Reintenta.':'No se pudo conectar con el servicio.');return false}
     finally {busy.current=false;if(version===epoch.current)setLoading(false)}
   }
-  return <AuthContext.Provider value={{isAuthenticated,loading,error,login:password=>mutate('/auth/admin/login',password),logout:()=>mutate('/auth/admin/logout')}}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{isAuthenticated,loading,error,login:(password,email)=>mutate('/auth/admin/login',password,email),logout:()=>mutate('/auth/admin/logout')}}>{children}</AuthContext.Provider>
 }
 export function useAuth(){const state=useContext(AuthContext);if(!state)throw new Error('AuthProvider required');return state}

@@ -17,6 +17,8 @@ export function LanguageSelector() {
 return (
     <div className="relative">
       <Button
+        type="button"
+        data-testid="site-language-selector"
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}

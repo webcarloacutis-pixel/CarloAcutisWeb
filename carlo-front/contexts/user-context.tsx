@@ -1,6 +1,7 @@
 "use client"
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { apiUrl } from '../lib/api-url'
+import { useLanguage } from './language-context'
 export interface ChatMessage { id:string; role:'user'|'assistant'; content:string; timestamp:Date }
 export interface Conversation { id:string; title:string; messages:ChatMessage[]; createdAt:Date; updatedAt:Date }
 export interface User { id:string; name:string; email:string }
@@ -27,7 +28,9 @@ export function UserProvider({children}:{children:ReactNode}) {
   const [conversations,setConversations]=useState<Conversation[]>([])
   const [currentId,setCurrentId]=useState<string|null>(null)
   const [loading,setLoading]=useState(true)
-  const [error,setError]=useState('')
+  const {t}=useLanguage()
+  const [errorKey,setError]=useState('')
+  const error=errorKey?t(errorKey):''
   const epoch=useRef(0),selection=useRef(0)
   const controller=useRef(new AbortController())
   const owner=useRef<User|null>(null)
@@ -50,8 +53,8 @@ export function UserProvider({children}:{children:ReactNode}) {
       signal:AbortSignal.any([work.signal,AbortSignal.timeout(15000)])})
     check(work)
     if(!response.ok) {
-      if(response.status===401 && owner.current){clearSession();setError('La sesión terminó. Inicia sesión de nuevo.')}
-      throw new Error(response.status===429?'Demasiadas solicitudes. Espera y reintenta.':'No se pudo completar la operación.')
+      if(response.status===401 && owner.current){clearSession();setError('chat.sessionExpired')}
+      throw new Error(response.status===429?'chat.rateLimit':'chat.operationFailed')
     }
     return response
   }
@@ -90,7 +93,7 @@ export function UserProvider({children}:{children:ReactNode}) {
       check(work)
       setConversations(list);setCurrentId(list[0]?.id||null)
       if(list[0])await loadMessages(list[0].id,work,++selection.current)
-    } catch {if(current(work))setError('La sesión está abierta, pero no se pudo cargar el historial. Reintenta al abrir una conversación o recarga la página.')}
+    } catch {if(current(work))setError('chat.historyUnavailable')}
   }
   useEffect(()=>{
     // Legacy unscoped local history is neither read nor uploaded.
@@ -101,7 +104,7 @@ export function UserProvider({children}:{children:ReactNode}) {
         if(response.ok)await hydrate((await json(work,response)).user,work)
         else if(response.status!==401)throw new Error()
       })
-      .catch(()=>{if(current(work))setError('No se pudo comprobar la sesión. Recarga la página para reintentar.')})
+      .catch(()=>{if(current(work))setError('chat.sessionUnavailable')})
       .finally(()=>{if(current(work))setLoading(false)})
     // Read the current generation intentionally: logout/login can advance it after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,30 +119,30 @@ export function UserProvider({children}:{children:ReactNode}) {
       const response=await request(work,path,{method:'POST',body:JSON.stringify(payload)})
       await hydrate((await json(work,response)).user,work)
       return current(work) && !!owner.current
-    }catch(e){if(current(work))setError(e instanceof Error?e.message:'No se pudo iniciar sesión.');return false}
+    }catch{if(current(work))setError('chat.operationFailed');return false}
     finally {authBusy.current=false;if(current(work))setLoading(false)}
   }
   async function logout() {
     if(authBusy.current)return false
     authBusy.current=true;invalidateWork();const work=scope();setLoading(true)
     try {await request(work,'/auth/logout',{method:'POST'});check(work);clearSession();setError('');setLoading(false);return true}
-    catch {if(current(work))setError('No se pudo cerrar la sesión en el servidor. Reintenta.');return false}
+    catch {if(current(work))setError('chat.operationFailed');return false}
     finally {authBusy.current=false;if(current(work))setLoading(false)}
   }
   async function createConversation() {
     if(!owner.current || authBusy.current)return null
     const work=scope()
     try {
-      const response=await request(work,'/conversations',{method:'POST',body:JSON.stringify({id:crypto.randomUUID(),title:'Nueva conversación'})})
+      const response=await request(work,'/conversations',{method:'POST',body:JSON.stringify({id:crypto.randomUUID(),title:t('chat.sidebar.newChat')})})
       const conversation=revive((await json(work,response)).conversation)
       check(work);selection.current++;persisted.current.set(conversation.id,new Map())
       setConversations(previous=>[conversation,...previous]);setCurrentId(conversation.id);return conversation
-    }catch{if(current(work))setError('No se pudo crear la conversación.');return null}
+    }catch{if(current(work))setError('chat.persistence');return null}
   }
   async function selectConversation(id:string) {
     if(!owner.current || authBusy.current)return
     const work=scope(),selected=++selection.current;setCurrentId(id);setError('')
-    try{await loadMessages(id,work,selected)}catch{if(current(work) && selected===selection.current)setError('No se pudo cargar la conversación. Selecciónala de nuevo para reintentar.')}
+    try{await loadMessages(id,work,selected)}catch{if(current(work) && selected===selection.current)setError('chat.historyUnavailable')}
   }
   function enqueue(id:string,work:Scope,operation:()=>Promise<void>) {
     if(!current(work) || !owner.current || authBusy.current)return Promise.resolve(false)
@@ -147,7 +150,7 @@ export function UserProvider({children}:{children:ReactNode}) {
     revisions.current.set(id,(revisions.current.get(id)||0)+1)
     const next=(queues.current.get(id)||Promise.resolve(true)).then(async()=>{
       if(!current(work) || !owner.current || authBusy.current)return false
-      try{await operation();check(work);return true}catch{if(current(work))setError('No se pudo guardar el cambio. Reintenta antes de salir.');return false}
+      try{await operation();check(work);return true}catch{if(current(work))setError('chat.persistence');return false}
     })
     queues.current.set(id,next)
     void next.finally(()=>{if(queues.current.get(id)===next)queues.current.delete(id)})
@@ -156,7 +159,7 @@ export function UserProvider({children}:{children:ReactNode}) {
   async function updateConversation(id:string,messages:ChatMessage[]) {
     const work=scope()
     return enqueue(id,work,async()=>{
-      const title=(messages.find(m=>m.role==='user')?.content||'Nueva conversación').slice(0,150)
+      const title=(messages.find(m=>m.role==='user')?.content||t('chat.sidebar.newChat')).slice(0,150)
       const saved=persisted.current.get(id)||new Map<string,string>()
       persisted.current.set(id,saved)
       // Only new IDs travel over the network; confirmed partial writes survive retries.

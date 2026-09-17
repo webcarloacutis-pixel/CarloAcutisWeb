@@ -7,6 +7,7 @@ import { prisma } from "../lib/prisma";
 import { rateLimit } from "../lib/rate-limit";
 import { HttpError } from "../lib/errors";
 import { withAiIdempotency } from "../lib/ai-idempotency";
+import { ensureAiConfigured } from "../lib/ai-errors";
 const languages: Record<string,string> = { es: "Spanish", en: "English", fr: "French", it: "Italian", pt: "Portuguese", de: "German", hi: "Hindi", ar: "Arabic", zh: "Chinese", ja: "Japanese", ko: "Korean", ru: "Russian" };
 export function registerAiTranslateRoute(app: Express) {
   const limiter = rateLimit(20, 60000);
@@ -21,7 +22,7 @@ export function registerAiTranslateRoute(app: Express) {
     const key = privateHash([scope, aiModel(), targetLang, source].join("\0"));
     const cached = await prisma.translationCache.findUnique({ where: { id: key } });
     if (cached && cached.expiresAt.getTime() > Date.now()) { res.json({ translated: cached.translated, cached: true }); return; }
-    if (process.env.AI_ENABLED !== "true") throw new HttpError(503, "AI_NOT_CONFIGURED");
+    ensureAiConfigured();
     await consumeQuota("translate:" + scope, 40, 86400000);
     const controller = new AbortController();
     const closed = () => { if (!res.writableEnded) controller.abort(); };

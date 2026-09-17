@@ -1,6 +1,6 @@
 "use client"
 
-import { postAiChat } from "@/lib/ai-client";
+import { postAiChat, chatErrorKey } from "@/lib/ai-client";
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -24,9 +24,9 @@ export function AIChatFullscreen() {
   const setInput = (value: string) => setInputState({ key: viewKey, value })
   const [typingKey, setTypingKey] = useState<string | null>(null)
   const isTyping = typingKey === viewKey
+  const [notice, setNotice] = useState<{ key: string; code: string } | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMobileSidebar, setShowMobileSidebar] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const historyButtonRef = useRef<HTMLButtonElement>(null)
@@ -35,158 +35,29 @@ export function AIChatFullscreen() {
     const historyButton = historyButtonRef.current
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
-    sidebarRef.current?.querySelector<HTMLElement>('button[aria-label="Cerrar historial"]')?.focus()
+    sidebarRef.current?.querySelector<HTMLElement>('[data-chat-close]')?.focus({ preventScroll: true })
     const closeOrTrap = (event: KeyboardEvent) => {
       if (event.key === "Escape") { event.preventDefault(); setShowMobileSidebar(false); return }
       if (event.key !== "Tab") return
       const focusable = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href], [tabindex="0"]') || []).filter((element) => element.getClientRects().length)
       const first = focusable[0], last = focusable[focusable.length - 1]
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
-      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus({ preventScroll: true }) }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus({ preventScroll: true }) }
     }
     document.addEventListener("keydown", closeOrTrap)
-    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOrTrap); historyButton?.focus() }
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOrTrap); historyButton?.focus({ preventScroll: true }) }
   }, [showMobileSidebar])
 
-  const activeRequest = useRef<{ key: string; controller: AbortController } | null>(null)
+  const activeRequest = useRef<{ key: string; language: string; controller: AbortController } | null>(null)
   useEffect(() => {
     return () => { if (activeRequest.current?.key === viewKey) activeRequest.current.controller.abort() }
   }, [viewKey])
   useEffect(() => () => activeRequest.current?.controller.abort(), [])
+  useEffect(() => () => activeRequest.current?.controller.abort("LANGUAGE_CHANGED"), [language])
 
-  // Traducciones para las preguntas rápidas
-  const quickQuestionsTranslations: Record<
-    string,
-    { saintMatch: string; psalm: string; miracle: string; prayer: string }
-  > = {
-    es: {
-      saintMatch: "¿Qué santo se parece a mí?",
-      psalm: "Salmo del día",
-      miracle: "Cuéntame un milagro",
-      prayer: "¿A qué santo le rezo?",
-    },
-    en: {
-      saintMatch: "Which saint is like me?",
-      psalm: "Psalm of the day",
-      miracle: "Tell me a miracle",
-      prayer: "Which saint should I pray to?",
-    },
-    zh: {
-      saintMatch: "哪位圣人像我？",
-      psalm: "今日圣咏",
-      miracle: "告诉我一个奇迹",
-      prayer: "我应该向哪位圣人祈祷？",
-    },
-    hi: {
-      saintMatch: "कौन सा संत मेरे जैसा है?",
-      psalm: "आज का भजन",
-      miracle: "मुझे एक चमत्कार बताएं",
-      prayer: "मैं किस संत से प्रार्थना करूं?",
-    },
-    ar: { saintMatch: "أي قديس يشبهني؟", psalm: "مزمور اليوم", miracle: "أخبرني عن معجزة", prayer: "لأي قديس أصلي؟" },
-    pt: {
-      saintMatch: "Qual santo se parece comigo?",
-      psalm: "Salmo do dia",
-      miracle: "Conte-me um milagre",
-      prayer: "A qual santo devo rezar?",
-    },
-    ru: {
-      saintMatch: "Какой святой похож на меня?",
-      psalm: "Псалом дня",
-      miracle: "Расскажи о чуде",
-      prayer: "Какому святому молиться?",
-    },
-    fr: {
-      saintMatch: "Quel saint me ressemble?",
-      psalm: "Psaume du jour",
-      miracle: "Raconte-moi un miracle",
-      prayer: "À quel saint prier?",
-    },
-    ja: {
-      saintMatch: "私に似た聖人は？",
-      psalm: "今日の詩篇",
-      miracle: "奇跡を教えて",
-      prayer: "どの聖人に祈るべき？",
-    },
-    de: {
-      saintMatch: "Welcher Heilige ist wie ich?",
-      psalm: "Psalm des Tages",
-      miracle: "Erzähl mir ein Wunder",
-      prayer: "Zu welchem Heiligen beten?",
-    },
-    ko: {
-      saintMatch: "나와 닮은 성인은?",
-      psalm: "오늘의 시편",
-      miracle: "기적을 알려주세요",
-      prayer: "어떤 성인에게 기도해야 하나요?",
-    },
-    it: {
-      saintMatch: "Quale santo mi assomiglia?",
-      psalm: "Salmo del giorno",
-      miracle: "Raccontami un miracolo",
-      prayer: "A quale santo pregare?",
-    },
-    tr: {
-      saintMatch: "Hangi aziz bana benziyor?",
-      psalm: "Günün mezmuru",
-      miracle: "Bana bir mucize anlat",
-      prayer: "Hangi azize dua etmeliyim?",
-    },
-    vi: {
-      saintMatch: "Vị thánh nào giống tôi?",
-      psalm: "Thánh vịnh hôm nay",
-      miracle: "Kể cho tôi một phép lạ",
-      prayer: "Tôi nên cầu nguyện với thánh nào?",
-    },
-    pl: {
-      saintMatch: "Który święty jest do mnie podobny?",
-      psalm: "Psalm dnia",
-      miracle: "Opowiedz mi o cudzie",
-      prayer: "Do którego świętego się modlić?",
-    },
-  }
-
-  // Traducciones para la dedicatoria
-  const honorTranslations: Record<string, { inHonor: string; name: string }> = {
-    es: { inHonor: "En Honor a", name: "Carlo Acutis" },
-    en: { inHonor: "In Honor of", name: "Carlo Acutis" },
-    fr: { inHonor: "En l'Honneur de", name: "Carlo Acutis" },
-    pt: { inHonor: "Em Honra de", name: "Carlo Acutis" },
-    it: { inHonor: "In Onore di", name: "Carlo Acutis" },
-    de: { inHonor: "Zu Ehren von", name: "Carlo Acutis" },
-    zh: { inHonor: "纪念", name: "卡洛·阿库蒂斯" },
-    ja: { inHonor: "を記念して", name: "カルロ・アクティス" },
-    ko: { inHonor: "기념", name: "카를로 아쿠티스" },
-    ar: { inHonor: "تكريماً لـ", name: "كارلو أكوتيس" },
-    hi: { inHonor: "के सम्मान में", name: "कार्लो एकुटिस" },
-    ru: { inHonor: "В честь", name: "Карло Акутис" },
-    tr: { inHonor: "Onuruna", name: "Carlo Acutis" },
-    vi: { inHonor: "Để tưởng nhớ", name: "Carlo Acutis" },
-    pl: { inHonor: "Na cześć", name: "Carlo Acutis" },
-  }
-
-  // Traducciones para el título de la IA
-  const aiTitleTranslations: Record<string, { title: string; subtitle: string }> = {
-    es: { title: "IA de la Fe Católica", subtitle: "Tu guía espiritual inteligente" },
-    en: { title: "Catholic Faith AI", subtitle: "Your intelligent spiritual guide" },
-    fr: { title: "IA de la Foi Catholique", subtitle: "Votre guide spirituel intelligent" },
-    pt: { title: "IA da Fé Católica", subtitle: "Seu guia espiritual inteligente" },
-    it: { title: "IA della Fede Cattolica", subtitle: "La tua guida spirituale intelligente" },
-    de: { title: "KI des Katholischen Glaubens", subtitle: "Ihr intelligenter geistlicher Führer" },
-    zh: { title: "天主教信仰人工智能", subtitle: "您的智能精神向导" },
-    ja: { title: "カトリック信仰AI", subtitle: "あなたのインテリジェントな霊的ガイド" },
-    ko: { title: "가톨릭 신앙 AI", subtitle: "당신의 지능형 영적 안내자" },
-    ar: { title: "الذكاء الاصطناعي للإيمان الكاثوليكي", subtitle: "دليلك الروحي الذكي" },
-    hi: { title: "कैथोलिक विश्वास AI", subtitle: "आपका बुद्धिमान आध्यात्मिक मार्गदर्शक" },
-    ru: { title: "ИИ Католической Веры", subtitle: "Ваш интеллектуальный духовный наставник" },
-    tr: { title: "Katolik İnanç Yapay Zekası", subtitle: "Akıllı ruhani rehberiniz" },
-    vi: { title: "AI Đức Tin Công Giáo", subtitle: "Hướng dẫn tâm linh thông minh của bạn" },
-    pl: { title: "AI Wiary Katolickiej", subtitle: "Twój inteligentny przewodnik duchowy" },
-  }
-
-  const currentQuestions = quickQuestionsTranslations[language] || quickQuestionsTranslations.es
-  const currentHonor = honorTranslations[language] || honorTranslations.es
-  const currentAiTitle = aiTitleTranslations[language] || aiTitleTranslations.es
+  const currentQuestions = { saintMatch: t("chat.quick.saintMatch"), psalm: t("chat.quick.psalm"), miracle: t("chat.quick.miracle"), prayer: t("chat.quick.prayer") }
+  const currentHonor = { inHonor: t("chat.honor.inHonor"), name: t("chat.honor.name") }
+  const currentAiTitle = { title: t("chat.title"), subtitle: t("chat.subtitle") }
 
   const quickQuestions = [
     {
@@ -211,69 +82,66 @@ export function AIChatFullscreen() {
     },
   ]
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
   const handleQuickQuestion = (question: string) => {
     setInput(question)
-    inputRef.current?.focus()
+    inputRef.current?.focus({ preventScroll: true })
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (!input.trim() || isTyping) return
+    if (!input.trim() || (activeRequest.current && !activeRequest.current.controller.signal.aborted)) return
     const submitted = input.trim()
     const controller = new AbortController()
-    activeRequest.current?.controller.abort()
-    activeRequest.current = { key: viewKey, controller }
+    const requestId = crypto.randomUUID()
+    activeRequest.current = { key: viewKey, language, controller }
+    setNotice(null)
     setTypingKey(viewKey)
     let targetKey = viewKey
     let convId = currentConversation?.id
+    const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: submitted, timestamp: new Date() }
+    const newMessages = [...messages, userMessage]
+    setLocalMessages({ key: targetKey, messages: newMessages })
+    setInputState({ key: targetKey, value: "" })
     try {
       if (!convId && isAuthenticated) {
         const conversation = await createConversation()
-        if (controller.signal.aborted || !conversation) return
+        if (!conversation) { setNotice({ key: targetKey, code: "chat.persistence" }); return }
         convId = conversation.id
         targetKey = conversationKey(user?.id, convId)
         if (activeRequest.current?.controller === controller) activeRequest.current.key = targetKey
+        setLocalMessages({ key: targetKey, messages: newMessages })
+        setInputState({ key: targetKey, value: "" })
+        setTypingKey(targetKey)
       }
       if (controller.signal.aborted) return
-      const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: submitted, timestamp: new Date() }
-      const newMessages = [...messages, userMessage]
-      setLocalMessages({ key: targetKey, messages: newMessages })
-      setInputState({ key: targetKey, value: "" })
-      setTypingKey(targetKey)
       if (convId && isAuthenticated) {
         const saved = await updateConversation(convId, newMessages)
-        if (controller.signal.aborted || !saved) return
-      }
-      try {
-        const { answer } = await postAiChat({ message: submitted, lang: language || "es" }, controller.signal)
         if (controller.signal.aborted) return
-        const updated = [...newMessages, { id: crypto.randomUUID(), role: "assistant" as const, content: answer, timestamp: new Date() }]
-        setLocalMessages({ key: targetKey, messages: updated })
-        if (convId && isAuthenticated) await updateConversation(convId, updated)
-      } catch (error: unknown) {
-        if (controller.signal.aborted) return
-        const status = (error as { status?: number })?.status
-        setLocalMessages({ key: targetKey, messages: [...newMessages, {
-          id: crypto.randomUUID(), role: "assistant", content: status === 429 ? "Hay demasiadas solicitudes. Espera antes de reintentar." : "No se pudo obtener una respuesta. Reintenta más tarde.", timestamp: new Date(),
-        }] })
+        if (!saved) { setNotice({ key: targetKey, code: "chat.persistence" }); return }
       }
+      const { answer } = await postAiChat({ message: submitted, lang: language, requestId }, controller.signal)
+      if (controller.signal.aborted) return
+      const updated = [...newMessages, { id: crypto.randomUUID(), role: "assistant" as const, content: answer, timestamp: new Date() }]
+      setLocalMessages({ key: targetKey, messages: updated })
+      if (convId && isAuthenticated) {
+        const saved = await updateConversation(convId, updated)
+        if (!saved && !controller.signal.aborted) setNotice({ key: targetKey, code: "chat.persistence" })
+      }
+    } catch (error: unknown) {
+      if (!controller.signal.aborted) setNotice({ key: targetKey, code: chatErrorKey(error) })
     } finally {
-      if (activeRequest.current?.controller === controller) setTypingKey(null)
+      if (activeRequest.current?.controller === controller) {
+        if (controller.signal.reason === "LANGUAGE_CHANGED") setNotice({ key: targetKey, code: "chat.languageChanged" })
+        setTypingKey(null)
+        activeRequest.current = null
+      }
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit(e)
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
+      event.preventDefault()
+      event.currentTarget.form?.requestSubmit()
     }
   }
 
@@ -288,9 +156,8 @@ export function AIChatFullscreen() {
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setShowMobileSidebar(false)} />
       )}
 
-      {historyError && <p role="alert" className="px-4 py-2 text-red-700">{historyError}</p>}
-      <section className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-80px)] flex bg-gradient-to-b from-background via-background to-muted/20 relative">
-        <div ref={sidebarRef} id="chat-history" role={showMobileSidebar ? "dialog" : undefined} aria-modal={showMobileSidebar || undefined} aria-label="Historial de conversaciones"
+      <section data-testid="chat-section" dir={language === "ar" ? "rtl" : "ltr"} style={{ overflowAnchor: "none" }} className="min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-80px)] flex bg-gradient-to-b from-background via-background to-muted/20 relative">
+        <div ref={sidebarRef} id="chat-history" role={showMobileSidebar ? "dialog" : undefined} aria-modal={showMobileSidebar || undefined} aria-label={t("chat.sidebar.history")}
           className={`
           fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
           transform transition-transform duration-300 ease-in-out
@@ -310,7 +177,7 @@ export function AIChatFullscreen() {
 
           <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-3 sm:px-4 md:px-6 relative z-10">
             <div className="lg:hidden flex items-center pt-3">
-              <Button variant="ghost" size="sm" ref={historyButtonRef} aria-controls="chat-history" aria-label="Abrir historial" aria-expanded={showMobileSidebar} onClick={() => setShowMobileSidebar(true)} className="p-2">
+              <Button variant="ghost" size="sm" ref={historyButtonRef} aria-controls="chat-history" aria-label={t("chat.openHistory")} aria-expanded={showMobileSidebar} onClick={() => setShowMobileSidebar(true)} className="p-2">
                 <Menu className="w-5 h-5" />
               </Button>
             </div>
@@ -367,9 +234,10 @@ export function AIChatFullscreen() {
 
             {/* Área de chat */}
             <div className="flex-1 flex flex-col justify-end pb-3 sm:pb-4">
+              <div data-testid="chat-messages" className="h-[320px] sm:h-[400px] overflow-y-auto" style={{ overflowAnchor: "none" }}>
               {messages.length === 0 ? (
                 /* Estado inicial - grid responsive mejorado */
-                <div className="flex flex-col items-center justify-center flex-1 py-4 sm:py-8">
+                <div className="h-full flex flex-col items-center justify-center py-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 w-full max-w-2xl mb-4 sm:mb-8 px-1">
                     {quickQuestions.map((q, index) => (
                       <button
@@ -392,7 +260,7 @@ export function AIChatFullscreen() {
                 </div>
               ) : (
                 /* Mensajes del chat - responsive mejorado */
-                <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 py-3 sm:py-4 max-h-[45vh] sm:max-h-[50vh]">
+                <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -442,15 +310,16 @@ export function AIChatFullscreen() {
                       </div>
                     </div>
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
               )}
 
+              </div>
+              <div data-testid="chat-status" role="status" aria-live="polite" className="h-16 overflow-y-auto text-sm py-2">{historyError || (notice?.key === viewKey ? t(notice.code) : isTyping ? t("chat.loading") : "")}</div>
               <div className="relative">
                 <form onSubmit={handleSubmit} className="relative">
                   <div className="flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-card border border-border rounded-xl sm:rounded-2xl shadow-lg focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5 transition-all">
                     <textarea
-                      aria-label="Mensaje para la IA"
+                      aria-label={t("chat.messageLabel")}
                       maxLength={4000}
                       ref={inputRef}
                       value={input}
@@ -462,7 +331,7 @@ export function AIChatFullscreen() {
                       style={{ minHeight: "40px" }}
                     />
                     <Button
-                      aria-label="Enviar mensaje"
+                      aria-label={t("chat.send")}
                       type="submit"
                       size="icon"
                       disabled={!input.trim() || isTyping}

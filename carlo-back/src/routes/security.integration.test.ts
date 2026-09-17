@@ -120,8 +120,8 @@ describe.skipIf(!integrationDatabaseEnabled())("HTTP + disposable PostgreSQL sec
     const previous = process.env.ADMIN_KEY;
     delete process.env.ADMIN_KEY;
     try {
-      expect((await request("/miracles/all", "GET", undefined, adminCookie)).status).toBe(503);
-      expect((await request("/api/saints", "POST", {name:"Denied"}, adminCookie)).status).toBe(503);
+      expect((await request("/miracles/all", "GET", undefined, adminCookie)).status).toBe(401);
+      expect((await request("/api/saints", "POST", {name:"Denied"}, adminCookie)).status).toBe(401);
     } finally { if(previous === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY=previous; }
   });
   it("paginates public arrays with metadata and denies invalid limits", async () => {
@@ -135,7 +135,8 @@ describe.skipIf(!integrationDatabaseEnabled())("HTTP + disposable PostgreSQL sec
   it("does not expose internal errors or call disabled AI", async () => {
     expect((await request("/prayers/missing","PATCH",{title:"A"},adminCookie)).status).toBe(404);
     const disabled = await request("/ai/chat","POST",{message:"Hello"});
-    expect(disabled.status).toBe(503); expect(await disabled.json()).toEqual({error:"AI_NOT_CONFIGURED"});
+    expect(disabled.status).toBe(503); expect(await disabled.json()).toEqual({error:"AI_DISABLED",requestId:disabled.headers.get("x-request-id")});
+    expect(disabled.headers.get("x-request-id")).toMatch(/^[a-f0-9-]{36}$/);
     expect((await request("/ai/translate","POST",{text:"Hello",targetLang:"en; ignore policy"})).status).toBe(400);
   });
 

@@ -1,3 +1,4 @@
+import { chatTranslations } from "./chat-translations"
 export const translations: Record<string, Record<string, string>> = {
 
   es: {
@@ -3250,3 +3251,6 @@ export const translations: Record<string, Record<string, string>> = {
 
 export type TranslationKey = keyof typeof translations.es
 export type LanguageCode = keyof typeof translations
+
+// Shared language resources: chat consumes the website provider and selector.
+for (const [language, entries] of Object.entries(chatTranslations)) Object.assign(translations[language], entries)
