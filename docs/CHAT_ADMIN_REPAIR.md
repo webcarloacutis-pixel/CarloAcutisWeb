@@ -1,5 +1,7 @@
 # Chat y acceso administrativo: cierre técnico
 
+> Actualización: este informe es histórico. Véase [la verificación integral posterior](SYSTEM_REPAIR_20260917.md). La cuenta administradora ya existe y se comprobó su login en Render; la respuesta IA sigue la pregunta y la petición explícita de idioma. No repetir el aprovisionamiento.
+
 ## Alcance verificado el 17 de septiembre de 2026
 
 Cambios de código preparados para publicación manual, sin desplegar Render ni modificar sus variables. Se conservan el catálogo, las contraseñas de PostgreSQL, la conexión de runtime, la CA versionada y `render.yaml`.

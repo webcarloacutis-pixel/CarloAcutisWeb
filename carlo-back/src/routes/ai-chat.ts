@@ -7,7 +7,7 @@ import { rateLimit } from "../lib/rate-limit";
 import { HttpError } from "../lib/errors";
 import { inputHash, withAiIdempotency } from "../lib/ai-idempotency";
 import { ensureAiConfigured } from "../lib/ai-errors";
-import { chatSystemInstruction } from "../lib/chat-language";
+import { chatSystemInstruction, chatUserInput } from "../lib/chat-language";
 export function registerAiChatRoute(app: Express) {
   const limiter = rateLimit(10, 60000);
   app.post(["/ai/chat", "/api/ai/chat"], limiter, async (req, res) => {
@@ -15,10 +15,11 @@ export function registerAiChatRoute(app: Express) {
     const closed = () => { if (!res.writableEnded) controller.abort(); };
     res.on("close", closed);
     try {
-      const body = objectBody(req.body, ["message", "lang", "sessionId", "requestId"]);
+      const body = objectBody(req.body, ["message", "lang", "sessionId", "requestId", "recentMessages"]);
       const message = text(body.message, 4000, true)!;
       const lang = text(body.lang, 10) || "es";
       const system = chatSystemInstruction(lang);
+      const user = chatUserInput(message, body.recentMessages);
       if (body.sessionId !== undefined) text(body.sessionId, 100, true);
       const requestId = body.requestId === undefined ? null : text(body.requestId, 100, true);
       res.locals.aiStage = "CONFIGURATION";
@@ -27,8 +28,8 @@ export function registerAiChatRoute(app: Express) {
       const userId = (await activeSession(req, "user"))?.uid;
       const scope = userId ? "user:" + userId : "ip:" + privateHash(clientAddress(req));
       await consumeQuota("chat:" + scope, 20, 86400000);
-      const complete = () => { res.locals.aiStage = "PROVIDER"; return runAiCompletion({ system, user: message, maxTokens: 500, signal: controller.signal }); };
-      const answer = requestId ? await withAiIdempotency(privateHash("chat:" + scope + ":" + requestId), inputHash(JSON.stringify({message,lang})), complete) : await complete();
+      const complete = () => { res.locals.aiStage = "PROVIDER"; return runAiCompletion({ system, user, maxTokens: 500, signal: controller.signal }); };
+      const answer = requestId ? await withAiIdempotency(privateHash("chat:" + scope + ":" + requestId), inputHash(JSON.stringify({user,lang})), complete) : await complete();
       res.locals.aiStage = "COMPLETE";
       res.json({ answer: answer.text, requestId: res.locals.requestId });
     } catch (error) {

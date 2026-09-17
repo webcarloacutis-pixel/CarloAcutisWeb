@@ -1,7 +1,7 @@
 "use client"
 
 import { T } from "@/components/t";
-import { postAiChat, chatErrorKey } from "@/lib/ai-client";
+import { postAiChat, chatErrorKey, recentChatContext } from "@/lib/ai-client";
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
@@ -67,7 +67,7 @@ export function AIChat() {
     const userMessage: Message = { id: crypto.randomUUID(), role: "user", content: input.trim(), timestamp: new Date() }
     setMessages(previous => [...previous, userMessage]);setInput("");setIsTyping(true);setNotice("")
     try {
-      const {answer} = await postAiChat({message:userMessage.content,lang:language},controller.signal)
+      const {answer} = await postAiChat({message:userMessage.content,lang:language,recentMessages:recentChatContext(messages)},controller.signal)
       if(!controller.signal.aborted)setMessages(previous=>[...previous,{id:crypto.randomUUID(),role:"assistant",content:answer,timestamp:new Date()}])
     } catch(error) {if(!controller.signal.aborted)setNotice(chatErrorKey(error))}
     finally {if(pending.current===controller){if(controller.signal.reason==="LANGUAGE_CHANGED")setNotice("chat.languageChanged");setIsTyping(false);pending.current=null}}

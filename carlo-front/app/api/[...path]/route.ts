@@ -11,9 +11,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{path: str
   const supplied=request.headers.get('x-request-id')
   const requestId=supplied && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(supplied)?supplied:crypto.randomUUID()
   const started=performance.now()
-  function unavailable(code:'AI_CONFIGURATION_MISSING'|'AI_UPSTREAM_UNAVAILABLE') {
-    if(ai)console.info('AI_REQUEST',{requestId,stage:'PROXY',code,httpStatus:503,durationMs:Math.round(performance.now()-started)})
-    return Response.json({error:ai?code:'Service unavailable',...(ai?{requestId}:{})},{status:503,headers:{...privateHeaders,'X-Request-Id':requestId}})
+  function log(code: string, httpStatus: number) {
+    console.info('API_PROXY', {requestId, stage:'PROXY', code, httpStatus, durationMs:Math.round(performance.now()-started)})
+  }
+  function unavailable(code:'CONFIGURATION_MISSING'|'UPSTREAM_UNAVAILABLE'|'UPSTREAM_TIMEOUT'|'REQUEST_CANCELLED', status=503) {
+    log(code,status)
+    const aiCode=code==='CONFIGURATION_MISSING'?'AI_CONFIGURATION_MISSING':code==='UPSTREAM_TIMEOUT'?'AI_TIMEOUT':'AI_UPSTREAM_UNAVAILABLE'
+    return Response.json({error:ai?aiCode:code,requestId},{status,headers:{...privateHeaders,'X-Request-Id':requestId}})
   }
   if (!allowed.has(path[0]) || path.some(segment => !segment || segment === '.' || segment === '..' || /[\/\\]/.test(segment)) || request.nextUrl.search.length > 2048) return Response.json({error:'Invalid API path'}, {status:404,headers:privateHeaders})
   let target: URL
@@ -22,9 +26,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{path: str
     if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/') throw new Error()
     target.pathname = '/' + path.map(encodeURIComponent).join('/')
     target.search = request.nextUrl.search
-  } catch { return unavailable('AI_CONFIGURATION_MISSING') }
+  } catch { return unavailable('CONFIGURATION_MISSING') }
   const headers = new Headers()
-  if(ai)headers.set('x-request-id',requestId)
+  headers.set('x-request-id',requestId)
   for (const key of ['accept','content-type','cookie','origin']) {
     const value=request.headers.get(key); if(value) headers.set(key,value)
   }
@@ -43,13 +47,21 @@ async function proxy(request: NextRequest, context: { params: Promise<{path: str
     body=new Uint8Array(size); let offset=0
     for(const chunk of chunks){body.set(chunk,offset);offset+=chunk.length}
   }
+  const timeout=AbortSignal.timeout(35000)
   try {
-    const upstream=await fetch(target,{method:request.method,headers,body:body as BodyInit,cache:'no-store',redirect:'manual',signal:AbortSignal.any([request.signal,AbortSignal.timeout(35000)])})
+    const upstream=await fetch(target,{method:request.method,headers,body:body as BodyInit,cache:'no-store',redirect:'manual',signal:AbortSignal.any([request.signal,timeout])})
     const out=new Headers()
-    for(const key of ['content-type','cache-control','x-total-count','x-next-cursor','retry-after','vary','x-request-id']) { const value=upstream.headers.get(key); if(value)out.set(key,value) }
+    for(const key of ['content-type','cache-control','x-total-count','x-next-cursor','retry-after','vary','x-request-id','x-backend-revision']) { const value=upstream.headers.get(key); if(value)out.set(key,value) }
     for(const cookie of upstream.headers.getSetCookie()) out.append('set-cookie',cookie)
     if(['auth','conversations','ai'].includes(path[0]) || !['GET','HEAD'].includes(request.method)) out.set('cache-control','private, no-store')
+    out.set('X-Request-Id',requestId)
+    log(upstream.ok?'OK':upstream.status<500?'UPSTREAM_REJECTED':'UPSTREAM_HTTP_ERROR',upstream.status)
+    // Ingress HTML errors are not provider responses. Preserve status and hide the HTML.
+    if(upstream.status>=400 && !upstream.headers.get('content-type')?.includes('application/json')) {
+      await upstream.body?.cancel()
+      return Response.json({error:ai?'AI_UPSTREAM_UNAVAILABLE':'UPSTREAM_HTTP_ERROR',requestId},{status:upstream.status,headers:{...privateHeaders,'X-Request-Id':requestId}})
+    }
     return new Response(upstream.body,{status:upstream.status,headers:out})
-  } catch { return unavailable('AI_UPSTREAM_UNAVAILABLE') }
+  } catch { return request.signal.aborted ? unavailable('REQUEST_CANCELLED',499) : timeout.aborted ? unavailable('UPSTREAM_TIMEOUT',504) : unavailable('UPSTREAM_UNAVAILABLE') }
 }
 export { proxy as GET, proxy as POST, proxy as PATCH, proxy as PUT, proxy as DELETE, proxy as HEAD }

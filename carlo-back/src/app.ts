@@ -43,9 +43,14 @@ export function createApp() {
     origin: process.env.FRONTEND_ORIGIN || false, credentials: true,
     exposedHeaders: ["X-Total-Count", "X-Next-Cursor"],
   }));
-  app.use((_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+  app.use((_req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    const revision = process.env.RENDER_GIT_COMMIT;
+    if (revision && /^[a-f0-9]{40}$/i.test(revision)) res.set("X-Backend-Revision", revision);
+    next();
+  });
   app.use(cookieParser());
-  app.use(["/ai", "/api/ai"], aiObservation);
+  app.use(aiObservation);
   app.use(csrf);
   app.use(express.json({ limit: "128kb", strict: true }));
   const authAbuse = rateLimit(20, 15 * 60 * 1000);

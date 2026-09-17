@@ -9,12 +9,13 @@ const state = vi.hoisted(() => ({
   user: { id: "account-a", name: "", email: "synthetic@example.invalid" } as { id: string; name: string; email: string } | null,
   currentConversation: null as { id: string; messages: ChatMessage[] } | null,
   createConversation: vi.fn(), updateConversation: vi.fn(),
+  error: "",
 }))
 vi.mock("@/contexts/user-context", () => ({ useUser: () => ({ ...state, isAuthenticated: Boolean(state.user) }) }))
 vi.mock("@/contexts/language-context", async () => { const {translations}=await import("@/lib/translations"); return {useLanguage:()=>({language:state.language,t:(key:string)=>translations[state.language]?.[key]??key})} })
 vi.mock("@/components/chat-sidebar", () => ({ ChatSidebar: () => <div>History test boundary</div> }))
 vi.mock("@/components/auth-modal", () => ({ AuthModal: () => null }))
-vi.mock("@/lib/ai-client", () => ({ postAiChat: vi.fn() }))
+vi.mock("@/lib/ai-client", async (original) => ({ ...await original<typeof import("@/lib/ai-client")>(), postAiChat: vi.fn() }))
 function deferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((done) => { resolve = done })
@@ -25,6 +26,7 @@ function submit(text = "Synthetic question") {
   fireEvent.click(screen.getByLabelText("Enviar mensaje"))
 }
 beforeEach(() => {
+  state.error = ""
   state.language = "es"
   state.user = { id: "account-a", name: "", email: "synthetic@example.invalid" }
   state.currentConversation = { id: "conversation-a", messages: [] }
@@ -32,6 +34,14 @@ beforeEach(() => {
   state.updateConversation.mockReset().mockResolvedValue(true)
   vi.mocked(postAiChat).mockReset()
   Element.prototype.scrollIntoView = vi.fn()
+})
+it("keeps session failure independent from a localized chat quota error",async()=>{
+  state.user=null;state.error="No se pudo comprobar la sesión."
+  vi.mocked(postAiChat).mockRejectedValue(Object.assign(new Error("AI request failed"),{code:"AI_QUOTA_EXCEEDED"}))
+  render(<AIChatFullscreen />);submit()
+  await waitFor(()=>expect(screen.getByTestId("chat-status").textContent).toContain("límite de uso"))
+  expect(screen.getByTestId("chat-status").textContent).toContain("comprobar la sesión")
+  expect(postAiChat).toHaveBeenCalledOnce()
 })
 afterEach(cleanup)
 it("does not scroll on send or reply and does not double-submit", async () => {

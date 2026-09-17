@@ -1,6 +1,6 @@
 "use client"
 
-import { postAiChat, chatErrorKey } from "@/lib/ai-client";
+import { postAiChat, chatErrorKey, recentChatContext } from "@/lib/ai-client";
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -119,7 +119,7 @@ export function AIChatFullscreen() {
         if (controller.signal.aborted) return
         if (!saved) { setNotice({ key: targetKey, code: "chat.persistence" }); return }
       }
-      const { answer } = await postAiChat({ message: submitted, lang: language, requestId }, controller.signal)
+      const { answer } = await postAiChat({ message: submitted, lang: language, requestId, recentMessages: recentChatContext(messages) }, controller.signal)
       if (controller.signal.aborted) return
       const updated = [...newMessages, { id: crypto.randomUUID(), role: "assistant" as const, content: answer, timestamp: new Date() }]
       setLocalMessages({ key: targetKey, messages: updated })
@@ -314,7 +314,7 @@ export function AIChatFullscreen() {
               )}
 
               </div>
-              <div data-testid="chat-status" role="status" aria-live="polite" className="h-16 overflow-y-auto text-sm py-2">{historyError || (notice?.key === viewKey ? t(notice.code) : isTyping ? t("chat.loading") : "")}</div>
+              <div data-testid="chat-status" role="status" aria-live="polite" className="h-16 overflow-y-auto text-sm py-2">{historyError && <p>{historyError}</p>}{notice?.key === viewKey ? t(notice.code) : isTyping ? t("chat.loading") : ""}</div>
               <div className="relative">
                 <form onSubmit={handleSubmit} className="relative">
                   <div className="flex items-end gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-card border border-border rounded-xl sm:rounded-2xl shadow-lg focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5 transition-all">

@@ -1,6 +1,6 @@
 import {afterEach,expect,it,vi} from 'vitest'
 vi.mock('./api-url',()=>({apiUrl:(path:string)=>'/api'+path}))
-import {postAiChat,chatErrorKey} from './ai-client'
+import {postAiChat,chatErrorKey,recentChatContext} from './ai-client'
 afterEach(()=>vi.unstubAllGlobals())
 it('preserves the safe application code and sends one correlated request',async()=>{
  const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({error:'AI_PROVIDER_AUTH',message:'private provider credential details'}),{status:502}));vi.stubGlobal('fetch',fetcher)
@@ -13,4 +13,8 @@ it.each([{answer:{unsafe:'object'}},null,[],{answer:''}])('rejects malformed suc
 })
 it('uses translation keys for errors instead of storing translated sentences',()=>{
  expect(chatErrorKey({code:'AI_DISABLED'})).toBe('chat.disabled');expect(chatErrorKey({code:'AI_PERSISTENCE_FAILED'})).toBe('chat.persistence');expect(chatErrorKey({code:'AI_TIMEOUT'})).toBe('chat.timeout')
+})
+it('bounds recent linguistic context and includes the last answer for ambiguous follow-ups',()=>{
+ expect(recentChatContext([{role:'user',content:'older'},{role:'user',content:'Responde en portugués'},{role:'assistant',content:'A oração é um diálogo com Deus.'},{role:'user',content:'OK'},{role:'system',content:'not accepted'}])).toEqual(['Responde en portugués','A oração é um diálogo com Deus.','OK'])
+ expect(recentChatContext([{role:'assistant',content:'x'.repeat(2000)}])[0]).toHaveLength(1000)
 })

@@ -7,6 +7,7 @@ const nextConfig = {
   },
   async headers() {
     return [{source:'/:path*',headers:[
+      ...(/^[a-f0-9]{40}$/i.test(process.env.RENDER_GIT_COMMIT || '') ? [{key:'X-App-Revision',value:process.env.RENDER_GIT_COMMIT}] : []),
       {key:'X-Content-Type-Options',value:'nosniff'},
       {key:'X-Frame-Options',value:'DENY'},
       {key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},

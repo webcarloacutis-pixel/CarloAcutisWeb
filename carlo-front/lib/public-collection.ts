@@ -1,3 +1,4 @@
+import { publicRequest } from "./public-request"
 /** Read every page before filtering; failures never become a plausible partial catalogue. */
 export async function fetchPublicCollection<T extends { id: string }>(
   url: string,
@@ -9,11 +10,7 @@ export async function fetchPublicCollection<T extends { id: string }>(
   let cursor = ""
   for (let page = 0; page < 1000; page++) {
     const separator = url.includes("?") ? "&" : "?"
-    const response = await fetcher(url + separator + new URLSearchParams({ limit: "100", ...(cursor ? { cursor } : {}) }), {
-      ...options,
-      signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
-    })
-    if (!response.ok) throw new Error("No se pudo cargar el catálogo completo.")
+    const response = await publicRequest(url + separator + new URLSearchParams({ limit: "100", ...(cursor ? { cursor } : {}) }), options, fetcher)
     const data: unknown = await response.json()
     if (!Array.isArray(data) || data.some((row) => !row || typeof row !== "object" || typeof row.id !== "string")) {
       throw new Error("El catálogo recibido no es válido.")

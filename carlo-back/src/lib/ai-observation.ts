@@ -9,8 +9,10 @@ export const aiObservation: RequestHandler = (req, res, next) => {
   const started = performance.now();
   res.once("finish", () => {
     const code = permitted.has(res.locals.aiCode) ? res.locals.aiCode : res.statusCode < 400 ? "OK" : res.statusCode === 429 ? "AI_RATE_LIMIT" : res.statusCode < 500 ? "INVALID_INPUT" : "AI_UPSTREAM_UNAVAILABLE";
-    const stage = ["VALIDATION", "CONFIGURATION", "PERSISTENCE", "PROVIDER", "COMPLETE"].includes(res.locals.aiStage) ? res.locals.aiStage : "VALIDATION";
-    console.info("AI_REQUEST", { requestId, stage, code, httpStatus: res.statusCode, durationMs: Math.round(performance.now() - started) });
+    const ai = /^\/(?:api\/)?ai(?:\/|$)/.test(req.path);
+    const stage = ai ? (["VALIDATION", "CONFIGURATION", "PERSISTENCE", "PROVIDER", "COMPLETE"].includes(res.locals.aiStage) ? res.locals.aiStage : "VALIDATION") : "EXPRESS";
+    const safeCode = ai ? code : res.statusCode < 400 ? "OK" : res.statusCode === 401 ? "NOT_AUTHENTICATED" : res.statusCode < 500 ? "REQUEST_REJECTED" : "SERVICE_ERROR";
+    console.info(ai ? "AI_REQUEST" : "API_REQUEST", { requestId, stage, code: safeCode, httpStatus: res.statusCode, durationMs: Math.round(performance.now() - started) });
   });
   next();
 };

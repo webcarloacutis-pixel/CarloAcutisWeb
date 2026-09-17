@@ -137,7 +137,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed text-pretty whitespace-pre-wrap break-words">
-            <TranslatedText text={saint.biography ?? "Biografía en construcción…"} />
+            <TranslatedText allowTranslation text={saint.biography ?? "Biografía en construcción…"} />
           </p>
         </CardContent>
       </Card>

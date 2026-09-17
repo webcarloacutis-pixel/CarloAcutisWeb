@@ -17,7 +17,11 @@ describe("readiness HTTP response", () => {
       const ready = await fetch(`${origin}/ready`);
       expect(ready.status).toBe(503);
       expect(await ready.json()).toEqual({ error: "DATABASE_NOT_READY", failureStage: "ENV_CONFIGURATION", safeCode: "DATABASE_URL_MISSING" });
-      expect(log).toHaveBeenCalledOnce();expect(log.mock.calls[0][0]).toBe("DB_READINESS_DIAGNOSTIC");
+      const diagnostics=log.mock.calls.filter(call=>call[0]==="DB_READINESS_DIAGNOSTIC");
+      expect(diagnostics).toHaveLength(1);
+      const requests=log.mock.calls.filter(call=>call[0]==="API_REQUEST");
+      expect(requests).toHaveLength(2);
+      expect(requests.map(call=>call[1].httpStatus)).toEqual([200,503]);
       expect(generic).not.toHaveBeenCalled();
     } finally { server.closeAllConnections();await new Promise<void>(resolve => server.close(() => resolve())); }
   });

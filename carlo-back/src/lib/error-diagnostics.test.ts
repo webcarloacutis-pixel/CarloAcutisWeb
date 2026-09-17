@@ -74,7 +74,7 @@ describe("safe TLS file diagnostics", () => {
     const logger = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = { headersSent: false, status: vi.fn().mockReturnThis(), json: vi.fn() };
     errorHandler({ name: "PrismaClientInitializationError", message: secret, stack: secret }, {} as Request, res as unknown as Response, vi.fn() as NextFunction);
-    expect(logger).toHaveBeenCalledExactlyOnceWith("REQUEST_FAILED", expected);
+    expect(logger).toHaveBeenCalledExactlyOnceWith("REQUEST_FAILED", { ...expected, code: null, requestId: null });
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: "INTERNAL_ERROR" });
   });

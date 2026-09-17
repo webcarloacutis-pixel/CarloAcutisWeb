@@ -7,10 +7,11 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { apiUrl } from "@/lib/api-url"
 import { fetchPublicCollection } from "@/lib/public-collection"
+import { publicRequest } from "@/lib/public-request"
 type MiracleApi = { id: string; title: string; details: string | null; date: string | null; location: string | null; approved: boolean }
 type PrayerApi = { id: string; title: string; content: string; saintName: string | null; occasion: string | null; approved: boolean }
 async function getSaint(slug: string): Promise<Saint> {
-  const response = await fetch(apiUrl("/saints/" + encodeURIComponent(slug)), { cache: "no-store", signal: AbortSignal.timeout(15000) })
+  const response = await publicRequest(apiUrl("/saints/" + encodeURIComponent(slug)), { cache: "no-store" }, fetch, true)
   if (response.status === 404) notFound()
   if (!response.ok) throw new Error("No se pudo cargar el santo.")
   const api = await response.json()
