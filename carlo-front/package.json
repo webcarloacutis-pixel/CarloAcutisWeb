@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "check:independent": "node scripts/check-independent.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
