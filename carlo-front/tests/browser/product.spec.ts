@@ -60,8 +60,6 @@ test("catalogue combines birth country, continent and death century; URL reload/
   await expect(page.getByText("1 santos encontrados", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: /Limpiar Filtros/i }).click()
   await expect(page.getByText("10 santos encontrados", { exact: true })).toBeVisible()
-  await expect(page.locator("main").getByRole("link", { name: /^Ver biografía de / })).toHaveCount(6)
-  await page.getByRole("button", { name: "Cargar más santos" }).click()
   await expect(page.locator("main").getByRole("link", { name: /^Ver biografía de / })).toHaveCount(10)
   await page.getByLabel("Siglo de fallecimiento", { exact: true }).filter({ visible: true }).selectOption("16-20")
   await expect(page.getByText("1 santos encontrados", { exact: true })).toBeVisible()

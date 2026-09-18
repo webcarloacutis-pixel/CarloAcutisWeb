@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiUrl } from "@/lib/api-url"
-import { fetchPublicCollection } from "@/lib/public-collection"
+import { fetchCollectionTotal } from "@/lib/public-collection"
 
-type MiracleApi = { id: string; approved: boolean }
 
 export function AdminMiraclesStatsCard() {
   const [total, setTotal] = useState(0)
@@ -13,11 +12,11 @@ export function AdminMiraclesStatsCard() {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     const controller = new AbortController()
-    fetchPublicCollection<MiracleApi>(apiUrl('/miracles/all'), {cache:'no-store', credentials:'include', signal:controller.signal})
-      .then(data => {
+    Promise.all(['/miracles/all', '/miracles'].map(path => fetchCollectionTotal(apiUrl(path), {cache:'no-store', credentials:'include', signal:controller.signal})))
+      .then(([total, approved]) => {
         if (controller.signal.aborted) return
-        setTotal(data.length)
-        setApproved(data.filter(miracle => miracle.approved).length)
+        setTotal(total)
+        setApproved(approved)
         setError(null)
       })
       .catch((cause: unknown) => {

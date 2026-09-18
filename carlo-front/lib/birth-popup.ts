@@ -12,13 +12,35 @@ export function createBirthPopup(group: PublicSaint[], documentRef: Document = d
   const precision = documentRef.createElement("p")
   precision.textContent = group.every((saint) => saint.birthPrecision === "exact") ? "Lugar documentado" : "Ubicación aproximada de la ciudad; no indica una casa natal exacta."
   popup.append(precision)
-  for (const saint of group) {
-    const link = documentRef.createElement("a")
-    link.href = "/santos/" + encodeURIComponent(saint.slug)
-    link.textContent = saint.name
-    link.className = "block underline"
-    popup.append(link)
+  const list = documentRef.createElement("div")
+  const controls = documentRef.createElement("div")
+  const previous = documentRef.createElement("button"), next = documentRef.createElement("button")
+  const status = documentRef.createElement("span")
+  status.setAttribute("aria-live", "polite")
+  previous.type = next.type = "button"
+  previous.textContent = "Anterior"; next.textContent = "Siguiente"
+  previous.className = next.className = "border rounded px-2 py-1 disabled:opacity-50"
+  controls.className = "flex flex-wrap items-center gap-2"
+  controls.append(previous, status, next)
+  let page = 0
+  function renderPage() {
+    list.replaceChildren()
+    for (const saint of group.slice(page * 20, (page + 1) * 20)) {
+      const link = documentRef.createElement("a")
+      link.href = "/santos/" + encodeURIComponent(saint.slug)
+      link.textContent = saint.name
+      link.className = "block underline"
+      list.append(link)
+    }
+    previous.disabled = page === 0
+    next.disabled = (page + 1) * 20 >= group.length
+    status.textContent = `${page * 20 + 1}–${Math.min((page + 1) * 20, group.length)} de ${group.length}`
   }
+  previous.addEventListener("click", () => { if (page > 0) { page--; renderPage() } })
+  next.addEventListener("click", () => { if ((page + 1) * 20 < group.length) { page++; renderPage() } })
+  renderPage()
+  popup.append(list)
+  if (group.length > 20) popup.append(controls)
   const country = documentRef.createElement("a")
   country.href = "/santos?" + new URLSearchParams({ country: first.birthCountryCode || "" })
   country.textContent = "Ver santos nacidos en " + countryName(first.birthCountryCode)

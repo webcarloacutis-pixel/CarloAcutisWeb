@@ -5,17 +5,19 @@ import { AdminMiraclesStatsCard } from './admin-miracles-stats-card'
 import { getMiraclesBySaintId } from '@/lib/admin-utils'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
-it('counts every authenticated admin page including pending miracles', async () => {
+it('counts 3000 authenticated records and public approvals with two one-row requests', async () => {
   const fetcher=vi.fn(async (input: unknown, options: RequestInit) => {
-    expect(String(input)).toMatch(/^\/api\/miracles\/all\?/)
+    const url = new URL(String(input), 'http://fixture.invalid')
+    expect(url.searchParams.get('limit')).toBe('1')
     expect(options.credentials).toBe('include')
-    if (String(input).includes('cursor=')) return Response.json([{id:'pending-fixture',approved:false}], {headers:{'X-Total-Count':'2'}})
-    return Response.json([{id:'approved-fixture',approved:true}], {headers:{'X-Next-Cursor':'approved-fixture','X-Total-Count':'2'}})
+    if (url.pathname === '/api/miracles/all') return Response.json({items:[{id:'pending-fixture',approved:false}],total:3000,nextCursor:'next',hasMore:true})
+    expect(url.pathname).toBe('/api/miracles')
+    return Response.json({items:[{id:'approved-fixture',approved:true}],total:2900,nextCursor:'next',hasMore:true})
   })
   vi.stubGlobal('fetch',fetcher)
   render(<AdminMiraclesStatsCard />)
-  expect(await screen.findByText('1 verificados')).toBeTruthy()
-  expect(screen.getByText('2')).toBeTruthy()
+  expect(await screen.findByText('2900 verificados')).toBeTruthy()
+  expect(screen.getByText('3000')).toBeTruthy()
   expect(fetcher).toHaveBeenCalledTimes(2)
 })
 it('reports an unauthorized admin response as an error', async () => {

@@ -1,0 +1,181 @@
+import { test, expect, type Page, type Request } from '@playwright/test'
+
+test.skip(process.env.ACUTIS_SCALE_BROWSER !== '1', 'Requires the dedicated disposable 3000/3000 fixture database')
+test.setTimeout(120_000)
+
+test.beforeEach(async ({ page, baseURL }) => {
+  expect(baseURL).toBe('http://127.0.0.1:3196')
+  const response = await page.request.get('/api/saints?limit=1')
+  expect(response.status()).toBe(200)
+  const body = await response.json()
+  expect(body.total).toBe(3000)
+  expect(body.items[0].id).toBe('scale-browser-saint-0000')
+})
+
+async function noOverflow(page: Page) {
+  const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth,
+    elements: [...document.querySelectorAll('body *')].map(node => ({ tag: node.tagName, class: String(node.className), right: node.getBoundingClientRect().right })).filter(node => node.right > innerWidth + 1).slice(-20) }))
+  await test.info().attach('layout', { body: JSON.stringify(overflow), contentType: 'application/json' })
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+}
+
+function trackPages(page: Page) {
+  const active = new Set<Request>(), urls: string[] = []
+  let peak = 0
+  page.on('request', request => {
+    if (/\/api\/(saints|miracles)(\?|\/)/.test(request.url()) && new URL(request.url()).searchParams.get('limit') === '100') {
+      active.add(request); urls.push(request.url()); peak = Math.max(peak, active.size)
+    }
+  })
+  page.on('requestfinished', request => active.delete(request))
+  page.on('requestfailed', request => active.delete(request))
+  return { urls, peak: () => peak }
+}
+
+async function metric(page: Page, name: string, start: number) {
+  const result: Record<string, number> = { elapsedMs: Date.now() - start, domElements: await page.locator('body *').count() }
+  if (test.info().project.use.browserName === 'chromium') {
+    const session = await page.context().newCDPSession(page)
+    await session.send('Performance.enable')
+    const { metrics } = await session.send('Performance.getMetrics')
+    result.jsHeapUsedBytes = metrics.find(item => item.name === 'JSHeapUsedSize')!.value
+    await session.detach()
+  }
+  await test.info().attach(name, { body: JSON.stringify(result), contentType: 'application/json' })
+}
+
+test('3000 saints: complete sequential fetch, bounded cards, last biography and combined filters', async ({ page }) => {
+  const tracking = trackPages(page), start = Date.now()
+  await page.goto('/santos')
+  await expect(page.getByText('3000 santos encontrados', { exact: true })).toBeVisible()
+  const cards = page.locator('main').getByRole('link', { name: /^Ver biografía de / })
+  await expect(cards).toHaveCount(12)
+  expect(tracking.urls).toHaveLength(30)
+  expect(new Set(tracking.urls).size).toBe(30)
+  expect(tracking.peak()).toBe(1)
+  await metric(page, 'saints-load', start)
+  const nav = page.getByRole('navigation', { name: 'Paginación de santos', exact: true })
+  await nav.getByRole('button', { name: 'Siguiente' }).click()
+  await expect(nav).toContainText('13–24 de 3000')
+  await expect(cards).toHaveCount(12)
+  const filterStart = Date.now()
+  await page.getByLabel('Buscar santos', { exact: true }).filter({ visible: true }).fill('marcador final completo')
+  await expect(cards).toHaveCount(1)
+  await expect(cards).toHaveAttribute('href', '/santos/scale-saint-2999')
+  await metric(page, 'saints-last-biography-filter', filterStart)
+  await page.getByLabel('Continente de nacimiento', { exact: true }).filter({ visible: true }).selectOption('south-america')
+  await page.getByLabel('País de nacimiento', { exact: true }).filter({ visible: true }).selectOption('CO')
+  await page.getByLabel('Siglo de fallecimiento', { exact: true }).filter({ visible: true }).selectOption('16-20')
+  await expect(cards).toHaveCount(1)
+  await page.getByLabel('Siglo de fallecimiento', { exact: true }).filter({ visible: true }).selectOption('21')
+  await expect(page.getByText('0 santos encontrados', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Limpiar Filtros/i }).click()
+  await expect(cards).toHaveCount(12)
+  expect(tracking.urls).toHaveLength(30)
+  await noOverflow(page)
+})
+
+test('3000 map locations use canvas and bounded navigation', async ({ page }) => {
+  const start = Date.now()
+  await page.goto('/mapa')
+  await expect(page.getByRole('status').filter({ hasText: '3000 santos encontrados;' })).toBeVisible()
+  const links = page.getByRole('link', { name: /^Ver detalles de / })
+  await expect(links).toHaveCount(20)
+  await expect(page.locator('.leaflet-overlay-pane canvas')).toHaveCount(1)
+  expect(await page.locator('.leaflet-marker-icon').count()).toBeLessThanOrEqual(200)
+  await metric(page, 'map-load', start)
+  await page.getByRole('navigation', { name: /Paginación de/ }).getByRole('button', { name: 'Siguiente' }).click()
+  await expect(links).toHaveCount(20)
+  await page.getByLabel('Continente de nacimiento', { exact: true }).selectOption('south-america')
+  await page.getByLabel('País de nacimiento', { exact: true }).selectOption('CO')
+  await expect(page.getByRole('status').filter({ hasText: '1500 santos encontrados;' })).toBeVisible()
+  await expect(links).toHaveCount(20)
+  await noOverflow(page)
+})
+
+test('3000 miracles: bounded cards, full selector, combined filters and complete last record', async ({ page }) => {
+  const tracking = trackPages(page), start = Date.now()
+  await page.goto('/milagros')
+  await expect(page.getByText('3000 milagros encontrados', { exact: true })).toBeVisible()
+  const titles = page.getByText(/^Milagro sintético [0-9]+$/, { exact: true })
+  await expect(titles).toHaveCount(12)
+  expect(tracking.urls).toHaveLength(60)
+  expect(new Set(tracking.urls).size).toBe(60)
+  expect(tracking.peak()).toBeLessThanOrEqual(2)
+  await expect(page.getByLabel('Filtrar milagros por santo').locator('option')).toHaveCount(3001)
+  await metric(page, 'miracles-load', start)
+  await page.getByLabel('Buscar milagros', { exact: true }).fill('Milagro sintético 2999')
+  await expect(titles).toHaveCount(1)
+  await page.getByLabel('Filtrar milagros por santo').selectOption('scale-browser-saint-0000')
+  await page.getByLabel('Filtrar milagros por tipo').click()
+  await page.getByRole('option', { name: 'Curación', exact: true }).click()
+  await page.getByRole('button', { name: 'Solo aprobados en el catálogo' }).click()
+  await expect(titles).toHaveCount(1)
+  await page.getByLabel('Filtrar milagros por santo').selectOption('scale-browser-saint-2999')
+  await expect(page.getByText('0 milagros encontrados', { exact: true })).toBeVisible()
+  expect(tracking.urls).toHaveLength(60)
+  await noOverflow(page)
+})
+
+test('saint details retain images and 3000 relations with twelve articles per page', async ({ page }) => {
+  await page.goto('/santos/scale-saint-0000')
+  await expect(page.getByRole('heading', { name: 'Santo sintético 0000', level: 1 })).toBeVisible()
+  await expect(page.locator('main article')).toHaveCount(12)
+  const image = page.locator('main img').first()
+  await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  const nav = page.getByRole('navigation', { name: 'Paginación de relatos de milagros' })
+  await expect(nav).toContainText('1–12 de 3000')
+  await nav.getByRole('button', { name: 'Siguiente' }).click()
+  await expect(nav).toContainText('13–24 de 3000')
+  await expect(page.locator('main article')).toHaveCount(12)
+  await noOverflow(page)
+})
+
+test('admin edits at capacity, rejects 3001 clearly, keeps full miracle selector', async ({ page }) => {
+  const login = await page.request.post('/api/auth/admin/login', { data: { email: 'scale-admin@example.invalid', password: 'Synthetic-scale-password-2026!' } })
+  expect(login.status()).toBe(200)
+  await page.goto('/admin')
+  await page.getByRole('button', { name: 'Santos', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toHaveCount(12)
+  await page.getByPlaceholder('Buscar santos...', { exact: true }).fill('2999')
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toHaveCount(1)
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
+  const editor = page.getByRole('dialog', { name: 'Editar santo', exact: true })
+  await expect(editor.locator('#biography')).toHaveValue(/Marcador final completo/)
+  const save = page.waitForResponse(response => new URL(response.url()).pathname === '/api/saints/scale-browser-saint-2999' && response.request().method() === 'PATCH')
+  await editor.getByRole('button', { name: 'Guardar cambios' }).click()
+  expect((await save).status()).toBe(200)
+  await expect(editor).not.toBeVisible()
+  await page.getByRole('button', { name: 'Nuevo Santo', exact: true }).click()
+  const create = page.getByRole('dialog', { name: 'Crear santo', exact: true })
+  await create.locator('#name').fill('Sintético no debe crearse')
+  await create.locator('#slug').fill('scale-must-not-be-created')
+  await create.locator('#biography').fill('Registro de prueba que excede la capacidad.')
+  const reject = page.waitForResponse(response => new URL(response.url()).pathname === '/api/saints' && response.request().method() === 'POST')
+  await create.getByRole('button', { name: 'Crear', exact: true }).click()
+  expect((await reject).status()).toBe(409)
+  await expect(create.getByRole('alert')).toContainText('3000')
+  await create.getByRole('button', { name: 'Cancelar', exact: true }).click()
+  await page.getByRole('button', { name: 'Milagros', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toHaveCount(12)
+  await page.getByRole('button', { name: 'Editar', exact: true }).first().click()
+  const miracleEditor = page.getByRole('dialog', { name: 'Editar milagro', exact: true })
+  await expect(miracleEditor.getByLabel('Verificado (aprobado)')).toBeChecked()
+  const miracleSave = page.waitForResponse(response => new URL(response.url()).pathname.startsWith('/api/miracles/') && response.request().method() === 'PATCH')
+  await miracleEditor.getByRole('button', { name: 'Guardar cambios' }).click()
+  const savedMiracle = await miracleSave
+  expect(savedMiracle.status()).toBe(200)
+  expect((await savedMiracle.json()).approved).toBe(true)
+  await expect(miracleEditor).not.toBeVisible()
+  await page.getByRole('button', { name: 'Nuevo Milagro' }).click()
+  const miracle = page.getByRole('dialog', { name: 'Crear milagro', exact: true })
+  await expect(miracle.getByLabel('Santo del milagro').locator('option')).toHaveCount(3000)
+  await miracle.getByLabel('Santo del milagro').selectOption('scale-browser-saint-2999')
+  await miracle.locator('input').first().fill('Milagro sintético que no debe crearse')
+  const rejectMiracle = page.waitForResponse(response => response.url().includes('/saints/scale-browser-saint-2999/miracles') && response.request().method() === 'POST')
+  await miracle.getByRole('button', { name: 'Crear', exact: true }).click()
+  expect((await rejectMiracle).status()).toBe(409)
+  await expect(miracle.getByRole('alert')).toContainText('3000')
+  for (const kind of ['saints', 'miracles']) expect((await (await page.request.get(`/api/${kind}?limit=1`)).json()).total).toBe(3000)
+  await noOverflow(page)
+})

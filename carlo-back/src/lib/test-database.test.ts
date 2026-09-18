@@ -11,3 +11,8 @@ describe("disposable integration target gate", () => {
     for (const host of ["localhost","127.0.0.1"]) expect(integrationDatabaseEnabled({ACUTIS_INTEGRATION_TEST:"1",DATABASE_URL:`postgresql://${host}:55439/acutis_repair_test`})).toBe(true);
   });
 });
+
+it("allows only the explicitly named local capacity database", () => {
+  expect(integrationDatabaseEnabled({ACUTIS_INTEGRATION_TEST:"1",DATABASE_URL:"postgresql://fixture:fixture@127.0.0.1:55439/acutis_catalog_capacity_test"})).toBe(true);
+  expect(()=>integrationDatabaseEnabled({ACUTIS_INTEGRATION_TEST:"1",DATABASE_URL:"postgresql://fixture:fixture@remote.invalid:55439/acutis_catalog_capacity_test"})).toThrow();
+});

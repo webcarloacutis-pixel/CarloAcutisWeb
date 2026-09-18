@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, MapPin, Crown, Heart, Sparkles, ArrowLeft } from "lucide-react";
+import { SaintMiracles } from "./saint-miracles";
+import { Calendar, MapPin, Crown, Heart, ArrowLeft } from "lucide-react";
 
 export type Saint = {
   editorial?: Editorial | null;
@@ -54,7 +55,6 @@ interface SaintDetailProps {
 
 export function SaintDetail({ saint }: SaintDetailProps) {
   const patronOf = saint.patronOf ?? [];
-  const miracles = saint.miracles ?? [];
   const prayers = saint.prayers ?? [];
   const symbols = saint.symbols ?? [];
 
@@ -144,47 +144,7 @@ export function SaintDetail({ saint }: SaintDetailProps) {
 
       {saint.editorial && <Card className="mb-8"><CardHeader><CardTitle className="font-playfair">Fuentes y notas</CardTitle></CardHeader><CardContent className="space-y-4 break-words"><p>{saint.editorial.ecclesialStatus}</p>{saint.editorial.notes && <p className="whitespace-pre-wrap text-muted-foreground">{saint.editorial.notes}</p>}<ul className="space-y-3">{saint.editorial.sources.map((source,index)=><li key={source.url+index}><a className="font-medium underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><p className="text-sm text-muted-foreground">{source.institution} · Consulta: {source.accessedAt}</p><p className="text-sm">{source.claims.join("; ")}</p></li>)}</ul></CardContent></Card>}
 
-      {/* Milagros */}
-      {miracles.length > 0 && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="font-playfair flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-secondary" />
-              Relatos de milagros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {miracles.map((miracle, index) => (
-                <div key={miracle.id}>
-                  <h4 className="font-playfair text-lg font-semibold text-foreground mb-2">{miracle.title}</h4>
-                  <p className="text-muted-foreground mb-3 text-pretty whitespace-pre-wrap break-words">{miracle.description}</p>
-
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {miracle.date && (
-                      <span>
-                        <strong>Fecha:</strong> {miracle.date}
-                      </span>
-                    )}
-                    {miracle.location && (
-                      <span>
-                        <strong>Lugar:</strong> {miracle.location}
-                      </span>
-                    )}
-                    {miracle.verified && (
-                      <Badge variant="outline" className="text-xs">
-                        Aprobado en el catálogo
-                      </Badge>
-                    )}
-                  </div>
-
-                  {index < miracles.length - 1 && <Separator className="mt-6" />}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <SaintMiracles key={saint.id} saintId={saint.id} />
 
       {/* Oraciones */}
       {prayers.length > 0 && (

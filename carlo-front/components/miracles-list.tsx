@@ -1,4 +1,5 @@
 "use client";
+import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 import { T } from "@/components/t";
 import { apiUrl } from "@/lib/api-url";
 import { fetchPublicCollection } from "@/lib/public-collection";
@@ -67,7 +68,7 @@ export function MiraclesList() {
         setError(null)
 
         const [saintsData, miraclesData] = await Promise.all([
-          fetchPublicCollection<SaintApi>(apiUrl("/saints"), { signal: controller.signal, cache: "no-store" }),
+          fetchPublicCollection<SaintApi>(apiUrl("/saints?view=names"), { signal: controller.signal, cache: "no-store" }),
           fetchPublicCollection<MiracleApi>(apiUrl("/miracles"), { signal: controller.signal, cache: "no-store" }),
         ])
         if (!mounted) return
@@ -106,7 +107,7 @@ export function MiraclesList() {
         normalizeText(miracle.description).includes(q) ||
         normalizeText(miracle.saintName).includes(q)
 
-      const matchesSaint = selectedSaint === "Todos los santos" || miracle.saintName === selectedSaint
+      const matchesSaint = selectedSaint === "Todos los santos" || miracle.saintId === selectedSaint
       const matchesVerified = !verifiedOnly || miracle.verified
       const matchesType = selectedType === "Todos los tipos" || (miracle.type || "") === selectedType
 
@@ -127,6 +128,8 @@ export function MiraclesList() {
     return filtered
   }, [allMiracles, searchTerm, selectedSaint, selectedType, verifiedOnly])
 
+
+  const page = useCatalogPage(filteredMiracles)
 
   return (
     <div className="space-y-6">
@@ -149,19 +152,10 @@ export function MiraclesList() {
               />
             </div>
 
-            <Select value={selectedSaint} onValueChange={setSelectedSaint}>
-              <SelectTrigger aria-label="Filtrar milagros por santo">
-                <SelectValue placeholder="Todos los santos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todos los santos">Todos los santos</SelectItem>
-                {saints.map((saint) => (
-                  <SelectItem key={saint.id} value={saint.name}>
-                    {saint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select aria-label="Filtrar milagros por santo" value={selectedSaint} onChange={event => setSelectedSaint(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="Todos los santos">Todos los santos</option>
+              {saints.map(saint => <option key={saint.id} value={saint.id}>{saint.name}</option>)}
+            </select>
 
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger aria-label="Filtrar milagros por tipo">
@@ -221,7 +215,7 @@ export function MiraclesList() {
           </CardContent>
         </Card>
       ) : (
-        filteredMiracles.map((miracle) => (
+        page.items.map((miracle) => (
           <Card key={`${miracle.saintName}-${miracle.id}`} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -288,6 +282,7 @@ export function MiraclesList() {
           </Card>
         ))
       )}
+      <CatalogPagination {...page} label="milagros" />
     </div>
   )
 }

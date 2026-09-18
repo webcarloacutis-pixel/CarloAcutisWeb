@@ -1,4 +1,5 @@
 "use client"
+import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 
 import { apiUrl } from "@/lib/api-url"
 import { fetchPublicCollection } from "@/lib/public-collection"
@@ -72,10 +73,10 @@ export function AdminMiraclesList() {
     setWitnessesText("")
   }, [])
 
-  const loadRows = useCallback(async () => {
+  const loadRows = useCallback(async (signal?: AbortSignal) => {
     const [saintsData,miraclesData] = await Promise.all([
-      fetchPublicCollection<SaintApi>(apiUrl('/saints'),{cache:'no-store',credentials:'include'}),
-      fetchPublicCollection<MiracleApi>(apiUrl('/miracles/all'),{cache:'no-store',credentials:'include'}),
+      fetchPublicCollection<SaintApi>(apiUrl('/saints?view=names'),{cache:'no-store',credentials:'include',signal}),
+      fetchPublicCollection<MiracleApi>(apiUrl('/miracles/all'),{cache:'no-store',credentials:'include',signal}),
     ])
     const names = new Map(saintsData.map(saint=>[saint.id,saint]))
     return {saints:saintsData,miracles:miraclesData.map(miracle=>({...mapApiToFormMiracle(miracle),saintName:names.get(miracle.saintId)?.name||'Santo',saintSlug:names.get(miracle.saintId)?.slug||'',saintId:miracle.saintId}))}
@@ -88,10 +89,11 @@ export function AdminMiraclesList() {
   },[loadRows])
   useEffect(()=>{
     let active=true
-    loadRows().then(data=>{if(active){setSaints(data.saints);setAllMiracles(data.miracles);setError(null)}})
+    const controller = new AbortController()
+    loadRows(controller.signal).then(data=>{if(active){setSaints(data.saints);setAllMiracles(data.miracles);setError(null)}})
       .catch(()=>{if(active)setError('No se pudieron cargar los milagros.')})
       .finally(()=>{if(active)setLoading(false)})
-    return ()=>{active=false}
+    return ()=>{active=false; controller.abort()}
   },[loadRows])
 
   const filteredMiracles = useMemo(() => {
@@ -103,6 +105,8 @@ export function AdminMiraclesList() {
       return t.includes(q) || s.includes(q) || d.includes(q)
     })
   }, [allMiracles, searchTerm])
+
+  const page = useCatalogPage(filteredMiracles)
 
   async function onCreate() {
     if (!createSaintId) {
@@ -143,6 +147,7 @@ export function AdminMiraclesList() {
   }
 
     function openEdit(miracle: any) {
+    setEditVerified(Boolean(miracle.approved ?? miracle.verified))
     setEditingId(String(miracle.id))
     setEditTitle(String(miracle.title || ""))
     setEditDescription(String(miracle.description || ""))
@@ -178,7 +183,7 @@ export function AdminMiraclesList() {
         date: editDate.trim(),
         location: editLocation.trim(),
         witnesses: witnessesArr,
-        verified: createVerified,
+        verified: editVerified,
       } as any)
 
       setEditOpen(false)
@@ -214,7 +219,7 @@ async function onDelete(miracleId: string, miracleTitle: string) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-playfair text-3xl font-bold">GestiÃ³n de Milagros</h2>
           <p className="text-muted-foreground">Administre todos los milagros documentados</p>
@@ -225,8 +230,8 @@ async function onDelete(miracleId: string, miracleTitle: string) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative flex-1 min-w-0 basis-48 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Buscar milagros..."
@@ -245,11 +250,11 @@ async function onDelete(miracleId: string, miracleTitle: string) {
       {error ? <p className="text-destructive whitespace-pre-wrap">{error}</p> : null}
 
       <div className="space-y-4">
-        {filteredMiracles.map((miracle) => (
+        {page.items.map((miracle) => (
           <Card key={miracle.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <CardTitle className="font-playfair text-lg mb-1 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-secondary" />
                     {miracle.title}
@@ -294,7 +299,6 @@ async function onDelete(miracleId: string, miracleTitle: string) {
                     onClick={async () => {
                       try {
                         await toggleApproved(String(miracle.id), !!(miracle.approved ?? miracle.verified));
-                        await reload();
                       } catch (e: any) {
                         alert(e?.message ? String(e.message) : "Error cambiando verificaciÃ³n");
                       }
@@ -327,9 +331,10 @@ async function onDelete(miracleId: string, miracleTitle: string) {
           </Card>
         ))}
       </div>
+      <CatalogPagination {...page} label="milagros del administrador" />
       {editOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-2xl">
+        <div role="dialog" aria-modal="true" aria-label="Editar milagro" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="text-lg font-semibold">Editar Milagro</div>
@@ -341,6 +346,7 @@ async function onDelete(miracleId: string, miracleTitle: string) {
             </CardHeader>
 
             <CardContent className="space-y-4">
+              {error && <p role="alert" className="text-destructive whitespace-pre-wrap">{error}</p>}
               <div className="grid gap-2">
                 <label className="text-sm font-medium">TÃ­tulo</label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} disabled={savingEdit} />
@@ -410,8 +416,8 @@ async function onDelete(miracleId: string, miracleTitle: string) {
 
 
       {createOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-2xl">
+        <div role="dialog" aria-modal="true" aria-label="Crear milagro" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="text-lg font-semibold">Nuevo Milagro</div>
@@ -425,9 +431,10 @@ async function onDelete(miracleId: string, miracleTitle: string) {
             </CardHeader>
 
             <CardContent className="space-y-4">
+              {error && <p role="alert" className="text-destructive whitespace-pre-wrap">{error}</p>}
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Santo</label>
-                <select
+                <select aria-label="Santo del milagro"
                   value={createSaintId}
                   onChange={(e) => setCreateSaintId(e.target.value)}
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"

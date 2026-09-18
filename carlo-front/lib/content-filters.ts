@@ -103,7 +103,9 @@ export function groupBirthLocations(saints: PublicSaint[]): PublicSaint[][] {
   const groups = new Map<string, PublicSaint[]>()
   for (const saint of saints.filter(hasBirthCoordinates)) {
     const key = saint.birthLat + "," + saint.birthLng
-    groups.set(key, [...(groups.get(key) || []), saint])
+    const group = groups.get(key)
+    if (group) group.push(saint)
+    else groups.set(key, [saint])
   }
   return [...groups.values()]
 }

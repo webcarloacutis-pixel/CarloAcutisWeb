@@ -1,6 +1,6 @@
 "use client"
 import { T } from "@/components/t"
-import { useState } from "react"
+import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 import Link from "next/link"
 import { CatalogImage as Image } from "@/components/catalog-image"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -12,12 +12,12 @@ import { countryName, type PublicSaint } from "@/lib/content-filters"
 export type Saint = PublicSaint
 
 export function SaintsList({ saints }: { saints: Saint[] }) {
-  const [visibleCount, setVisibleCount] = useState(6)
+  const page = useCatalogPage(saints, 12)
   return <div className="space-y-8">
     <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{saints.length} santos encontrados</p>
     {saints.length === 0 && <p>No se encontraron santos con estos filtros.</p>}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {saints.slice(0, visibleCount).map((saint) => <Card key={saint.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+      {page.items.map((saint) => <Card key={saint.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
         <div className="relative h-48 overflow-hidden">
           <Image src={saint.imageUrl || "/placeholder.svg"} alt={saint.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" unoptimized />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -36,6 +36,6 @@ export function SaintsList({ saints }: { saints: Saint[] }) {
         </CardContent>
       </Card>)}
     </div>
-    {visibleCount < saints.length && <div className="text-center"><Button onClick={() => setVisibleCount((count) => count + 6)} variant="outline" size="lg">Cargar más santos</Button></div>}
+    <CatalogPagination {...page} label="santos" />
   </div>
 }

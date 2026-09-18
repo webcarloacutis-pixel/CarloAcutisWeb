@@ -1,3 +1,4 @@
+import { catalogWriteError } from "./catalog-write-error"
 import { fetchPublicCollection } from "./public-collection"
 import { apiUrl } from "./api-url"
 
@@ -74,10 +75,11 @@ export async function saveSaint(
     });
 
     if (!res.ok) {
-      return { success: false, message: `Error guardando santo (${res.status}).` };
+      return { success: false, message: await catalogWriteError(res, `Error guardando santo (${res.status}).`) };
     }
 
     const data = (await res.json().catch(() => null)) as any;
+    window.dispatchEvent(new Event("catalog:saints-changed"));
     return { success: true, message: "Santo guardado.", id: data?.id };
   } catch (e: any) {
     return { success: false, message: e?.message ? String(e.message) : "Error guardando santo." };
@@ -180,7 +182,7 @@ export async function createMiracle(saintId: string, formData: MiracleFormData):
     credentials: "include",
   });
 
-    if (!res.ok) throw new Error(`No se pudo crear el milagro (${res.status}).`);
+    if (!res.ok) throw new Error(await catalogWriteError(res, `No se pudo crear el milagro (${res.status}).`));
   const created = (await res.json()) as MiracleApi;
   return mapApiToFormMiracle(created);
 }

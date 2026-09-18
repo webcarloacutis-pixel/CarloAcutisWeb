@@ -16,7 +16,7 @@ export function AdminHeader() {
   return (
     <header className="bg-white border-b border-amber-200 px-6 py-4">
       {error && <p role="alert">{error}</p>}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <Shield className="w-6 h-6 text-amber-600" />
           <h1 className="text-xl font-playfair font-bold text-amber-900">Panel de Administración Sagrado</h1>

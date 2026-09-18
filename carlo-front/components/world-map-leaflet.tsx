@@ -36,22 +36,28 @@ export function WorldMapLeaflet({ saints }: { saints: PublicSaint[] }) {
     if (!ready || !L || !instance) return
     const layer = L.layerGroup().addTo(instance)
     const groups = groupBirthLocations(saints)
+    const canvas = groups.length > 200 ? L.canvas({ padding: 0.5 }) : undefined
     for (const group of groups) {
       const first = group[0]
       const iconNode = document.createElement("span")
       iconNode.className = "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-red-800 text-white font-bold shadow"
       iconNode.textContent = String(group.length)
-      const popup = createBirthPopup(group)
+      const popup = () => createBirthPopup(group)
+      if (canvas) {
+        L.circleMarker([first.birthLat!, first.birthLng!], { renderer: canvas, radius: 7, color: "#7f1d1d", fillColor: "#991b1b", fillOpacity: 0.85, weight: 1 })
+          .bindTooltip(iconNode).bindPopup(popup, { maxWidth: 280 }).addTo(layer)
+        continue
+      }
       L.marker([first.birthLat!, first.birthLng!], {
         icon: L.divIcon({ html: iconNode, className: "", iconSize: [32, 32] }),
         keyboard: true,
-        title: group.map((saint) => saint.name).join(", "),
+        title: group.slice(0, 3).map((saint) => saint.name).join(", ") + (group.length > 3 ? ` y ${group.length - 3} más` : ""),
         alt: first.birthPlace + ": " + group.length + " santos. Abrir detalles",
       }).bindPopup(popup, { maxWidth: 280 }).addTo(layer)
     }
     if (groups.length) instance.fitBounds(L.latLngBounds(groups.map(([saint]) => [saint.birthLat!, saint.birthLng!] as [number, number])), { padding: [36, 36], maxZoom: 6 })
     else instance.setView([20, 0], 2)
-    return () => { layer.remove() }
+    return () => { layer.remove(); canvas?.remove() }
   }, [saints, ready])
   return <div className="relative space-y-3">
     <div ref={container} aria-label="Mapa de lugares de nacimiento. Usa las flechas y las teclas más y menos para navegar." className="w-full h-96 min-h-[400px] rounded-lg border relative z-0" />

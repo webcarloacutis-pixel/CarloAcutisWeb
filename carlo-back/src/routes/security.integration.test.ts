@@ -97,14 +97,14 @@ describe.skipIf(!integrationDatabaseEnabled())("HTTP + disposable PostgreSQL sec
       for (const path of ["/miracles", "/saints/"+saintId+"/miracles"]) {
         const publicResponse = await request(prefix+path+"?limit=1");
         expect(publicResponse.status).toBe(200);
-        expect(((await publicResponse.json()) as Array<{id:string,approved:boolean}>).every(row => row.approved && row.id !== pendingId)).toBe(true);
+        expect(((await publicResponse.json()) as {items:Array<{id:string,approved:boolean}>}).items.every(row => row.approved && row.id !== pendingId)).toBe(true);
         expect(publicResponse.headers.get("cache-control")).toContain("public");
         expect((await request(prefix+path+"/all")).status).toBe(401);
         expect((await request(prefix+path+"/all", "GET", undefined, cookieA)).status).toBe(401);
         const privateResponse = await request(prefix+path+"/all", "GET", undefined, adminCookie);
         expect(privateResponse.status).toBe(200);
         expect(privateResponse.headers.get("cache-control")).toBe("private, no-store");
-        const rows = await privateResponse.json() as Array<{id:string}>;
+        const {items:rows} = await privateResponse.json() as {items:Array<{id:string}>};
         expect(rows.some(row => row.id === pendingId)).toBe(true);
       }
     }
@@ -113,7 +113,7 @@ describe.skipIf(!integrationDatabaseEnabled())("HTTP + disposable PostgreSQL sec
     expect((await request("/miracles/"+pendingId, "PATCH", {approved:true}, adminCookie)).status).toBe(200);
     const after = await request("/api/saints/"+saintId+"/miracles?limit=1");
     expect(after.headers.get("x-total-count")).toBe("1");
-    expect(((await after.json()) as Array<{id:string}>)[0].id).toBe(pendingId);
+    expect(((await after.json()) as {items:Array<{id:string}>}).items[0].id).toBe(pendingId);
     expect((await request("/miracles/"+pendingId, "PATCH", {approved:false}, adminCookie)).status).toBe(200);
   });
   it("fails closed for admin reads and writes when server configuration disappears", async () => {
@@ -124,9 +124,11 @@ describe.skipIf(!integrationDatabaseEnabled())("HTTP + disposable PostgreSQL sec
       expect((await request("/api/saints", "POST", {name:"Denied"}, adminCookie)).status).toBe(401);
     } finally { if(previous === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY=previous; }
   });
-  it("paginates public arrays with metadata and denies invalid limits", async () => {
+  it("paginates public items with explicit metadata and denies invalid limits", async () => {
     const response = await request("/saints?limit=1");
-    expect(response.status).toBe(200); expect(Array.isArray(await response.json())).toBe(true);
+    expect(response.status).toBe(200); const page = await response.json() as {items:unknown[];total:number;nextCursor:string|null;hasMore:boolean};
+    expect(Array.isArray(page.items)).toBe(true); expect(page.items.length).toBeLessThanOrEqual(1);
+    expect(page.total).toBe(Number(response.headers.get("x-total-count"))); expect(page.hasMore).toBe(Boolean(page.nextCursor));
     expect(Number(response.headers.get("x-total-count"))).toBeGreaterThanOrEqual(1);
     expect(response.headers.get("cache-control")).toContain("public");
     expect((await request("/saints?limit=100000")).status).toBe(400);

@@ -1,3 +1,4 @@
+import { CATALOG_CAPACITY } from "./catalog-limits";
 import { safeErrorDiagnostics } from "./error-diagnostics";
 import type { ErrorRequestHandler } from "express";
 export class HttpError extends Error {
@@ -5,7 +6,9 @@ export class HttpError extends Error {
 }
 export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
   if (res.headersSent) return;
-  if (error instanceof HttpError) { res.locals.aiCode = error.code; res.status(error.status).json({ error: error.code, ...(res.locals.requestId ? {requestId: res.locals.requestId} : {}) }); return; }
+  if (error instanceof HttpError) { res.locals.aiCode = error.code; res.status(error.status).json({ error: error.code,
+    ...(["SAINT_LIMIT_REACHED", "MIRACLE_LIMIT_REACHED"].includes(error.code) ? { limit: CATALOG_CAPACITY, message: `Se alcanzó el límite de ${CATALOG_CAPACITY} ${error.code === "SAINT_LIMIT_REACHED" ? "santos" : "milagros"}. No se pueden crear más registros.` } : {}),
+    ...(res.locals.requestId ? {requestId: res.locals.requestId} : {}) }); return; }
   const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   const status = typeof error === "object" && error !== null && "status" in error ? Number(error.status) : 0;
   if (code === "P2002") { res.status(409).json({ error: "ALREADY_EXISTS" }); return; }

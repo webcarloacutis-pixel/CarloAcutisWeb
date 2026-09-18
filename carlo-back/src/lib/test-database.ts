@@ -5,7 +5,7 @@ export function integrationDatabaseEnabled(env: NodeJS.ProcessEnv = process.env)
     const target = new URL(env.DATABASE_URL ?? "");
     if (["postgres:", "postgresql:"].includes(target.protocol) &&
         ["127.0.0.1", "localhost"].includes(target.hostname) && target.port === "55439" &&
-        target.pathname === "/acutis_repair_test") return true;
+        ["/acutis_repair_test", "/acutis_catalog_capacity_test"].includes(target.pathname)) return true;
   } catch { /* Report a safe target error, never a connection string. */ }
   throw new Error("EXACT_DISPOSABLE_DATABASE_REQUIRED");
 }

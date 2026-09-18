@@ -18,7 +18,7 @@ describe.skipIf(!enabled)("popularity shared PostgreSQL lease (real isolated DB,
   beforeAll(async () => {
     const target = new URL(process.env.DATABASE_URL ?? "");
     if (!["localhost", "127.0.0.1"].includes(target.hostname) || target.port !== "55439" ||
-        target.pathname !== "/acutis_repair_test") throw new Error("ISOLATED_DATABASE_REQUIRED");
+        !["/acutis_repair_test", "/acutis_catalog_capacity_test"].includes(target.pathname)) throw new Error("ISOLATED_DATABASE_REQUIRED");
     first = new PrismaClient({ datasources: { db: { url: target.href } } });
     second = new PrismaClient({ datasources: { db: { url: target.href } } });
     await Promise.all([first.$connect(), second.$connect()]);

@@ -1,4 +1,6 @@
 "use client";
+import { apiUrl } from "@/lib/api-url";
+import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,7 +33,6 @@ type AdminSaintsListProps = {
 
 export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListProps) {
   const router = useRouter();
-  const baseUrl = '';
 
   const [searchTerm, setSearchTerm] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -47,19 +48,22 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
     });
   }, [saints, searchTerm]);
 
+  const page = useCatalogPage(filteredSaints)
+
   async function onDelete(id: string) {
     const ok = confirm("¿Seguro que quieres eliminar este santo?");
     if (!ok) return;
 
     setDeletingId(id);
     try {
-      const res = await fetch(`${baseUrl}/saints/${id}`, { method: "DELETE" });
+      const res = await fetch(apiUrl(`/saints/${encodeURIComponent(id)}`), { method: "DELETE", credentials: "include" });
 
       if (!res.ok && res.status !== 204) {
         const text = await res.text();
         throw new Error(text || `Error ${res.status}`);
       }
 
+      window.dispatchEvent(new Event("catalog:saints-changed"));
       router.refresh();
     } catch (e: any) {
       alert(e?.message ?? "Error eliminando santo");
@@ -70,7 +74,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-playfair text-3xl font-bold">Gestión de Santos</h2>
           <p className="text-muted-foreground">Administre la información de todos los santos</p>
@@ -82,8 +86,8 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative flex-1 min-w-0 basis-48 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Buscar santos..."
@@ -96,7 +100,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredSaints.map((_saint) => {
+        {page.items.map((_saint) => {
           const imgSrc =
             _saint.imageUrl?.startsWith("data:")
               ? _saint.imageUrl
@@ -158,6 +162,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
           );
         })}
       </div>
+      <CatalogPagination {...page} label="santos del administrador" />
     </div>
   );
 }

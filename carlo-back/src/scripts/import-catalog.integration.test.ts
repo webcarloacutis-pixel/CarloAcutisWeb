@@ -11,7 +11,7 @@ describe.skipIf(!integrationDatabaseEnabled())('catalog import with isolated rea
   const key='audit-import-'+randomUUID().replace(/-/g,'');keys.push(key);
   return {identityKey:key,originalNumber:1,name:'Controlled '+key,slug:key,biography:'Controlled disposable integration fixture. '.repeat(12),birthYear:null,deathYear:null,birthCountryCode:null,birthPlace:null,birthLat:null,birthLng:null,editorial:{kind,ecclesialStatus:'Controlled test',birthDate:{text:null,status:kind==='person'?'unknown':'not-applicable'},deathDate:{text:null,status:kind==='person'?'unknown':'not-applicable'},birthplaceStatus:kind==='person'?'unknown':'not-applicable',notes:null,image:null,sources:[{url:'https://example.invalid/controlled-fixture',institution:'Local test',title:'Controlled fixture',accessedAt:'2026-09-15',claims:['Not editorial content']}]},miracles:[{title:'Controlled relation',approved:false,details:'Not editorial content'}],prayers:[{title:'Controlled relation',content:'Not editorial content',approved:false}]};
  }
- beforeAll(async()=>{const result=await prisma.$queryRaw<Array<{name:string}>>`SELECT current_database() AS name`;expect(result[0].name).toBe('acutis_repair_test');});
+ beforeAll(async()=>{const result=await prisma.$queryRaw<Array<{name:string}>>`SELECT current_database() AS name`;expect(result[0].name).toBe(new URL(process.env.DATABASE_URL!).pathname.slice(1));});
  afterAll(async()=>{
   await prisma.catalogImport.deleteMany({where:{identityKey:{in:keys}}});
   await prisma.prayer.deleteMany({where:{id:{in:keys.map(key=>'catalog-'+key+'-p1')}}});

@@ -7,6 +7,7 @@ import { AdminSaintsList } from "@/components/admin-saints-list";
 import { AdminSaintsModal } from "@/components/admin-saints-modal";
 import { AdminMiraclesList } from "@/components/admin-miracles-list";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api-url";
 import { AdminMiraclesStatsCard } from "@/components/admin-miracles-stats-card"
 import { AdminPrayersStatsCard } from "@/components/admin-prayers-stats-card"
 import { AdminPrayersList } from "@/components/admin-prayers-list";
@@ -34,6 +35,7 @@ export function AdminDashboard({ saints }: AdminDashboardProps) {
 
   const router = useRouter();
 const [modalOpen, setModalOpen] = useState(false);
+const [editError, setEditError] = useState<string | null>(null);
 const [editing, setEditing] = useState<Partial<Saint> | undefined>(undefined);
 
 function openCreate() {
@@ -41,9 +43,14 @@ function openCreate() {
   setModalOpen(true);
 }
 
-function openEdit(s: Saint) {
-  setEditing(s);
-  setModalOpen(true);
+async function openEdit(s: Saint) {
+  try {
+    setEditError(null);
+    const response = await fetch(apiUrl("/saints/" + encodeURIComponent(s.id)), { cache: "no-store", credentials: "include" });
+    if (!response.ok) throw new Error("No se pudo cargar la ficha completa para editar.");
+    setEditing(await response.json());
+    setModalOpen(true);
+  } catch (error) { setEditError(error instanceof Error ? error.message : "No se pudo cargar la ficha."); }
 }
 
 function closeModal() {
@@ -60,8 +67,9 @@ function closeModal() {
 
   return (
     <div className="space-y-6">
+      {editError && <p role="alert">{editError}</p>}
       {/* Tabs */}
-      <div className="flex items-center justify-center gap-2 rounded-lg border bg-white/40 p-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 rounded-lg border bg-white/40 p-2">
         <Button
           type="button"
           variant={tab === "resumen" ? "default" : "outline"}

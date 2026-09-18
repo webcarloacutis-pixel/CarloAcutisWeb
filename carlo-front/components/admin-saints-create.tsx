@@ -1,5 +1,6 @@
 "use client";
 
+import { catalogWriteError } from "@/lib/catalog-write-error";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,8 +38,7 @@ export function AdminSaintsCreate() {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Error ${res.status}`);
+        throw new Error(await catalogWriteError(res, `Error ${res.status}`));
       }
 
       setMsg("✓ Santo creado.");
@@ -47,6 +47,7 @@ export function AdminSaintsCreate() {
       setCountry("");
 
       // refresca lo que estÃ© mostrando lista en el admin
+      window.dispatchEvent(new Event("catalog:saints-changed"));
       router.refresh();
     } catch (e: any) {
       setMsg(`Error: ${e?.message ?? "Error creando santo"}`);

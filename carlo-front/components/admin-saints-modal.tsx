@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { catalogWriteError } from "@/lib/catalog-write-error";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ function SaintEditor({onClose,saint}:Props) {
   for(const key of ['patronOf','symbols','birthSources'])payload[key]=values[key].split('\n').map(v=>v.trim()).filter(Boolean);
   if(editorial)payload.editorial=editorial;
   setLoading(true);
-  try{const response=await fetch(apiUrl('/saints'+(editing?'/'+saint!.id:'')),{method:editing?'PATCH':'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok){const body=await response.json().catch(()=>null);throw new Error(`No se pudo guardar (${response.status}${body?.error?': '+body.error:''}).`);}router.refresh();onClose();}catch(e){setError(e instanceof Error?e.message:'Error al guardar.');}finally{setLoading(false);}
+  try{const response=await fetch(apiUrl('/saints'+(editing?'/'+saint!.id:'')),{method:editing?'PATCH':'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw new Error(await catalogWriteError(response, `No se pudo guardar (${response.status}).`));window.dispatchEvent(new Event("catalog:saints-changed"));router.refresh();onClose();}catch(e){setError(e instanceof Error?e.message:'Error al guardar.');}finally{setLoading(false);}
  }
  return <dialog ref={dialog} onCancel={event=>{event.preventDefault();if(!loading)onClose();}} aria-labelledby="saint-editor-title" className="w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] rounded-xl border bg-background p-0 text-foreground backdrop:bg-black/50">
  <form onSubmit={save} className="space-y-5 p-5"><div className="flex items-center justify-between gap-3"><h2 id="saint-editor-title" className="text-xl font-semibold">{editing?'Editar santo':'Crear santo'}</h2><Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cerrar</Button></div>

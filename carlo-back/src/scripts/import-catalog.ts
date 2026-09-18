@@ -4,6 +4,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { saintData, miracleData, prayerData, saintFields } from "../lib/content-validation";
+import { CATALOG_CAPACITY } from "../lib/catalog-limits";
+import { reserveCatalogCapacity } from "../lib/catalog-capacity";
 import { saintSnapshot } from "../lib/saint-service";
 import { editorialData } from "../lib/editorial-validation";
 type Obj=Record<string,unknown>;
@@ -44,12 +46,25 @@ function incomingSnapshot(entry:Entry):Snapshot {
 export async function importEntry(entry:Entry,execute:boolean) {
  const incoming=incomingSnapshot(entry);const hash=contentHash(incoming);
  return prisma.$transaction(async tx=>{
+  // Acquire creation locks before reading, at READ COMMITTED: a waiter must count
+  // the previous writer's committed rows, not a Serializable transaction's old snapshot.
+  if(execute){
+   await tx.$executeRaw`SELECT pg_advisory_xact_lock(30002026, 1)`;
+   await tx.$executeRaw`SELECT pg_advisory_xact_lock(30002026, 2)`;
+  }
   const binding=await tx.catalogImport.findUnique({where:{identityKey:entry.identityKey}});
   if(binding&&binding.saintId===null)return{identityKey:entry.identityKey,originalNumber:entry.originalNumber,action:'conflict',reason:'ADMIN_DELETION_PRESERVED_REIMPORT_REQUIRES_REVIEW'};
   const saintId=binding?.saintId??`catalog-${entry.identityKey}`;
   let decision:string='create';
   if(binding){
    const old=binding.snapshot as unknown as Snapshot;
+   // Preserve manual edits while changing isolation: lock the exact rows before
+   // comparing their snapshots; no editor can change them between compare/update.
+   if(execute){
+    await tx.$queryRaw`SELECT "id" FROM "Saint" WHERE "id" = ${saintId} FOR UPDATE`;
+    if(old.miracles.length)await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Miracle" WHERE "id" IN (${Prisma.join(old.miracles.map(record=>String(record.id)))}) ORDER BY "id" FOR UPDATE`);
+    if(old.prayers.length)await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Prayer" WHERE "id" IN (${Prisma.join(old.prayers.map(record=>String(record.id)))}) ORDER BY "id" FOR UPDATE`);
+   }
    const current=await currentSnapshot(tx,saintId,old);
    decision=importDecision(binding.importedHash,current,incoming);
    if(old.miracles.some(m=>!incoming.miracles.some(n=>n.id===m.id))||old.prayers.some(m=>!incoming.prayers.some(n=>n.id===m.id)))decision='conflict';
@@ -59,13 +74,16 @@ export async function importEntry(entry:Entry,execute:boolean) {
   }
   if(execute&&['create','update'].includes(decision)) {
    const data=saintData(incoming.saint);
+   if(decision==='create')await reserveCatalogCapacity(tx,'saint');
+   const existingMiracles=await tx.miracle.count({where:{id:{in:incoming.miracles.map(record=>String(record.id))}}});
+   await reserveCatalogCapacity(tx,'miracle',incoming.miracles.length-existingMiracles);
    if(decision==='create')await tx.saint.create({data:{...data,id:saintId}});else await tx.saint.update({where:{id:saintId},data});
    for(const record of incoming.miracles){const {id,...body}=record;const data=miracleData(body);await tx.miracle.upsert({where:{id:String(id)},create:{...data,id:String(id),saintId},update:data});}
    for(const record of incoming.prayers){const {id,...body}=record;const data=prayerData(body);await tx.prayer.upsert({where:{id:String(id)},create:{...data,id:String(id)},update:data});}
    await tx.catalogImport.upsert({where:{identityKey:entry.identityKey},create:{identityKey:entry.identityKey,saintId,importedHash:hash,snapshot:incoming as unknown as Prisma.InputJsonValue},update:{importedHash:hash,snapshot:incoming as unknown as Prisma.InputJsonValue}});
   }
   return {identityKey:entry.identityKey,originalNumber:entry.originalNumber,saintId,slug:incoming.saint.slug,action:decision,executed:execute&&['create','update'].includes(decision),contentHash:hash};
- },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,timeout:10000});
+ },{isolationLevel:Prisma.TransactionIsolationLevel.ReadCommitted,timeout:10000});
 }
 async function main() {
  const args=process.argv.slice(2),value=(key:string)=>args[args.indexOf(key)+1];
@@ -78,7 +96,7 @@ async function main() {
  const entries:Entry[]=JSON.parse((await readFile(batch,'utf8')).replace(/^\uFEFF/,''));
  if(!Array.isArray(entries)||entries.length<1||entries.length>20)throw new Error('BATCH_SIZE_1_TO_20_REQUIRED');
  const seen=new Set<string>();
- for(const entry of entries){if(!/^owner-2026-\d{3}$/.test(entry.identityKey)||seen.has(entry.identityKey)||!Number.isInteger(entry.originalNumber)||entry.originalNumber<1||entry.originalNumber>200)throw new Error('INVALID_OR_DUPLICATE_IDENTITY');seen.add(entry.identityKey);incomingSnapshot(entry);await verifyImage(root,entry);}
+ for(const entry of entries){if(!/^owner-2026-\d{3,4}$/.test(entry.identityKey)||seen.has(entry.identityKey)||!Number.isInteger(entry.originalNumber)||entry.originalNumber<1||entry.originalNumber>CATALOG_CAPACITY)throw new Error('INVALID_OR_DUPLICATE_IDENTITY');seen.add(entry.identityKey);incomingSnapshot(entry);await verifyImage(root,entry);}
  const target=await prisma.$queryRaw<{database:string;host:string;port:number}[]>`SELECT current_database() as database, host(inet_server_addr()) as host, inet_server_port() as port`;
  if(target[0]?.database!=='acutis_editorial_local'||target[0]?.host!=='127.0.0.1'||target[0]?.port!==55439)throw new Error('DATABASE_IDENTITY_MISMATCH');
  const execute=args.includes('--execute'),runId=process.env.ACUTIS_RUN_ID??new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8);
