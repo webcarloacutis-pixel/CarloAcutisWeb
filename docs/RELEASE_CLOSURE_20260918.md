@@ -57,6 +57,6 @@ Se deben actualizar los servicios existentes: **primero backend y después front
 | Backend | `carlo-back` | `npm ci --include=dev && npm run build && npm run typecheck && npm run lint` | `npm start` |
 | Frontend | `carlo-front` | `npm ci --include=dev && npm run typecheck && npm run lint && NODE_ENV=test npm test && npm run build` | `npm start -- --hostname 0.0.0.0` |
 
-No hay predeploy de migración ni nuevas variables obligatorias. No se requiere cambiar credenciales, CA, planes ni recursos. El `render.yaml` histórico prepara servicios de pago: no crear un Blueprint ni aplicarlo a los servicios gratuitos existentes. Tras el despliegue autorizado, comprobar `X-App-Revision` de ambos servicios y repetir el recorrido remoto.
+No hay predeploy de migración ni nuevas variables obligatorias. No se requiere cambiar credenciales, CA, planes ni recursos. El `render.yaml` histórico prepara servicios de pago: no crear un Blueprint ni aplicarlo a los servicios gratuitos existentes. Tras el despliegue autorizado, comprobar `X-App-Revision` del frontend y `X-Backend-Revision` del backend y repetir el recorrido remoto.
 
 Procedencia y licencias: [registro de imágenes](CATALOG_IMAGE_LICENSES.csv). Metodología: [popularidad](POPULARITY_SAINTS.md).
