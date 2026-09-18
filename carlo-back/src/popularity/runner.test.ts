@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  inputHash, isValidEstimate, METHODOLOGY_VERSION,
+  inputHash, isValidEstimate, METHODOLOGY_VERSION, SAINT_METHODOLOGY_VERSION,
   type CompletionProvider, type ContentKey, type ContentSource, type EstimateRepository, type EstimateRow,
   type PopularityContent, type ValidEstimate,
 } from "./domain";
-import { generateBatch, SpendBudget, type RunnerOptions } from "./runner";
+import { batchContinuation, generateBatch, SpendBudget, type RunnerOptions } from "./runner";
 
 const content: PopularityContent = { contentType: "verse", contentId: "1", title: "Reference", text: "Public text", category: "Hope" };
 const keyOf = (key: ContentKey) => key.contentType + ":" + key.contentId;
@@ -192,5 +192,74 @@ describe("editorial popularity", () => {
     const result = await generateBatch([content], { ...f.options, signal: controller.signal });
     expect(result.results[0].code).toBe("CANCELLED");
     expect(f.provider).not.toHaveBeenCalled();
+  });
+});
+
+describe("saint estimation uses its own persisted methodology", () => {
+  it("persists a saint result and resumes without charging again for unchanged public identity", async () => {
+    const f = fixture();
+    const saint: PopularityContent = { contentType: "saint", contentId: "synthetic-saint", title: "Synthetic identity",
+      text: "Synthetic biography, never a production estimate", category: null };
+    vi.mocked(f.source.read).mockResolvedValue(saint);
+    f.provider.mockResolvedValue({ text: JSON.stringify({ contentType: "saint", contentId: saint.contentId, score: 0 }), model: "mock-snapshot" });
+    const generated = await generateBatch([saint], f.options);
+    expect(generated.results[0].status).toBe("generated");
+    expect(f.repository.rows.get(keyOf(saint))).toMatchObject({ score: 0, methodologyVersion: SAINT_METHODOLOGY_VERSION,
+      model: "mock-snapshot", inputHash: inputHash(saint, "test-model") });
+    expect(f.provider.mock.calls[0][0].system).toContain(SAINT_METHODOLOGY_VERSION);
+    expect(f.provider.mock.calls[0][0].system).toContain("No dispones de visitas");
+    const resumed = await generateBatch([saint], f.options);
+    expect(resumed.results[0].status).toBe("unchanged");
+    expect(resumed.reservedUsd).toBe(generated.reservedUsd);
+    expect(f.provider).toHaveBeenCalledTimes(1);
+  });
+  it("cannot dispatch if durable reservation fails", async () => {
+    const f = fixture();
+    const budget = new SpendBudget({ maxUsd: 1, inputUsdPerMillion: 1, outputUsdPerMillion: 1 }, {
+      onReservation: () => { throw new Error("private file path must never leak"); },
+    });
+    const result = await generateBatch([content], { ...f.options, budget });
+    expect(result.results[0]).toMatchObject({ status: "failed", code: "PROVIDER_OR_STORAGE_FAILURE" });
+    expect(f.provider).not.toHaveBeenCalled();
+    expect(budget.reservedUsd).toBe(0);
+    expect(JSON.stringify(result)).not.toContain("private");
+  });
+});
+
+describe("maintenance continuation does not skip unresolved inputs", () => {
+  const inputs = ["a", "b", "c"].map(contentId => ({ ...content, contentId }));
+  it.each(["failed", "leased", "changed", "budget_exhausted"] as const)("resumes before %s and keeps later persisted results idempotent", status => {
+    const results = inputs.map((item, index) => ({ contentType: item.contentType, contentId: item.contentId,
+      status: index === 1 ? status : "generated" as const }));
+    expect(batchContinuation(inputs, results, "previous", 3)).toEqual({ resumeAfter: "a", nextCursor: "a", retryRequired: true });
+  });
+  it("resumes unattempted inputs and makes restart-from-first explicit", () => {
+    expect(batchContinuation(inputs, [], undefined, 3)).toEqual({ resumeAfter: null, nextCursor: null, retryRequired: true });
+    expect(batchContinuation(inputs, [{ contentType: "verse", contentId: "a", status: "generated" }], undefined, 3))
+      .toEqual({ resumeAfter: "a", nextCursor: "a", retryRequired: true });
+    expect(batchContinuation([], [], "c", 100)).toEqual({ resumeAfter: "c", nextCursor: null, retryRequired: false });
+  });
+});
+
+describe("maintenance stops repeated or global provider failures", () => {
+  it.each(["AI_QUOTA_EXCEEDED", "AI_PROVIDER_AUTH", "AI_CONFIGURATION_MISSING", "AI_DISABLED", "AI_MODEL_UNAVAILABLE", "AI_RATE_LIMIT", "AI_BUSY"])("does not spend through remaining inputs after %s", code => {
+    const f = fixture();
+    const inputs = ["1", "2", "3"].map(contentId => ({ ...content, contentId }));
+    vi.mocked(f.source.read).mockImplementation(async key => inputs.find(item => item.contentId === key.contentId) ?? null);
+    f.provider.mockRejectedValue({ code, status: 503 });
+    return generateBatch(inputs, { ...f.options, retries: 1 }).then(result => {
+      expect(f.provider).toHaveBeenCalledTimes(1);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]).toMatchObject({ status: "failed", code });
+      expect(batchContinuation(inputs, result.results, undefined, 3).retryRequired).toBe(true);
+    });
+  });
+  it("stops after two equivalent unknown failures without a retry storm", async () => {
+    const f = fixture(); const inputs = ["1", "2", "3"].map(contentId => ({ ...content, contentId }));
+    vi.mocked(f.source.read).mockImplementation(async key => inputs.find(item => item.contentId === key.contentId) ?? null);
+    f.provider.mockRejectedValue(new Error("private remote response"));
+    const result = await generateBatch(inputs, f.options);
+    expect(f.provider).toHaveBeenCalledTimes(2); expect(result.results).toHaveLength(2);
+    expect(JSON.stringify(result)).not.toContain("private");
   });
 });

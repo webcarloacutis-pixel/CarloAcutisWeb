@@ -23,3 +23,8 @@ it("never turns network failure into an empty catalog or logs an error message",
   await expect(publicRequest('http://example.invalid',{},vi.fn().mockRejectedValue(new Error('secret credential')))).rejects.toMatchObject({code:'CATALOG_UNAVAILABLE'})
   expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret|credential/)
 })
+
+it.each([['TimeoutError','CATALOG_TIMEOUT'],['AbortError','CATALOG_CANCELLED']])('classifies an external %s deadline/cancellation separately',async(name,code)=>{
+  const signal=AbortSignal.abort(new DOMException('Synthetic cancellation',name))
+  await expect(publicRequest('http://example.invalid/saints',{signal},vi.fn().mockRejectedValue(signal.reason))).rejects.toMatchObject({code})
+})

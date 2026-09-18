@@ -1,8 +1,9 @@
 import { mkdtemp, rmdir, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { readVerses } from "./content-source";
+import type { PrismaClient } from "@prisma/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createContentSource, readVerses, saintContent } from "./content-source";
 
 const fixtures: Array<{ dir: string; file: string }> = [];
 async function fixture(text: string): Promise<string> {
@@ -28,5 +29,26 @@ describe("public verse content source", () => {
   it("preserves literal text, accents and newlines", async () => {
     const file = await fixture('export const scriptureData = [{id:"1",reference:"María",text:"Primera\\nSegunda",category:"Oración"}]');
     expect((await readVerses(file))[0]).toMatchObject({ title: "María", text: "Primera\nSegunda", category: "Oración" });
+  });
+});
+
+describe("saint public estimation input", () => {
+  const row = { id: "synthetic-saint", name: "Santa identidad sintética", slug: "synthetic-saint", title: null,
+    biography: "Biografía sintética para una prueba aislada.", country: null, patronOf: [], canonizationYear: null, deathYear: null };
+  it("preserves public identity and nullable metadata without touching images, credentials or users", () => {
+    const content = saintContent(row);
+    expect(content).toMatchObject({ contentType: "saint", contentId: row.id, title: row.name, category: null });
+    expect(JSON.parse(content.text)).toEqual({ slug: row.slug, biography: row.biography, country: null, patronOf: [], canonizationYear: null, deathYear: null });
+    expect(() => saintContent({ ...row, biography: "x".repeat(25000) })).toThrow("CONTENT_TOO_LARGE");
+  });
+  it("uses only Saint for saint identities and returns null for a removed identity", async () => {
+    const findUnique = vi.fn().mockResolvedValue(row);
+    const client = { saint: { findUnique } } as unknown as PrismaClient;
+    const source = createContentSource(client, "unused");
+    expect(await source.read({ contentType: "saint", contentId: row.id })).toEqual(saintContent(row));
+    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: row.id } }));
+    findUnique.mockResolvedValue(null);
+    expect(await source.read({ contentType: "saint", contentId: row.id })).toBeNull();
+    await expect(createContentSource(null, "unused").read({ contentType: "saint", contentId: row.id })).rejects.toThrow("DATABASE_REQUIRED");
   });
 });

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { badgeVariants } from "@/components/ui/badge"
 import { Loader2, Sparkles } from "lucide-react"
 import { SaintMatcherResults, type DiscoverSaintResult } from "@/components/saint-matcher-results"
 
@@ -12,13 +12,13 @@ const API = ('').replace(/\/$/, "")
 
 const personalityTraits = [
   "Compasivo","Determinado","Humilde","Valiente","Paciente","Generoso","Contemplativo","Activo",
-  "Estudioso","Servicial","LÃ­der","Obediente","Creativo","Disciplinado","Alegre","Serio",
-  "Sociable","Reservado","Aventurero","Prudente","Optimista","Realista","Intuitivo","AnalÃ­tico",
+  "Estudioso","Servicial","Líder","Obediente","Creativo","Disciplinado","Alegre","Serio",
+  "Sociable","Reservado","Aventurero","Prudente","Optimista","Realista","Intuitivo","Analítico",
 ]
 
 const challenges = [
   "Impaciencia","Orgullo","Miedo","Ira","Pereza","Envidia","Dudas de fe","Ansiedad","Perfeccionismo",
-  "ProcrastinaciÃ³n","CrÃ­tica excesiva","Pesimismo","Terquedad","Impulsividad","DesorganizaciÃ³n",
+  "Procrastinación","Crítica excesiva","Pesimismo","Terquedad","Impulsividad","DesorganizaciÃ³n",
   "Timidez","Materialismo","Vanidad",
 ]
 
@@ -63,10 +63,10 @@ export function SaintMatcherForm() {
 
       setResult(data as DiscoverSaintResult)
       setShowResults(true)
-    } catch (e: any) {
+    } catch (e: unknown) {
       setResult(null)
       setShowResults(false)
-      setError(e?.message || "Error")
+      setError(e instanceof Error ? e.message : "Error")
     } finally {
       setIsAnalyzing(false)
     }
@@ -89,7 +89,7 @@ export function SaintMatcherForm() {
     <div className="space-y-6">
       <Card className="border-amber-200">
         <CardHeader>
-          <CardTitle className="font-playfair text-xl text-gray-900">CuÃ©ntanos sobre ti</CardTitle>
+          <CardTitle className="font-playfair text-xl text-gray-900">Cuéntanos sobre ti</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -103,17 +103,18 @@ export function SaintMatcherForm() {
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-32 resize-none"
             />
-            <p className="text-xs text-gray-500 mt-1">MÃ­nimo 20 caracteres para un anÃ¡lisis mÃ¡s preciso</p>
+            <p className="text-xs text-gray-500 mt-1">Mínimo 20 caracteres para un análisis más preciso</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Selecciona tus principales cualidades</label>
             <div className="flex flex-wrap gap-2">
               {personalityTraits.map((trait) => (
-                <Badge
+                <button
                   key={trait}
-                  variant={selectedTraits.includes(trait) ? "default" : "outline"}
-                  className={`cursor-pointer transition-colors ${
+                  type="button"
+                  aria-pressed={selectedTraits.includes(trait)}
+                  className={`${badgeVariants({variant: selectedTraits.includes(trait) ? "default" : "outline"})} min-h-11 cursor-pointer transition-colors ${
                     selectedTraits.includes(trait)
                       ? "bg-amber-600 hover:bg-amber-700"
                       : "hover:bg-amber-50 hover:border-amber-300"
@@ -121,19 +122,20 @@ export function SaintMatcherForm() {
                   onClick={() => toggleTrait(trait)}
                 >
                   {trait}
-                </Badge>
+                </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Ãreas donde buscas crecimiento</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Áreas donde buscas crecimiento</label>
             <div className="flex flex-wrap gap-2">
               {challenges.map((challenge) => (
-                <Badge
+                <button
                   key={challenge}
-                  variant={selectedChallenges.includes(challenge) ? "default" : "outline"}
-                  className={`cursor-pointer transition-colors ${
+                  type="button"
+                  aria-pressed={selectedChallenges.includes(challenge)}
+                  className={`${badgeVariants({variant: selectedChallenges.includes(challenge) ? "default" : "outline"})} min-h-11 cursor-pointer transition-colors ${
                     selectedChallenges.includes(challenge)
                       ? "bg-red-600 hover:bg-red-700"
                       : "hover:bg-red-50 hover:border-red-300"
@@ -141,7 +143,7 @@ export function SaintMatcherForm() {
                   onClick={() => toggleChallenge(challenge)}
                 >
                   {challenge}
-                </Badge>
+                </button>
               ))}
             </div>
           </div>

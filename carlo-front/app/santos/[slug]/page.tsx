@@ -7,13 +7,16 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { apiUrl } from "@/lib/api-url"
 import { fetchPublicCollection } from "@/lib/public-collection"
-import { publicRequest } from "@/lib/public-request"
+import { publicRequest, publicJson, publicContractError } from "@/lib/public-request"
 type PrayerApi = { id: string; title: string; content: string; saintName: string | null; occasion: string | null; approved: boolean }
 async function getSaint(slug: string): Promise<Saint> {
   const response = await publicRequest(apiUrl("/saints/" + encodeURIComponent(slug)), { cache: "no-store" }, fetch, true)
   if (response.status === 404) notFound()
   if (!response.ok) throw new Error("No se pudo cargar el santo.")
-  const api = await response.json()
+  const raw = await publicJson(response)
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || !("id" in raw) || typeof raw.id !== "string" ||
+      !("slug" in raw) || typeof raw.slug !== "string" || !("name" in raw) || typeof raw.name !== "string" || !raw.name.trim()) publicContractError(response)
+  const api = raw as Saint & { imageUrl?: string | null }
   const prayers = await fetchPublicCollection<PrayerApi>(apiUrl("/prayers/approved"), { cache: "no-store" });
   return {
     ...api,

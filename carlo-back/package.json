@@ -16,7 +16,8 @@
     "popularity": "tsx src/scripts/generate-popularity.ts",
     "maintenance:cleanup": "tsx src/scripts/cleanup-expired.ts",
     "maintenance:birthplaces": "tsx src/scripts/apply-birthplaces.ts",
-    "catalog:import": "tsx src/scripts/import-catalog.ts"
+    "catalog:import": "tsx src/scripts/import-catalog.ts",
+    "test:coverage": "vitest run --coverage --pool=forks --maxWorkers=1"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
@@ -36,14 +37,15 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "9.0.10",
     "@types/node": "24.13.4",
+    "@vitest/coverage-v8": "4.1.11",
     "concurrently": "^9.2.1",
     "esbuild": "^0.27.2",
     "eslint": "10.10.0",
     "tsx": "4.23.13",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.70.0",
-    "vitest": "^4.1.5",
-    "@types/jsonwebtoken": "9.0.10"
+    "vitest": "^4.1.5"
   }
 }

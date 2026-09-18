@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
-  buildPrompt, inputHash, isValidEstimate, MAX_OUTPUT_TOKENS, METHODOLOGY_VERSION,
-  parseScore, PopularityError, SYSTEM_PROMPT, validateContent,
+  buildPrompt, inputHash, isValidEstimate, MAX_OUTPUT_TOKENS, methodologyFor,
+  parseScore, PopularityError, systemPromptFor, validateContent,
   type CompletionProvider, type ContentSource, type EstimateRepository, type PopularityContent,
 } from "./domain";
 
@@ -9,12 +9,15 @@ export interface BudgetConfig { maxUsd: number; inputUsdPerMillion: number; outp
 export class SpendBudget {
   private spentMicros = 0;
   readonly maxMicros: number;
-  constructor(private readonly config: BudgetConfig) {
+  constructor(private readonly config: BudgetConfig, private readonly persistence: { initialReservedMicros?: number; onReservation?: (micros: number) => void } = {}) {
     if (![config.maxUsd, config.inputUsdPerMillion, config.outputUsdPerMillion].every(n => Number.isFinite(n) && n > 0) ||
         config.maxUsd > 100 || config.inputUsdPerMillion > 1000 || config.outputUsdPerMillion > 1000) {
       throw new PopularityError("INVALID_SPEND_CONFIG");
     }
     this.maxMicros = Math.floor(config.maxUsd * 1000000);
+    const previous = persistence.initialReservedMicros ?? 0;
+    if (this.maxMicros < 1 || !Number.isSafeInteger(previous) || previous < 0 || previous > this.maxMicros) throw new PopularityError("INVALID_SPEND_CONFIG");
+    this.spentMicros = previous;
   }
   reserve(system: string, user: string, outputTokens: number): void {
     // A UTF-8 byte per possible token plus generous message/protocol overhead.
@@ -22,6 +25,7 @@ export class SpendBudget {
     const inputBound = Buffer.byteLength(system + user, "utf8") + 2048;
     const costMicros = Math.ceil(inputBound * this.config.inputUsdPerMillion + outputTokens * this.config.outputUsdPerMillion);
     if (this.spentMicros + costMicros > this.maxMicros) throw new PopularityError("SPEND_LIMIT");
+    this.persistence.onReservation?.(this.spentMicros + costMicros);
     this.spentMicros += costMicros; // Reserve failed/timeout attempts too; never refund unknown billing.
   }
   get reservedUsd(): number { return this.spentMicros / 1000000; }
@@ -41,13 +45,18 @@ export type ItemStatus = "generated" | "unchanged" | "leased" | "missing" | "cha
 export interface ItemResult { contentType: string; contentId: string; status: ItemStatus; code?: string }
 export interface BatchResult { results: ItemResult[]; reservedUsd: number }
 
+const blockedProviderCodes = new Set(["AI_DISABLED", "AI_CONFIGURATION_MISSING", "AI_PROVIDER_AUTH", "AI_MODEL_UNAVAILABLE", "AI_QUOTA_EXCEEDED", "AI_RATE_LIMIT", "AI_BUSY"]);
 function safeErrorCode(error: unknown): string {
   if (error instanceof PopularityError) return error.code;
-  if (error && typeof error === "object" && "code" in error && error.code === "AI_TIMEOUT") return "PROVIDER_TIMEOUT";
+  if (error && typeof error === "object" && "code" in error) {
+    if (error.code === "AI_TIMEOUT") return "PROVIDER_TIMEOUT";
+    if (typeof error.code === "string" && blockedProviderCodes.has(error.code)) return error.code;
+  }
   return "PROVIDER_OR_STORAGE_FAILURE";
 }
 function retryable(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
+  if (blockedProviderCodes.has(safeErrorCode(error))) return false;
   const status = (error as { status?: unknown; statusCode?: unknown }).status ??
     (error as { statusCode?: unknown }).statusCode;
   return [429, 502, 503, 504].includes(status as number);
@@ -86,6 +95,8 @@ export async function generateBatch(contents: readonly PopularityContent[], opti
       !/^[a-zA-Z0-9][a-zA-Z0-9:._/-]{0,127}$/.test(options.model)) throw new PopularityError("INVALID_RUN_CONFIG");
   const results: ItemResult[] = [];
   const seen = new Set<string>();
+  let previousFailure: string | null = null;
+  let repeatedFailures = 0;
   for (const candidate of contents) {
     const key = { contentType: candidate.contentType, contentId: candidate.contentId };
     const result = (status: ItemStatus, code?: string): ItemResult => ({ ...key, status, ...(code ? { code } : {}) });
@@ -101,25 +112,27 @@ export async function generateBatch(contents: readonly PopularityContent[], opti
       const current = await options.source.read(key);
       if (!current) { results.push(result("missing")); continue; }
       const hash = inputHash(current, options.model);
+      const methodologyVersion = methodologyFor(current.contentType);
+      const system = systemPromptFor(current.contentType);
       const previous = await options.repository.read(key);
       if (isValidEstimate(previous) && previous.inputHash === hash &&
-          previous.methodologyVersion === METHODOLOGY_VERSION) {
+          previous.methodologyVersion === methodologyVersion) {
         results.push(result("unchanged")); continue;
       }
       acquired = await options.repository.acquire(key, owner, timeoutMs * (retries + 1) + 10000);
       if (!acquired) { results.push(result("leased")); continue; }
       // Another command may have completed between our initial read and lease claim.
       const locked = await options.repository.read(key);
-      if (isValidEstimate(locked) && locked.inputHash === hash && locked.methodologyVersion === METHODOLOGY_VERSION) {
+      if (isValidEstimate(locked) && locked.inputHash === hash && locked.methodologyVersion === methodologyVersion) {
         results.push(result("unchanged")); continue;
       }
       const user = buildPrompt(current);
       let completion: Awaited<ReturnType<CompletionProvider>> | undefined;
       for (let attempt = 0; attempt <= retries; attempt++) {
-        options.budget.reserve(SYSTEM_PROMPT, user, MAX_OUTPUT_TOKENS);
+        options.budget.reserve(system, user, MAX_OUTPUT_TOKENS);
         try {
           completion = await callWithDeadline(options.provider, {
-            system: SYSTEM_PROMPT, user, model: options.model, maxTokens: MAX_OUTPUT_TOKENS, maxRetries: 0,
+            system, user, model: options.model, maxTokens: MAX_OUTPUT_TOKENS, maxRetries: 0,
           }, timeoutMs, options.signal);
           break;
         } catch (error) {
@@ -138,13 +151,16 @@ export async function generateBatch(contents: readonly PopularityContent[], opti
       }
       const saved = await options.repository.save(key, owner, {
         score, model: completion.model, generatedAt: new Date(),
-        methodologyVersion: METHODOLOGY_VERSION, inputHash: hash,
+        methodologyVersion, inputHash: hash,
       });
       results.push(saved ? result("generated") : result("leased", "LEASE_LOST"));
+      if (saved) { previousFailure = null; repeatedFailures = 0; }
     } catch (error) {
       const code = safeErrorCode(error);
       results.push(result(code === "SPEND_LIMIT" ? "budget_exhausted" : "failed", code));
-      if (code === "SPEND_LIMIT" || code === "CANCELLED") break;
+      repeatedFailures = previousFailure === code ? repeatedFailures + 1 : 1;
+      previousFailure = code;
+      if (code === "SPEND_LIMIT" || code === "CANCELLED" || blockedProviderCodes.has(code) || repeatedFailures >= 2) break;
     } finally {
       if (acquired && !keepLease) {
         // Owner fencing prevents one worker from releasing another worker's lease.
@@ -153,4 +169,18 @@ export async function generateBatch(contents: readonly PopularityContent[], opti
     }
   }
   return { results, reservedUsd: options.budget.reservedUsd };
+}
+
+/** Never advance the CLI cursor past an unresolved or unattempted item. */
+export function batchContinuation(contents: readonly PopularityContent[], results: readonly ItemResult[], previous: string | undefined, limit: number) {
+  let completedThrough = previous ?? null;
+  let complete = true;
+  for (let index = 0; index < contents.length; index++) {
+    const result = results[index];
+    if (!result || result.contentId !== contents[index].contentId || result.contentType !== contents[index].contentType ||
+        !["generated", "unchanged", "missing"].includes(result.status)) { complete = false; break; }
+    completedThrough = contents[index].contentId;
+  }
+  return { resumeAfter: completedThrough, retryRequired: !complete,
+    nextCursor: !complete || contents.length === limit ? completedThrough : null };
 }

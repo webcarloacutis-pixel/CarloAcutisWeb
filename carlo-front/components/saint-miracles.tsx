@@ -1,23 +1,25 @@
 "use client"
+import { useState } from "react"
 import { Sparkles } from "lucide-react"
 import { apiUrl } from "@/lib/api-url"
-import { useCatalogCollection } from "@/lib/use-catalog-collection"
+import { miraclePageUrl } from "@/lib/miracle-pages"
+import { useMiraclePage } from "@/lib/use-miracle-page"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
-import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
+import { SaintPagePagination } from "./saint-page-pagination"
 
-type Miracle = { id: string; title: string; details: string | null; date: string | null; location: string | null; approved: boolean }
 export function SaintMiracles({ saintId }: { saintId: string }) {
-  const { items, loading, error, retry } = useCatalogCollection<Miracle>(apiUrl(`/saints/${encodeURIComponent(saintId)}/miracles`))
-  const page = useCatalogPage(items)
-  if (loading) return <p role="status">Cargando relatos de milagros…</p>
-  if (error) return <div role="alert"><p>{error}</p><Button onClick={retry}>Reintentar</Button></div>
-  if (!items.length) return null
-  return <Card className="mb-8">
+  const [cursor, setCursor] = useState<string | null>(null)
+  const { page, previousPage, loading, error, retry } = useMiraclePage(apiUrl(miraclePageUrl(`/saints/${encodeURIComponent(saintId)}/miracles`, { query: "" }, cursor)))
+  const display = page || (loading ? previousPage : null)
+  if (error) return <div role="alert"><p>{error}</p><Button onClick={retry}>Reintentar</Button>{cursor && <Button onClick={() => setCursor(null)}>Volver a la primera página</Button>}</div>
+  if (!display) return <p role="status">Cargando relatos de milagros…</p>
+  if (!display.total) return null
+  return <Card className="mb-8" aria-busy={loading}>
     <CardHeader><CardTitle className="font-playfair flex items-center gap-2"><Sparkles className="h-5 w-5 text-secondary" />Relatos de milagros</CardTitle></CardHeader>
     <CardContent><div className="space-y-6">
-      {page.items.map(miracle => <article key={miracle.id}>
+      {display.items.map(miracle => <article key={miracle.id}>
         <h4 className="font-playfair text-lg font-semibold mb-2">{miracle.title}</h4>
         <p className="text-muted-foreground mb-3 whitespace-pre-wrap break-words">{miracle.details}</p>
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -26,6 +28,6 @@ export function SaintMiracles({ saintId }: { saintId: string }) {
           {miracle.approved && <Badge variant="outline">Aprobado en el catálogo</Badge>}
         </div>
       </article>)}
-    </div><CatalogPagination {...page} label="relatos de milagros" /></CardContent>
+    </div><SaintPagePagination page={display} onCursor={setCursor} label="relatos de milagros" disabled={loading} /></CardContent>
   </Card>
 }

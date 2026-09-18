@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@prisma/client";
 import { prismaEstimateRepository } from "./prisma-repository";
-import { inputHash, METHODOLOGY_VERSION, type CompletionProvider, type PopularityContent } from "./domain";
+import { inputHash, METHODOLOGY_VERSION, SAINT_METHODOLOGY_VERSION, type CompletionProvider, type PopularityContent } from "./domain";
+import { createContentSource, saintContent, saintSelect } from "./content-source";
 import { generateBatch, SpendBudget } from "./runner";
 
 const enabled = integrationDatabaseEnabled();
@@ -11,6 +12,7 @@ describe.skipIf(!enabled)("popularity shared PostgreSQL lease (real isolated DB,
   let first: PrismaClient;
   let second: PrismaClient;
   const ownedIds: string[] = [];
+  const ownedSaintIds: string[] = [];
   const item = (): PopularityContent => {
     const contentId = "audit-pop-" + randomUUID(); ownedIds.push(contentId);
     return { contentType: "verse", contentId, title: "Lease integration fixture", text: "Synthetic text", category: null };
@@ -27,6 +29,10 @@ describe.skipIf(!enabled)("popularity shared PostgreSQL lease (real isolated DB,
     if (first) {
       // Delete only the exact synthetic IDs created by this test invocation.
       if (ownedIds.length) await first.popularityEstimate.deleteMany({ where: { contentType: "verse", contentId: { in: ownedIds } } });
+      if (ownedSaintIds.length) {
+        await first.popularityEstimate.deleteMany({ where: { contentType: "saint", contentId: { in: ownedSaintIds } } });
+        await first.saint.deleteMany({ where: { id: { in: ownedSaintIds } } });
+      }
       await first.$disconnect();
     }
     if (second) await second.$disconnect();
@@ -76,4 +82,20 @@ describe.skipIf(!enabled)("popularity shared PostgreSQL lease (real isolated DB,
     expect((await job).results[0].status).toBe("generated");
     expect(provider).toHaveBeenCalledTimes(1);
   });
+  it("persists a saint methodology in the existing schema and resumes with no second simulated request", async () => {
+    const id = "audit-pop-saint-" + randomUUID(); ownedSaintIds.push(id);
+    const row = await first.saint.create({ data: { id, slug: id, name: "Synthetic isolated ranking fixture",
+      biography: "Synthetic public identity only, never production content." }, select: saintSelect });
+    const content = saintContent(row);
+    const provider = vi.fn<CompletionProvider>(async () => ({ text: JSON.stringify({ contentType: "saint", contentId: id, score: 0 }), model: "mock-snapshot" }));
+    const options = { source: createContentSource(first, "unused"), repository: prismaEstimateRepository(first), provider,
+      model: "mock-model", timeoutMs: 10000, budget: new SpendBudget({ maxUsd: 1, inputUsdPerMillion: 1, outputUsdPerMillion: 1 }) };
+    const initial = await generateBatch([content], options);
+    expect(initial.results[0].status).toBe("generated");
+    expect(await first.popularityEstimate.findUnique({ where: { contentType_contentId: { contentType: "saint", contentId: id } } }))
+      .toMatchObject({ score: 0, model: "mock-snapshot", methodologyVersion: SAINT_METHODOLOGY_VERSION, inputHash: inputHash(content, "mock-model") });
+    expect((await generateBatch([content], { ...options, source: createContentSource(second, "unused"), repository: prismaEstimateRepository(second) })).results[0].status).toBe("unchanged");
+    expect(provider).toHaveBeenCalledTimes(1);
+  });
+
 });

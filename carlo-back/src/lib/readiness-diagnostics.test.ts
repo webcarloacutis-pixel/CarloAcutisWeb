@@ -135,3 +135,43 @@ describe("deterministic readiness stages", () => {
     } finally { log.mockRestore(); }
   });
 });
+
+
+describe("explicit local readiness without weakening Supabase checks", () => {
+  const localUrl = "postgresql://synthetic:synthetic@127.0.0.1:55439/acutis_catalog_capacity_test";
+  it("checks the local Prisma connection and schema without requiring Supabase TLS", async () => {
+    const test = setup(); test.options.env.DATABASE_PROVIDER = "local"; test.options.env.DATABASE_URL = localUrl;
+    const result = await test.run();
+    expect(result).toMatchObject({ ready: true, databaseConnected: true, readyQueryPassed: true, schemaAccessible: true,
+      certificateExists: false, tlsConnected: false, tlsAuthorized: false, certificateFingerprint256: null });
+    expect(test.database.connect).toHaveBeenCalledOnce(); expect(test.database.readyQuery).toHaveBeenCalledOnce();
+    expect(test.database.schemaQuery).toHaveBeenCalledOnce();
+    expect(test.dependencies.resolve).not.toHaveBeenCalled(); expect(test.dependencies.tls).not.toHaveBeenCalled();
+  });
+  it.each(["postgresql://synthetic:synthetic@remote.invalid:5432/postgres", "file:///local-only"])("rejects an invalid local target without networking: %s", async value => {
+    const test = setup(); test.options.env.DATABASE_PROVIDER = "local"; test.options.env.DATABASE_URL = value;
+    expect(await test.run()).toMatchObject({ ready: false, failureStage: "ENV_CONFIGURATION", safeCode: "DATABASE_LOCAL_TARGET_INVALID" });
+    expect(test.getDatabase).not.toHaveBeenCalled(); expect(test.dependencies.resolve).not.toHaveBeenCalled();
+  });
+  it("reports a rejected local database connection without exposing credentials or endpoint", async () => {
+    const test = setup(); test.options.env.DATABASE_PROVIDER = "local"; test.options.env.DATABASE_URL = localUrl.replace(":55439/", ":9/");
+    test.database.connect.mockRejectedValue({ code: "P1001", message: localUrl });
+    const report = await test.run();
+    expect(report).toMatchObject({ ready: false, failureStage: "DATABASE_CONNECTION", safeCode: "P1001", prismaReached: true });
+    expect(JSON.stringify(report)).not.toMatch(/synthetic|127\.0\.0\.1|postgresql/);
+    expect(test.database.readyQuery).not.toHaveBeenCalled();
+  });
+  it("refreshes a cached failure after five seconds and then reports recovery", async () => {
+    const test = setup(); test.options.env.DATABASE_PROVIDER = "local"; test.options.env.DATABASE_URL = localUrl;
+    test.database.connect.mockRejectedValueOnce({ code: "P1001" });
+    const time = vi.spyOn(Date, "now").mockReturnValue(0), log = vi.spyOn(console, "info").mockImplementation(() => {});
+    try {
+      const check = createReadinessCheck(test.getDatabase, test.options);
+      expect((await check()).ready).toBe(false); expect((await check()).ready).toBe(false);
+      expect(test.database.connect).toHaveBeenCalledOnce();
+      time.mockReturnValue(5001);
+      expect((await check()).ready).toBe(true); expect(test.database.connect).toHaveBeenCalledTimes(2);
+      expect(log).toHaveBeenCalledTimes(2);
+    } finally { time.mockRestore(); log.mockRestore(); }
+  });
+});

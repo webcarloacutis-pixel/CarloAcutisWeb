@@ -1,8 +1,13 @@
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { assertDatabaseTarget, executionConfig, parseCliArgs } from "./cli-config";
 import { SpendBudget } from "./runner";
 
 describe("popularity CLI safety", () => {
+  it("allows bounded resumable saint dry runs without paid authorization", () => {
+    expect(parseCliArgs(["--kind", "saint", "--limit", "100", "--after", "existing-id"], process.cwd()))
+      .toMatchObject({ execute: false, kind: "saint", limit: 100, after: "existing-id" });
+  });
   it("defaults to a bounded offline verse dry run", () => {
     expect(parseCliArgs([], process.cwd())).toMatchObject({ execute: false, kind: "verse", limit: 20 });
   });
@@ -17,10 +22,11 @@ describe("popularity CLI safety", () => {
   });
   it("requires finite allowance and explicit applicable prices", () => {
     const env = { AI_ENABLED: "true", POPULARITY_ALLOW_PAID_REQUESTS: "true", OPENAI_API_KEY: "mock-project-key",
-      OPENAI_MODEL: "test-model", POPULARITY_MAX_SPEND_USD: "1", POPULARITY_INPUT_USD_PER_MILLION: "1",
+      OPENAI_MODEL: "test-model", POPULARITY_SPEND_LEDGER_FILE: resolve("synthetic-ledger.json"), POPULARITY_MAX_SPEND_USD: "1", POPULARITY_INPUT_USD_PER_MILLION: "1",
       POPULARITY_OUTPUT_USD_PER_MILLION: "2" };
     const config = executionConfig(env);
     expect(config.model).toBe("test-model");
+    expect(() => executionConfig({ ...env, POPULARITY_SPEND_LEDGER_FILE: "" })).toThrow("ABSOLUTE_SPEND_LEDGER_PATH_REQUIRED");
     expect(new SpendBudget(config.budget).reservedUsd).toBe(0);
     expect(() => executionConfig({ ...env, POPULARITY_MAX_SPEND_USD: "Infinity" })).toThrow();
     expect(() => new SpendBudget({ ...config.budget, maxUsd: 101 })).toThrow();

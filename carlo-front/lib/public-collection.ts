@@ -1,4 +1,4 @@
-import { publicRequest } from "./public-request"
+import { publicRequest, publicJson } from "./public-request"
 
 export const CATALOG_REQUEST_SIZE = 100
 const MAX_COLLECTION_PAGES = 1000 // Safety guard, not a limit on the catalogue's total.
@@ -21,7 +21,7 @@ export async function fetchPublicCollection<T extends { id: string }>(
   let cursor = "", expectedTotal: number | undefined, revision: string | undefined
   for (let page = 0; page < MAX_COLLECTION_PAGES; page++) {
     const response = await publicRequest(pageUrl(url, cursor), options, fetcher)
-    const body: unknown = await response.json()
+    const body: unknown = await publicJson(response)
     const envelope = !Array.isArray(body) && body !== null && typeof body === "object" ? body as Record<string, unknown> : null
     const items = envelope ? envelope.items : body
     const totalHeader = response.headers.get("X-Total-Count")
@@ -61,7 +61,7 @@ export async function fetchCollectionTotal(url: string, options: RequestInit = {
   const parsed = new URL(url, "http://catalog.invalid")
   parsed.searchParams.set("limit", "1")
   const response = await publicRequest(/^https?:\/\//.test(url) ? parsed.href : parsed.pathname + parsed.search, options, fetcher)
-  const body: unknown = await response.json()
+  const body: unknown = await publicJson(response)
   const header = response.headers.get("X-Total-Count")
   const total = body && !Array.isArray(body) && typeof body === "object" && "total" in body ? body.total
     : header !== null && /^\d+$/.test(header) ? Number(header) : undefined

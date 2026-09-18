@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminSaintsList } from "@/components/admin-saints-list";
+import { AdminSaintsBrowser } from "./admin-saints-browser";
+import { saintPageUrl } from "@/lib/saint-pages";
+import { useSaintPage } from "@/lib/use-saint-page";
 import { AdminSaintsModal } from "@/components/admin-saints-modal";
 import { AdminMiraclesList } from "@/components/admin-miracles-list";
 import { useRouter } from "next/navigation";
@@ -63,7 +66,8 @@ function closeModal() {
   // ✅ blindaje: si llega undefined, no revienta el .filter
   const safeSaints = useMemo(() => (Array.isArray(saints) ? saints : []), [saints]);
 
-  const totalSaints = safeSaints.length;
+  const totalPage = useSaintPage(apiUrl(saintPageUrl({query:"",continent:"",country:"",century:""}, "", 1)), saints === undefined);
+  const totalSaints = saints === undefined ? totalPage.page?.total : safeSaints.length;
 
   return (
     <div className="space-y-6">
@@ -123,7 +127,8 @@ function closeModal() {
             <CardTitle className="text-sm font-medium">Total Santos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{totalSaints}</div>
+            <div className="text-3xl font-bold">{totalSaints ?? "—"}</div>
+            {totalPage.error && <div role="alert"><p>{totalPage.error}</p><Button onClick={totalPage.retry}>Reintentar totales</Button></div>}
             <p className="text-sm text-muted-foreground">Santos documentados</p>
           </CardContent>
         </Card>
@@ -166,7 +171,7 @@ function closeModal() {
 
 {tab === "santos" && (
   <>
-    <AdminSaintsList saints={safeSaints} onAddNew={openCreate} onEdit={openEdit} />
+    {saints === undefined ? <AdminSaintsBrowser onAddNew={openCreate} onEdit={openEdit} /> : <AdminSaintsList saints={safeSaints} onAddNew={openCreate} onEdit={openEdit} />}
     <AdminSaintsModal open={modalOpen} onClose={closeModal} saint={editing} />
   </>
 )}

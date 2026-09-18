@@ -1,10 +1,12 @@
 "use client"
-import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
+import { SaintPagePagination } from "./saint-page-pagination"
+import { miraclePageUrl } from "@/lib/miracle-pages"
+import { useMiraclePage } from "@/lib/use-miracle-page"
+import { useSaintNames } from "@/lib/use-saint-names"
 
 import { apiUrl } from "@/lib/api-url"
-import { fetchPublicCollection } from "@/lib/public-collection"
-import { mapApiToFormMiracle, type MiracleApi } from "@/lib/admin-utils"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { mapApiToFormMiracle } from "@/lib/admin-utils"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,27 +17,21 @@ import Link from "next/link"
 import {
   createMiracle,
   deleteMiracle,
-  getMiraclesBySaintId,
   updateMiracle,
-  type MiracleFormData,
 
 } from "@/lib/admin-utils"
 
-type SaintApi = { id: string; slug: string; name: string }
-
-type MiracleRow = MiracleFormData & {
-  saintName: string
-  saintSlug: string
-  saintId: string
-}
-
 export function AdminMiraclesList() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [saints, setSaints] = useState<SaintApi[]>([])
-  const [allMiracles, setAllMiracles] = useState<MiracleRow[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const names = useSaintNames()
+  const saints = names.items
+  const result = useMiraclePage(apiUrl(miraclePageUrl("/miracles/all", { query: searchTerm }, cursor)))
+  const loading = result.loading
+  const page = result.page || (loading ? result.previousPage : null)
+  const filteredMiracles = (page?.items || []).map(miracle => ({ ...mapApiToFormMiracle(miracle), saintName: miracle.saintName, saintSlug: miracle.saintSlug, saintId: miracle.saintId }))
 
   // modal create
   const [createOpen, setCreateOpen] = useState(false)
@@ -62,51 +58,17 @@ export function AdminMiraclesList() {
   const [savingEdit, setSavingEdit] = useState(false)
 
 
-  const baseUrl = '/api'
 
-  const resetCreateForm = useCallback(() => {
+  function resetCreateForm() {
     setTitle("")
     setDescription("")
     setMType("")
     setMDate("")
     setMLocation("")
     setWitnessesText("")
-  }, [])
+  }
 
-  const loadRows = useCallback(async (signal?: AbortSignal) => {
-    const [saintsData,miraclesData] = await Promise.all([
-      fetchPublicCollection<SaintApi>(apiUrl('/saints?view=names'),{cache:'no-store',credentials:'include',signal}),
-      fetchPublicCollection<MiracleApi>(apiUrl('/miracles/all'),{cache:'no-store',credentials:'include',signal}),
-    ])
-    const names = new Map(saintsData.map(saint=>[saint.id,saint]))
-    return {saints:saintsData,miracles:miraclesData.map(miracle=>({...mapApiToFormMiracle(miracle),saintName:names.get(miracle.saintId)?.name||'Santo',saintSlug:names.get(miracle.saintId)?.slug||'',saintId:miracle.saintId}))}
-  }, [])
-  const reload = useCallback(async () => {
-    setLoading(true)
-    try { const data=await loadRows();setSaints(data.saints);setAllMiracles(data.miracles);setError(null) }
-    catch {setError('No se pudieron cargar los milagros.')}
-    finally {setLoading(false)}
-  },[loadRows])
-  useEffect(()=>{
-    let active=true
-    const controller = new AbortController()
-    loadRows(controller.signal).then(data=>{if(active){setSaints(data.saints);setAllMiracles(data.miracles);setError(null)}})
-      .catch(()=>{if(active)setError('No se pudieron cargar los milagros.')})
-      .finally(()=>{if(active)setLoading(false)})
-    return ()=>{active=false; controller.abort()}
-  },[loadRows])
-
-  const filteredMiracles = useMemo(() => {
-    const q = searchTerm.toLowerCase()
-    return allMiracles.filter((miracle) => {
-      const t = (miracle.title || "").toLowerCase()
-      const s = (miracle.saintName || "").toLowerCase()
-      const d = (miracle.description || "").toLowerCase()
-      return t.includes(q) || s.includes(q) || d.includes(q)
-    })
-  }, [allMiracles, searchTerm])
-
-  const page = useCatalogPage(filteredMiracles)
+  async function reload() { setCursor(null); result.retry(); setError(null) }
 
   async function onCreate() {
     if (!createSaintId) {
@@ -236,21 +198,24 @@ async function onDelete(miracleId: string, miracleTitle: string) {
           <Input
             placeholder="Buscar milagros..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCursor(null) }}
+            maxLength={200}
+            aria-label="Buscar milagros del administrador"
             className="pl-10"
           />
         </div>
         <div className="flex gap-2">
-          <Badge variant="secondary">{filteredMiracles.length} milagros</Badge>
-          <Badge variant="outline">{filteredMiracles.filter((m) => (m.approved ?? m.verified)).length} verificados</Badge>
+          <Badge variant="secondary">{page?.total ?? "—"} milagros</Badge>
+          <Badge variant="outline">{page?.metadata.approvedTotal ?? "—"} verificados</Badge>
         </div>
       </div>
 
       {loading ? <p className="text-muted-foreground">Cargando milagros...</p> : null}
-      {error ? <p className="text-destructive whitespace-pre-wrap">{error}</p> : null}
+      {error ? <p role="alert" className="text-destructive whitespace-pre-wrap">{error}</p> : null}
+      {(result.error || names.error) && <div role="alert"><p>{result.error || names.error}</p><Button onClick={() => { result.retry(); if(names.error) names.retry() }}>Reintentar</Button>{cursor && <Button onClick={() => setCursor(null)}>Volver a la primera página</Button>}</div>}
 
       <div className="space-y-4">
-        {page.items.map((miracle) => (
+        {filteredMiracles.map((miracle) => (
           <Card key={miracle.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
@@ -331,7 +296,7 @@ async function onDelete(miracleId: string, miracleTitle: string) {
           </Card>
         ))}
       </div>
-      <CatalogPagination {...page} label="milagros del administrador" />
+      {page && <SaintPagePagination page={page} onCursor={setCursor} label="milagros del administrador" disabled={loading} />}
       {editOpen ? (
         <div role="dialog" aria-modal="true" aria-label="Editar milagro" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto">

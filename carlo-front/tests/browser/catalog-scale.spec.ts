@@ -4,7 +4,7 @@ test.skip(process.env.ACUTIS_SCALE_BROWSER !== '1', 'Requires the dedicated disp
 test.setTimeout(120_000)
 
 test.beforeEach(async ({ page, baseURL }) => {
-  expect(baseURL).toBe('http://127.0.0.1:3196')
+  expect(baseURL).toBe('http://127.0.0.1:3197')
   const response = await page.request.get('/api/saints?limit=1')
   expect(response.status()).toBe(200)
   const body = await response.json()
@@ -23,7 +23,7 @@ function trackPages(page: Page) {
   const active = new Set<Request>(), urls: string[] = []
   let peak = 0
   page.on('request', request => {
-    if (/\/api\/(saints|miracles)(\?|\/)/.test(request.url()) && new URL(request.url()).searchParams.get('limit') === '100') {
+    if (/\/api\/(saints|miracles)(\?|\/)/.test(request.url()) && ['1','12','100'].includes(new URL(request.url()).searchParams.get('limit') || '')) {
       active.add(request); urls.push(request.url()); peak = Math.max(peak, active.size)
     }
   })
@@ -44,14 +44,15 @@ async function metric(page: Page, name: string, start: number) {
   await test.info().attach(name, { body: JSON.stringify(result), contentType: 'application/json' })
 }
 
-test('3000 saints: complete sequential fetch, bounded cards, last biography and combined filters', async ({ page }) => {
+test('3000 saints: one server page, complete global search and combined filters', async ({ page }) => {
   const tracking = trackPages(page), start = Date.now()
   await page.goto('/santos')
   await expect(page.getByText('3000 santos encontrados', { exact: true })).toBeVisible()
   const cards = page.locator('main').getByRole('link', { name: /^Ver biografía de / })
   await expect(cards).toHaveCount(12)
-  expect(tracking.urls).toHaveLength(30)
-  expect(new Set(tracking.urls).size).toBe(30)
+  expect(tracking.urls).toHaveLength(1)
+  expect(new URL(tracking.urls[0]).searchParams.get('view')).toBe('cards')
+  expect(new URL(tracking.urls[0]).searchParams.get('limit')).toBe('12')
   expect(tracking.peak()).toBe(1)
   await metric(page, 'saints-load', start)
   const nav = page.getByRole('navigation', { name: 'Paginación de santos', exact: true })
@@ -71,16 +72,21 @@ test('3000 saints: complete sequential fetch, bounded cards, last biography and 
   await expect(page.getByText('0 santos encontrados', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /Limpiar Filtros/i }).click()
   await expect(cards).toHaveCount(12)
-  expect(tracking.urls).toHaveLength(30)
+  expect(tracking.urls.length).toBeLessThanOrEqual(9)
+  expect(tracking.urls.every(url => new URL(url).searchParams.get('limit') === '12')).toBe(true)
+  expect(tracking.peak()).toBe(1)
   await noOverflow(page)
 })
 
 test('3000 map locations use canvas and bounded navigation', async ({ page }) => {
-  const start = Date.now()
+  const tracking = trackPages(page), start = Date.now()
   await page.goto('/mapa')
   await expect(page.getByRole('status').filter({ hasText: '3000 santos encontrados;' })).toBeVisible()
   const links = page.getByRole('link', { name: /^Ver detalles de / })
   await expect(links).toHaveCount(20)
+  expect(tracking.urls).toHaveLength(30)
+  expect(tracking.urls.every(url => new URL(url).searchParams.get('view') === 'map' && new URL(url).searchParams.get('limit') === '100')).toBe(true)
+  expect(tracking.peak()).toBe(1)
   await expect(page.locator('.leaflet-overlay-pane canvas')).toHaveCount(1)
   expect(await page.locator('.leaflet-marker-icon').count()).toBeLessThanOrEqual(200)
   await metric(page, 'map-load', start)
@@ -99,10 +105,12 @@ test('3000 miracles: bounded cards, full selector, combined filters and complete
   await expect(page.getByText('3000 milagros encontrados', { exact: true })).toBeVisible()
   const titles = page.getByText(/^Milagro sintético [0-9]+$/, { exact: true })
   await expect(titles).toHaveCount(12)
-  expect(tracking.urls).toHaveLength(60)
-  expect(new Set(tracking.urls).size).toBe(60)
-  expect(tracking.peak()).toBeLessThanOrEqual(2)
   await expect(page.getByLabel('Filtrar milagros por santo').locator('option')).toHaveCount(3001)
+  expect(tracking.urls.filter(url => new URL(url).pathname === '/api/miracles')).toHaveLength(1)
+  expect(tracking.urls.filter(url => new URL(url).searchParams.get('view') === 'names')).toHaveLength(30)
+  expect(tracking.urls.filter(url => new URL(url).pathname === '/api/miracles').every(url => new URL(url).searchParams.get('limit') === '12')).toBe(true)
+  expect(new Set(tracking.urls).size).toBe(tracking.urls.length)
+  expect(tracking.peak()).toBeLessThanOrEqual(2)
   await metric(page, 'miracles-load', start)
   await page.getByLabel('Buscar milagros', { exact: true }).fill('Milagro sintético 2999')
   await expect(titles).toHaveCount(1)
@@ -113,14 +121,19 @@ test('3000 miracles: bounded cards, full selector, combined filters and complete
   await expect(titles).toHaveCount(1)
   await page.getByLabel('Filtrar milagros por santo').selectOption('scale-browser-saint-2999')
   await expect(page.getByText('0 milagros encontrados', { exact: true })).toBeVisible()
-  expect(tracking.urls).toHaveLength(60)
+  expect(tracking.urls.filter(url => new URL(url).searchParams.get('view') === 'names')).toHaveLength(30)
+  expect(tracking.urls.filter(url => new URL(url).pathname === '/api/miracles').length).toBeLessThanOrEqual(7)
+  expect(tracking.urls.filter(url => new URL(url).pathname === '/api/miracles').every(url => new URL(url).searchParams.get('limit') === '12')).toBe(true)
   await noOverflow(page)
 })
 
 test('saint details retain images and 3000 relations with twelve articles per page', async ({ page }) => {
+  const tracking = trackPages(page)
   await page.goto('/santos/scale-saint-0000')
   await expect(page.getByRole('heading', { name: 'Santo sintético 0000', level: 1 })).toBeVisible()
   await expect(page.locator('main article')).toHaveCount(12)
+  expect(tracking.urls.filter(url => new URL(url).pathname.endsWith('/miracles'))).toHaveLength(1)
+  expect(tracking.urls.filter(url => new URL(url).pathname.endsWith('/miracles')).every(url => new URL(url).searchParams.get('limit') === '12')).toBe(true)
   const image = page.locator('main img').first()
   await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
   const nav = page.getByRole('navigation', { name: 'Paginación de relatos de milagros' })

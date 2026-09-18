@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiUrl } from "@/lib/api-url";
+import { editorialForDisplay } from "@/lib/editorial-read";
 import { blankEditorial, type Editorial } from "@/lib/editorial";
 import { SaintEditorialFields } from "./saint-editorial-fields";
 export type Saint = {
@@ -21,8 +22,9 @@ export function AdminSaintsModal(props:Props) { return props.open?<SaintEditor k
 function SaintEditor({onClose,saint}:Props) {
  const router=useRouter(), dialog=useRef<HTMLDialogElement>(null), editing=Boolean(saint?.id);
  const [values,setValues]=useState<Record<string,string>>(()=>Object.fromEntries([...fields.map(([key])=>[key,String(saint?.[key]??'')]),['biography',saint?.biography??''],['patronOf',(saint?.patronOf??[]).join('\n')],['symbols',(saint?.symbols??[]).join('\n')],['birthSources',(saint?.birthSources??[]).join('\n')]]));
- const [editorial,setEditorial]=useState<Editorial|null>(saint?.editorial??null), [loading,setLoading]=useState(false), [error,setError]=useState('');
- useEffect(()=>{dialog.current?.showModal();return()=>dialog.current?.close();},[]);
+ const [editorial,setEditorial]=useState<Editorial|null>(()=>editorialForDisplay(saint?.editorial)), [loading,setLoading]=useState(false), [error,setError]=useState('');
+ const [editorialChanged,setEditorialChanged]=useState(false);
+ useEffect(()=>{const element=dialog.current;element?.showModal();return()=>element?.close();},[]);
  const change=(key:string,value:string)=>setValues(previous=>({...previous,[key]:value,...(key==='name'&&!editing?{slug:slugify(value)}:{})}));
  async function save(event:React.FormEvent) {
   event.preventDefault();setError('');
@@ -31,7 +33,7 @@ function SaintEditor({onClose,saint}:Props) {
   for(const [key] of fields){const value=values[key].trim();payload[key]=numeric.has(key)?(value===''?null:Number(value)):(value||null);if(numeric.has(key)&&value!==''&&!Number.isFinite(payload[key])){setError('Los años y coordenadas deben ser números válidos.');return;}}
   payload.slug=values.slug.trim()||slugify(values.name);payload.biography=values.biography.trim()||null;
   for(const key of ['patronOf','symbols','birthSources'])payload[key]=values[key].split('\n').map(v=>v.trim()).filter(Boolean);
-  if(editorial)payload.editorial=editorial;
+  if(editorial && (!editing || editorialChanged))payload.editorial=editorial;
   setLoading(true);
   try{const response=await fetch(apiUrl('/saints'+(editing?'/'+saint!.id:'')),{method:editing?'PATCH':'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw new Error(await catalogWriteError(response, `No se pudo guardar (${response.status}).`));window.dispatchEvent(new Event("catalog:saints-changed"));router.refresh();onClose();}catch(e){setError(e instanceof Error?e.message:'Error al guardar.');}finally{setLoading(false);}
  }
@@ -40,6 +42,6 @@ function SaintEditor({onClose,saint}:Props) {
  <p className="text-sm text-muted-foreground">Deja vacíos los datos desconocidos. Los años anteriores a nuestra era usan números negativos; no existe el año cero. Solo las coordenadas de nacimiento documentadas se muestran en el mapa.</p>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{fields.map(([key,label])=><div key={key} className="space-y-1"><Label htmlFor={key}>{label}</Label><Input id={key} value={values[key]} type={numeric.has(key)?'number':'text'} step={key.includes('Lat')||key.includes('Lng')||key==='lat'||key==='lng'?'any':'1'} onChange={e=>change(key,e.target.value)}/></div>)}</div>
  {([['biography','Biografía'],['patronOf','Patronazgos documentados (uno por línea)'],['symbols','Símbolos documentados (uno por línea)'],['birthSources','Fuentes de nacimiento y coordenadas (una URL por línea)']] as const).map(([key,label])=><div key={key}><Label htmlFor={key}>{label}</Label><textarea id={key} className="min-h-28 w-full rounded-md border bg-background p-3 text-sm" value={values[key]} onChange={e=>change(key,e.target.value)}/></div>)}
- {editorial?<SaintEditorialFields value={editorial} onChange={setEditorial}/>:<Button type="button" variant="outline" onClick={()=>setEditorial(blankEditorial())}>Documentar fuentes y licencia</Button>}
+ {editorial?<SaintEditorialFields value={editorial} onChange={value=>{setEditorialChanged(true);setEditorial(value);}}/>:<Button type="button" variant="outline" onClick={()=>{setEditorialChanged(true);setEditorial(blankEditorial());}}>Documentar fuentes y licencia</Button>}
  {error&&<p role="alert" className="text-destructive">{error}</p>}<div className="flex gap-3"><Button type="submit" disabled={loading}>{loading?'Guardando…':editing?'Guardar cambios':'Crear'}</Button><Button type="button" variant="outline" disabled={loading} onClick={onClose}>Cancelar</Button></div></form></dialog>;
 }

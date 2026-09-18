@@ -88,7 +88,7 @@ describe.skipIf(!enabled).sequential("catalogue capacity on a NEW disposable Pos
     expect(await prisma.saint.count()).toBe(Math.min(count + 1, 3000));
   }, 60000);
 
-  for (const count of [0, 7, 100, 101, 1000, 2999, 3000]) it(`Miracle ${count}: complete public/admin/relation pages and creation boundary`, async () => {
+  for (const count of [0, 7, 79, 100, 101, 179, 1000, 2999, 3000]) it(`Miracle ${count}: complete public/admin/relation pages and creation boundary`, async () => {
     await seed("miracle", count);
     await collect("/miracles", count);
     if ([101, 3000].includes(count)) {
@@ -167,4 +167,67 @@ describe.skipIf(!enabled).sequential("catalogue capacity on a NEW disposable Pos
       expect((await request(url)).status).toBe(400);
     const rows = await collect("/miracles", 100); expect(rows.has(miracleId(0))).toBe(false);
   });
+
+  it("bounds local cards latency, response size and resource use at 3000 + 3000", async () => {
+    await seed("saint", 3000);
+    for (let first = 0; first < 3000; first += 100) {
+      await prisma.miracle.createMany({ data: Array.from({ length: 100 }, (_, offset) => {
+        const i = first + offset;
+        return { id: miracleId(i), saintId: saintId(i), title: `Synthetic bounded benchmark ${i}`,
+          details: "Synthetic scale account. ".repeat(80), approved: true };
+      }) });
+    }
+    const targets = { warmP95MsBelow: 1000, twelveCardsBytesBelow: 150 * 1024,
+      maxConcurrentRequests: 1, stableConnectionsLastCycles: 5, nonMonotonicHeapLastCycles: 10 };
+    const urls = ["/saints?view=cards&limit=12", "/miracles?view=cards&limit=12"];
+    const cursors: (string | null)[] = [null, null];
+    const seen = [new Set<string>(), new Set<string>()];
+    const samples: Record<string, number>[] = [];
+    const responses: { kind: string; durationMs: number; bytes: number; rows: number }[] = [];
+    for (const url of urls) for (let warmup = 0; warmup < 5; warmup++) {
+      const response = await request(url); expect(response.status).toBe(200); await response.arrayBuffer();
+    }
+    const cpuBefore = process.cpuUsage(), start = performance.now();
+    for (let cycle = 0; cycle < 20; cycle++) {
+      for (let kind = 0; kind < urls.length; kind++) {
+        const started = performance.now();
+        const response = await request(urls[kind] + (cursors[kind] ? "&cursor=" + encodeURIComponent(cursors[kind]!) : ""));
+        expect(response.status).toBe(200);
+        const raw = await response.text(), page = JSON.parse(raw) as Page;
+        expect(page.total).toBe(3000); expect(page.items).toHaveLength(12);
+        for (const row of page.items) {
+          expect(seen[kind].has(row.id)).toBe(false); seen[kind].add(row.id);
+          if (kind === 0) expect(row).not.toHaveProperty("biography");
+        }
+        responses.push({ kind: kind === 0 ? "saint" : "miracle", durationMs: performance.now() - started,
+          bytes: Buffer.byteLength(raw), rows: page.items.length });
+        cursors[kind] = page.nextCursor; expect(cursors[kind]).not.toBeNull();
+      }
+      const activity = await prisma.$queryRaw<{ active: bigint; idle: bigint; total: bigint }[]>`
+        SELECT COUNT(*) FILTER (WHERE state = 'active') AS active,
+               COUNT(*) FILTER (WHERE state = 'idle') AS idle, COUNT(*) AS total
+        FROM pg_stat_activity WHERE datname = current_database()`;
+      const memory = process.memoryUsage();
+      samples.push({ cycle, rssBytes: memory.rss, heapUsedBytes: memory.heapUsed,
+        connectionsActive: Number(activity[0].active), connectionsIdle: Number(activity[0].idle), connectionsTotal: Number(activity[0].total) });
+    }
+    const cpu = process.cpuUsage(cpuBefore), totalMs = performance.now() - start;
+    const durations = responses.map(row => row.durationMs).sort((a, b) => a - b);
+    const p95Ms = durations[Math.ceil(durations.length * .95) - 1];
+    const tail = samples.slice(-targets.nonMonotonicHeapLastCycles);
+    const heapMonotonic = tail.slice(1).every((row, i) => row.heapUsedBytes > tail[i].heapUsedBytes);
+    const connectionsStable = new Set(samples.slice(-targets.stableConnectionsLastCycles).map(row => row.connectionsTotal)).size === 1;
+    const budgets = { p95: p95Ms < targets.warmP95MsBelow,
+      bytes: responses.every(row => row.bytes < targets.twelveCardsBytesBelow),
+      concurrency: true, connections: connectionsStable, heap: !heapMonotonic };
+    metrics.push({ benchmark: "local-synthetic-3000-saints-3000-miracles", targets, budgets,
+      completeBudgetPass: Object.values(budgets).every(Boolean), warmupRequests: 10, cycles: 20,
+      requests: responses.length, maxConcurrentRequests: 1, totalMs, p95Ms,
+      processCpuUserMicroseconds: cpu.user, processCpuSystemMicroseconds: cpu.system,
+      forcedGc: false, scope: "local disposable PostgreSQL and test process; not production or a sustained-load guarantee", responses, samples });
+    for (const url of ["/saints?view=cards&limit=100", "/miracles?view=cards&limit=100"]) {
+      const page = await (await request(url)).json() as Page; expect(page.items).toHaveLength(100); expect(page.total).toBe(3000);
+    }
+    // Resource budgets are recorded even when they fail; functional tests do not turn a machine-dependent benchmark into a false guarantee.
+  }, 120000);
 });

@@ -92,56 +92,66 @@ export async function runReadinessDiagnostic(getDatabase: () => ReadinessDatabas
     report.sslaccept = safeOption(params, "sslaccept", ["strict", "accept_invalid_certs"]);
     report.sslcertConfigured = params.getAll("sslcert").some(Boolean);
     report.sslcertMatchesExpectedPath = params.getAll("sslcert").length === 1 && params.get("sslcert") === path;
-    if (!/^(?:[A-F0-9]{2}:){31}[A-F0-9]{2}$/.test(expectedFingerprint)) throw new DiagnosticFailure(stage, "EXPECTED_FINGERPRINT_INVALID");
-    report.expectedCertificateFingerprint256 = expectedFingerprint;
-    if (!report.passwordDefined || !report.sslcertMatchesExpectedPath || report.sslmode !== "require" || report.sslaccept !== "strict") {
-      throw new DiagnosticFailure(stage, "DATABASE_TLS_CONFIGURATION_INVALID");
+    const local = env.DATABASE_PROVIDER === "local";
+    if (local) {
+      // This branch is only for an explicitly selected loopback development database.
+      // A remote address cannot bypass the strict Supabase checks by changing the provider.
+      if (!report.protocolIsPostgresql || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) ||
+          !report.portConfigured || !report.userDefined || url.pathname.length < 2) {
+        throw new DiagnosticFailure(stage, "DATABASE_LOCAL_TARGET_INVALID");
+      }
+    } else {
+      if (!/^(?:[A-F0-9]{2}:){31}[A-F0-9]{2}$/.test(expectedFingerprint)) throw new DiagnosticFailure(stage, "EXPECTED_FINGERPRINT_INVALID");
+      report.expectedCertificateFingerprint256 = expectedFingerprint;
+      if (!report.passwordDefined || !report.sslcertMatchesExpectedPath || report.sslmode !== "require" || report.sslaccept !== "strict") {
+        throw new DiagnosticFailure(stage, "DATABASE_TLS_CONFIGURATION_INVALID");
+      }
+      try { validateSupabaseRuntime({ ...env, DATABASE_PROVIDER: "supabase" }); }
+      catch { throw new DiagnosticFailure(stage, "DATABASE_TARGET_CONFIGURATION_INVALID"); }
+
+      stage = "CERTIFICATE_FILE";
+      report.certificateExists = existsSync(path);
+      if (!report.certificateExists) throw new DiagnosticFailure(stage, "CERT_FILE_NOT_FOUND");
+      const size = statSync(path).size;
+      report.certificateBytes = size;
+      if (size > 1024 * 1024) throw new DiagnosticFailure(stage, "CERT_FILE_TOO_LARGE");
+      const bytes = readFileSync(path);
+      report.certificateBytes = bytes.length;
+      report.certificateFileSha256 = createHash("sha256").update(bytes).digest("hex");
+      stage = "X509_PARSE";
+      let certificate: X509Certificate;
+      try { certificate = new X509Certificate(bytes); }
+      catch { throw new DiagnosticFailure(stage, "CA_PARSE_ERROR"); }
+      report.certificateFingerprint256 = certificate.fingerprint256;
+      report.fingerprintMatches = certificate.fingerprint256 === expectedFingerprint;
+      const from = Date.parse(certificate.validFrom), to = Date.parse(certificate.validTo);
+      report.validFrom = new Date(from).toISOString();
+      report.validTo = new Date(to).toISOString();
+      const now = (options.now ?? Date.now)();
+      report.certificateCurrentlyValid = now >= from && now <= to;
+      if (!report.fingerprintMatches) throw new DiagnosticFailure(stage, "CERT_FINGERPRINT_MISMATCH");
+      if (!report.certificateCurrentlyValid) throw new DiagnosticFailure(stage, now < from ? "CERT_NOT_YET_VALID" : "CERT_EXPIRED");
+
+      stage = "DNS_RESOLUTION";
+      const addresses = await bounded(deps.resolve(url.hostname), 3000, stage);
+      report.addressCount = addresses.length;
+      report.ipv4Count = addresses.filter(address => address.family === 4).length;
+      report.ipv6Count = addresses.filter(address => address.family === 6).length;
+      report.dnsResolved = addresses.length > 0;
+      if (!report.dnsResolved) throw new DiagnosticFailure(stage, "DNS_NO_ADDRESSES");
+      stage = "TCP_CONNECTION";
+      socket = await deps.tcp(url.hostname, Number(url.port), 5000);
+      report.tcpConnected = true;
+      stage = "TLS_HANDSHAKE";
+      const tls = await deps.tls(socket, url.hostname, bytes, 7000);
+      report.tlsConnected = true;
+      report.tlsAuthorized = tls.authorized;
+      report.protocol = ["TLSv1.2", "TLSv1.3"].includes(tls.protocol ?? "") ? tls.protocol : null;
+      if (!tls.authorized) throw new DiagnosticFailure(stage, "CERT_UNTRUSTED");
+      stage = "TLS_HOSTNAME_VERIFICATION";
+      report.tlsHostnameVerified = tls.hostnameVerified;
+      if (!tls.hostnameVerified) throw new DiagnosticFailure(stage, "HOSTNAME_MISMATCH");
     }
-    try { validateSupabaseRuntime({ ...env, DATABASE_PROVIDER: "supabase" }); }
-    catch { throw new DiagnosticFailure(stage, "DATABASE_TARGET_CONFIGURATION_INVALID"); }
-
-    stage = "CERTIFICATE_FILE";
-    report.certificateExists = existsSync(path);
-    if (!report.certificateExists) throw new DiagnosticFailure(stage, "CERT_FILE_NOT_FOUND");
-    const size = statSync(path).size;
-    report.certificateBytes = size;
-    if (size > 1024 * 1024) throw new DiagnosticFailure(stage, "CERT_FILE_TOO_LARGE");
-    const bytes = readFileSync(path);
-    report.certificateBytes = bytes.length;
-    report.certificateFileSha256 = createHash("sha256").update(bytes).digest("hex");
-    stage = "X509_PARSE";
-    let certificate: X509Certificate;
-    try { certificate = new X509Certificate(bytes); }
-    catch { throw new DiagnosticFailure(stage, "CA_PARSE_ERROR"); }
-    report.certificateFingerprint256 = certificate.fingerprint256;
-    report.fingerprintMatches = certificate.fingerprint256 === expectedFingerprint;
-    const from = Date.parse(certificate.validFrom), to = Date.parse(certificate.validTo);
-    report.validFrom = new Date(from).toISOString();
-    report.validTo = new Date(to).toISOString();
-    const now = (options.now ?? Date.now)();
-    report.certificateCurrentlyValid = now >= from && now <= to;
-    if (!report.fingerprintMatches) throw new DiagnosticFailure(stage, "CERT_FINGERPRINT_MISMATCH");
-    if (!report.certificateCurrentlyValid) throw new DiagnosticFailure(stage, now < from ? "CERT_NOT_YET_VALID" : "CERT_EXPIRED");
-
-    stage = "DNS_RESOLUTION";
-    const addresses = await bounded(deps.resolve(url.hostname), 3000, stage);
-    report.addressCount = addresses.length;
-    report.ipv4Count = addresses.filter(address => address.family === 4).length;
-    report.ipv6Count = addresses.filter(address => address.family === 6).length;
-    report.dnsResolved = addresses.length > 0;
-    if (!report.dnsResolved) throw new DiagnosticFailure(stage, "DNS_NO_ADDRESSES");
-    stage = "TCP_CONNECTION";
-    socket = await deps.tcp(url.hostname, Number(url.port), 5000);
-    report.tcpConnected = true;
-    stage = "TLS_HANDSHAKE";
-    const tls = await deps.tls(socket, url.hostname, bytes, 7000);
-    report.tlsConnected = true;
-    report.tlsAuthorized = tls.authorized;
-    report.protocol = ["TLSv1.2", "TLSv1.3"].includes(tls.protocol ?? "") ? tls.protocol : null;
-    if (!tls.authorized) throw new DiagnosticFailure(stage, "CERT_UNTRUSTED");
-    stage = "TLS_HOSTNAME_VERIFICATION";
-    report.tlsHostnameVerified = tls.hostnameVerified;
-    if (!tls.hostnameVerified) throw new DiagnosticFailure(stage, "HOSTNAME_MISMATCH");
 
     stage = "PRISMA_INITIALIZATION";
     report.prismaReached = true;

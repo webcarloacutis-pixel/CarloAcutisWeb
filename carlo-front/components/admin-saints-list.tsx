@@ -1,6 +1,8 @@
 "use client";
 import { apiUrl } from "@/lib/api-url";
 import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
+import { SaintPagePagination } from "./saint-page-pagination"
+import type { SaintPage } from "@/lib/saint-pages"
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,15 +31,18 @@ type AdminSaintsListProps = {
   saints: Saint[];
   onAddNew: () => void;
   onEdit: (_saint: Saint) => void;
+  remotePage?: SaintPage; onCursor?: (cursor: string | null) => void;
+  query?: string; onQuery?: (query: string) => void; busy?: boolean;
 };
 
-export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListProps) {
+export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor, query, onQuery, busy }: AdminSaintsListProps) {
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredSaints = useMemo(() => {
+    if (remotePage) return saints;
     const q = searchTerm.toLowerCase().trim();
     return (Array.isArray(saints) ? saints : []).filter((s) => {
       return (
@@ -46,7 +51,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
         s.slug.toLowerCase().includes(q)
       );
     });
-  }, [saints, searchTerm]);
+  }, [saints, searchTerm, remotePage]);
 
   const page = useCatalogPage(filteredSaints)
 
@@ -91,16 +96,18 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Buscar santos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={query ?? searchTerm}
+            onChange={(e) => onQuery ? onQuery(e.target.value) : setSearchTerm(e.target.value)}
+            maxLength={200}
+            aria-label="Buscar santos del administrador"
             className="pl-10"
           />
         </div>
-        <Badge variant="secondary">{filteredSaints.length} santos encontrados</Badge>
+        <Badge variant="secondary">{remotePage?.total ?? filteredSaints.length} santos encontrados</Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {page.items.map((_saint) => {
+        {(remotePage ? saints : page.items).map((_saint) => {
           const imgSrc =
             _saint.imageUrl?.startsWith("data:")
               ? _saint.imageUrl
@@ -108,12 +115,13 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
 
           return (
           <Card key={_saint.id} className="group hover:shadow-lg transition-all duration-300">
-            <div className="relative h-32 overflow-hidden rounded-t-lg">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-t-lg bg-muted">
               <Image
                 src={imgSrc}
                 alt={_saint.name}
                 fill
-                className="object-cover"
+                className="object-contain"
+                sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                 unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -162,7 +170,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit }: AdminSaintsListPro
           );
         })}
       </div>
-      <CatalogPagination {...page} label="santos del administrador" />
+      {remotePage && onCursor ? <SaintPagePagination page={remotePage} onCursor={onCursor} label="santos del administrador" disabled={busy} /> : <CatalogPagination {...page} label="santos del administrador" />}
     </div>
   );
 }

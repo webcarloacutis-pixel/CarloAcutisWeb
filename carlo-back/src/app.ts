@@ -34,7 +34,8 @@ export function createApp() {
   const checkReadiness = createReadinessCheck(() => ({
     connect: () => prisma.$connect(),
     readyQuery: () => prisma.$queryRaw`SELECT 1`,
-    schemaQuery: () => prisma.$queryRaw`SELECT 1 FROM "acutis"."Saint" LIMIT 1`,
+    // Read through the configured Prisma schema (acutis in Supabase, disposable schema locally).
+    schemaQuery: () => prisma.saint.findFirst({ select: { id: true } }),
   }), { env: { ...process.env, DATABASE_URL: runtimeDatabaseUrl } });
   app.disable("x-powered-by");
   app.set("trust proxy", proxyTrust());

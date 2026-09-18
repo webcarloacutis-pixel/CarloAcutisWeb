@@ -2,9 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Playfair_Display, Inter } from "next/font/google"
 import { VisitAnalytics } from "@/components/visit-analytics"
-import { Suspense } from "react"
-import { LanguageProvider } from "@/contexts/language-context"
-import { UserProvider } from "@/contexts/user-context"
+import { SiteProviders } from "@/components/site-providers"
 import { DynamicMetadata } from "@/components/dynamic-metadata"
 import "./globals.css"
 
@@ -35,15 +33,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`font-sans ${playfair.variable} ${inter.variable} antialiased`}>
-        <LanguageProvider>
-          <UserProvider>
-            <DynamicMetadata />
-            <Suspense fallback={null}>
-              {children}
-              <VisitAnalytics />
-            </Suspense>
-          </UserProvider>
-        </LanguageProvider>
+        <SiteProviders>
+          <DynamicMetadata />
+          {children}
+          <VisitAnalytics />
+        </SiteProviders>
       </body>
     </html>
   )

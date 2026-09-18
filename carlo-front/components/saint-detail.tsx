@@ -1,3 +1,4 @@
+import { editorialForDisplay } from "@/lib/editorial-read";
 import { factStatusLabels, historicalYear, imageKindLabels, type Editorial } from "@/lib/editorial";
 import { countryName } from "@/lib/content-filters";
 import { TranslatedText } from "@/components/translated-text";
@@ -53,7 +54,8 @@ interface SaintDetailProps {
   saint: Saint;
 }
 
-export function SaintDetail({ saint }: SaintDetailProps) {
+export function SaintDetail({ saint: input }: SaintDetailProps) {
+  const saint = { ...input, editorial: editorialForDisplay(input.editorial) };
   const patronOf = saint.patronOf ?? [];
   const prayers = saint.prayers ?? [];
   const symbols = saint.symbols ?? [];
@@ -71,8 +73,8 @@ export function SaintDetail({ saint }: SaintDetailProps) {
       {/* Header del santo */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <div className="lg:col-span-1">
-          <div className="relative h-96 rounded-lg overflow-hidden">
-            <Image src={saint.image || "/placeholder.svg"} alt={saint.editorial?.image?.alt || saint.name} fill className="object-cover" unoptimized />
+          <div className="relative aspect-[3/4] max-h-[32rem] rounded-lg overflow-hidden bg-muted">
+            <Image src={saint.image || "/placeholder.svg"} alt={saint.editorial?.image?.alt || saint.name} fill className="object-contain" sizes="(max-width: 1024px) 100vw, 360px" loading="eager" fetchPriority="high" />
           </div>
           {saint.editorial?.image && <p className="mt-2 text-xs text-muted-foreground break-words">{imageKindLabels[saint.editorial.image.kind]}. {saint.editorial.image.attribution}. Versión redimensionada en WebP · <a className="underline" href={saint.editorial.image.sourceUrl} target="_blank" rel="noopener noreferrer">Procedencia</a> · <a className="underline" href={saint.editorial.image.licenseUrl} target="_blank" rel="noopener noreferrer">{saint.editorial.image.license}</a></p>}
         </div>

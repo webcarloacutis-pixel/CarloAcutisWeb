@@ -2,22 +2,29 @@
 
 ## Contrato y límites
 
-- Capacidad independiente: 3000 `Saint` y 3000 `Miracle`, incluidos milagros pendientes.
-- `GET /saints`, `/miracles`, `/miracles/all`, `/saints/:id/miracles` y `/saints/:id/miracles/all`: `limit` entre 1 y 100, predeterminado 100.
-- Respuesta: `{ items, total, nextCursor, hasMore, revision }`. También se mantienen `X-Total-Count` y `X-Next-Cursor`.
-- Enviar el cursor opaco recibido en `cursor`. Orden estable por ID, consulta por ID mayor que el último recibido, sin offset. Cada página usa una transacción con snapshot consistente.
-- La revisión detecta altas, bajas y ediciones entre páginas. HTTP 409 `CATALOG_CHANGED` exige reiniciar la lectura; el cliente muestra error/reintento y nunca entrega una colección parcial como completa. Un cursor no se puede reutilizar entre vistas, relaciones o permisos.
-- `/saints?view=listing` excluye los campos editoriales grandes que no usa el listado, pero conserva toda la biografía para búsqueda. `view=names` contiene solo ID, nombre y slug para los selectores. El detalle individual conserva todos los campos.
-- Creación número 3001: HTTP 409 `SAINT_LIMIT_REACHED` o `MIRACLE_LIMIT_REACHED`, con `limit: 3000` y mensaje claro. Se permiten lecturas, ediciones y borrados a capacidad. Los GET no truncan una colección preexistente superior al límite.
-- Comprobación e inserción comparten una transacción y un bloqueo consultivo de PostgreSQL por entidad. Todos los creadores de la aplicación y el importador usan esta misma reserva; varias instancias del backend comparten el bloqueo. No se añade un trigger: escrituras SQL directas fuera de la aplicación deben respetar el límite por separado.
+- Capacidad independiente: 3000 `Saint` y 3000 `Miracle`, incluidos milagros pendientes. Una lectura no trunca registros preexistentes.
+- Todas las consultas de catálogo mantienen `limit` entre 1 y 100. Las vistas de colección existentes conservan su contrato y orden por ID; el límite predeterminado de esas vistas es 100.
+- Las vistas nuevas `?view=cards` de `/saints`, `/miracles`, `/miracles/all` y las relaciones `/saints/:id/miracles[/all]` devuelven **12 registros por defecto**, con máximo de 100. La interfaz pide explícitamente 12.
+- Contrato de tarjetas: `{items,total,nextCursor,hasMore,previousCursor,hasPrevious,offset,revision,metadata}`. `offset` describe la posición de los elementos; la navegación envía el **cursor opaco**, no un offset calculado por el navegador. `hasPrevious:true` y `previousCursor:null` significan volver a la primera página quitando `cursor`.
+- La revisión y el ámbito de cada cursor detectan cambios de contenido, puntuaciones, filtros, relación y permisos. `409 CATALOG_CHANGED` exige reiniciar la lectura. Un cursor de otro ámbito se rechaza. La interfaz muestra error/reintento y permite volver a la primera página, sin bucles ni colección parcial presentada como completa.
+- Santos: los filtros `q`, `continent`, `country` y `century` se aplican globalmente en el servidor antes de cortar la página. La búsqueda incluye el texto completo persistido, aunque la respuesta de tarjetas lleve únicamente `biographyExcerpt`, de hasta 600 caracteres. El detalle y el editor individual conservan la biografía completa.
+- La respuesta de tarjetas de santos incluye `rankingMode` y los países globales en `metadata.facets.countries`. `ai-estimate` indica puntuaciones válidas descendentes, sin puntuación al final y desempate estable por nombre normalizado/ID. `alphabetical-unrated` se presenta expresamente como orden alfabético sin estimaciones disponibles. No se generan estimaciones durante una lectura.
+- Milagros: `q`, `saintId`, `type` y `approved` (alias `verified`) se aplican globalmente. Se preserva el orden de aprobados primero, luego fecha de creación descendente e ID como desempate. No se inventa un ranking IA de milagros. `metadata.facets.types` y `metadata.approvedTotal` permiten filtros y contadores completos sin descargar todas las descripciones.
+- `view=names` en santos devuelve solo ID, nombre y slug para selectores. `view=map` devuelve los campos mínimos de identidad/imagen/ubicación documentada, sin biografía ni objeto editorial completo. Conserva el orden global de santos y admite filtros del servidor. Las vistas antiguas `full` y `listing` siguen disponibles para consumidores anteriores; no son la carga inicial del listado nuevo.
+- Creación número 3001: HTTP 409 `SAINT_LIMIT_REACHED` o `MIRACLE_LIMIT_REACHED`, con `limit:3000` y mensaje claro. Se permiten lecturas y ediciones a capacidad; nunca hay borrado automático.
+- Comprobación e inserción comparten transacción y bloqueo consultivo PostgreSQL por entidad. Los creadores de la aplicación y el importador usan la misma reserva entre instancias. No se añade un trigger: una escritura SQL directa fuera de la aplicación debe respetar el límite por separado.
 
 ## Cliente y renderizado
 
-El recolector central hace peticiones secuenciales de 100; los milagros pueden cargar simultáneamente dos colecciones, cada una secuencial. Valida totales, revisión, cursores y progreso, cancela al desmontar y deduplica por ID. Acepta además el formato antiguo de arrays con cabeceras para facilitar el despliegue escalonado.
+`/santos`, `/milagros`, el administrador y las relaciones de una ficha recuperan **una página de 12 registros** para mostrar 12 tarjetas. Cambiar página o filtros solicita únicamente la página necesaria; no se descargan 30 páginas completas para abrir una vista de 12 fichas. El navegador respeta el orden recibido del servidor; no reordena únicamente las tarjetas visibles como si fuera un ranking global.
 
-Listados públicos, administrador y relaciones muestran 12 fichas por página. El mapa muestra 20 enlaces por página y usa Canvas cuando hay más de 200 ubicaciones, con popups creados al abrirse y paginados a 20. Los filtros trabajan sobre la colección completa y no descargan otra vez al cambiar de filtro. El administrador carga la ficha completa al abrir su editor; las estadísticas consultan únicamente una fila y el total.
+Los lectores mantienen una solicitud activa por vista, cancelan la anterior al cambiar filtros/desmontar, agrupan cambios rápidos de búsqueda y conservan una caché acotada de 24 páginas durante 20 segundos. Validan forma, totales, cursores, progreso e IDs repetidos. Un error se presenta como error, no como cero resultados. Las estadísticas administrativas piden una fila y leen el total; los totales de oraciones incluyen pendientes mediante el endpoint privado.
 
-Las páginas de santos, mapa y administrador envían una estructura inicial pequeña y el navegador recupera las páginas API. No se insertan 3000 fichas en HTML ni en el DOM. Los selectores nativos de santos contienen los 3000 nombres; no montan 3000 tarjetas ni opciones de un menú personalizado.
+El URL de `/santos` conserva búsqueda, filtros y cursor. Atrás/adelante y recarga vuelven al ámbito indicado; la navegación usa historial nativo sin ordenar desplazamientos del documento. `ScrollToResults` tampoco fuerza scroll al cambiar búsquedas de oraciones o versículos. El editor administrativo sigue solicitando la ficha singular completa antes de editar.
+
+El mapa necesita todas las coordenadas y los selectores todos los nombres. Solo estas colecciones mínimas se recuperan secuencialmente en páginas de 100, con deduplicación por ID. Los selectores reutilizan un resultado reciente durante 30 segundos y no repiten la descarga de nombres al filtrar milagros. La carga de una página y la del selector pueden coincidir, con una petición activa por cada flujo.
+
+El mapa muestra 20 enlaces por página y usa Canvas cuando supera 200 ubicaciones; sus popups se crean al abrirlos y contienen 20 enlaces por página. Los selectores nativos admiten 3000 nombres, sin montar 3000 tarjetas ni un menú personalizado con 3000 opciones. No se insertan 3000 fichas completas en HTML inicial. Las tarjetas reservan un marco uniforme 4:5 con `object-fit:contain`, fondo neutro y tamaños responsive; el detalle conserva el contenido completo de la imagen.
 
 ## Verificación reproducible, exclusivamente local
 
@@ -43,7 +50,7 @@ Para navegador, después de terminar las pruebas backend y con la base vacía:
 node scripts/catalog-scale-fixtures.cjs
 ```
 
-Solo crea contenido y una cuenta **sintéticos** en la base desechable; no importa el catálogo real. Iniciar el backend en `127.0.0.1:4196`, con `FRONTEND_ORIGIN=http://127.0.0.1:3196`. Iniciar el frontend compilado en `127.0.0.1:3196`, con `BACKEND_URL=http://127.0.0.1:4196`, `NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3196`, `CATALOG_STORAGE_PROVIDER=supabase` y analítica desactivada. Las imágenes son lecturas de objetos públicos existentes, sin cargas ni claves.
+Solo crea contenido y una cuenta **sintéticos** en la base desechable; no importa el catálogo real. Iniciar el backend en `127.0.0.1:4196`, con `FRONTEND_ORIGIN=http://127.0.0.1:3197`. Iniciar el frontend compilado en `127.0.0.1:3197`, con `BACKEND_URL=http://127.0.0.1:4196`, `NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3197`, `CATALOG_STORAGE_PROVIDER=supabase` y analítica desactivada. Las imágenes son lecturas de objetos públicos existentes, sin cargas ni claves.
 
 En `carlo-front`:
 
@@ -53,21 +60,23 @@ npm run typecheck
 npm run lint
 NODE_ENV=test npm test -- --pool=threads --maxWorkers=1
 npm run build
-# En otra terminal: npm run start -- -H 127.0.0.1 -p 3196
-ACUTIS_SCALE_BROWSER=1 ACUTIS_BROWSER_ORIGIN=http://127.0.0.1:3196 npm run test:browser -- catalog-scale.spec.ts --project=chromium-desktop --project=iphone-emulated
+# En otra terminal: npm run start -- -H 127.0.0.1 -p 3197
+ACUTIS_SCALE_BROWSER=1 ACUTIS_BROWSER_ORIGIN=http://127.0.0.1:3197 npm run test:browser -- catalog-scale.spec.ts --project=chromium-desktop --project=iphone-emulated
 ```
 
-En PowerShell definir cada variable mediante `$env:NOMBRE='valor'` antes de ejecutar su comando. Configurar Playwright con sus navegadores instalados. El suite de escala se omite por defecto y rechaza cualquier origen distinto del puerto local 3196. Requiere los IDs sintéticos y total 3000 antes de operar. Comprueba filtros, mapa, imágenes, relaciones, edición, creación rechazada, límites de DOM, concurrencia y escritorio/móvil. Adjunta tiempos y memoria JavaScript donde Chromium permite medirla.
+En PowerShell definir cada variable mediante `$env:NOMBRE='valor'` antes de ejecutar su comando. Configurar Playwright con sus navegadores instalados. El suite de escala se omite por defecto y rechaza cualquier origen distinto del puerto local 3197. Requiere los IDs sintéticos y total 3000 antes de operar. Comprueba filtros, mapa, imágenes, relaciones, edición, creación rechazada, límites de DOM, concurrencia y escritorio/móvil. Adjunta tiempos y memoria JavaScript donde Chromium permite medirla.
 
 Al finalizar, detener los servidores y ejecutar `node scripts/catalog-scale-fixtures.cjs --cleanup` en `carlo-back` con la misma conexión desechable. Borra únicamente los fixtures identificados y su cuenta sintética. No ejecutar este cargador junto con las pruebas de integración, que esperan la base vacía.
 
 ## Publicación y producción
 
-Se necesitan **frontend y backend**. Primero publicar el frontend compatible con ambos contratos; después el backend que añade envelopes y el límite transaccional. No se requiere migrar, modificar el catálogo, imágenes, secretos, certificados ni variables de Render. Esta entrega no ejecuta ningún despliegue.
+Se necesitan **frontend y backend**. Para esta revisión, desplegar primero el backend: añade `view=cards`/`view=map` y conserva las vistas antiguas usadas por el frontend activo. Después desplegar el frontend que consume esas vistas nuevas. No invertir este orden sin verificar que el backend ya ofrece el contrato nuevo. No se requiere migrar, modificar el catálogo, imágenes, secretos, certificados ni variables de Render. Esta entrega no ejecuta ningún despliegue.
 
-Los tiempos locales con datos sintéticos no garantizan latencia de Render gratuito ni de Supabase remoto. Repetir una comprobación de lectura tras el despliegue autorizado. El tamaño total descargado depende de la longitud del contenido; el límite de 100 acota cada respuesta por registros, no por bytes.
+Los tiempos locales con datos sintéticos no garantizan latencia de Render gratuito ni de Supabase remoto. Repetir una comprobación de lectura tras el despliegue autorizado. El límite API de 100 acota cada respuesta por registros, no por bytes. Las tarjetas de santos limitan además el extracto de biografía; las descripciones completas de milagros siguen disponibles en las 12 fichas solicitadas.
 
-## Resultados comprobados el 18 de septiembre de 2026
+## Evidencia histórica de la entrega de capacidad anterior
+
+Los resultados siguientes pertenecen al commit `9dc6b5769c6801adf171aa9b3fe0f3db09d8892f`, del 18 de septiembre de 2026. **No acreditan los cambios actuales de páginas del servidor, popularidad ni imágenes.** El cierre actual debe ejecutar sus pruebas integrales y navegador sobre el mismo manifiesto final y registrar sus resultados por separado; mientras tanto el navegador de esta revisión permanece NOT_TESTED.
 
 - Backend: 255 pruebas / 27 archivos; frontend: 181 pruebas / 26 archivos. Typecheck, lint y build de ambos aprobados. Lint frontend conserva una advertencia previa sobre limpieza de una referencia del diálogo; ningún error.
 - Navegador: 10 escenarios aprobados, cero fallos/omitidos, Chromium escritorio y WebKit móvil de 390×844. Se verificó además que editar un milagro al límite conserva su aprobación y que el borrado de santos usa el proxy autenticado.

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { PopularityError, validateContent, type ContentKey, type ContentSource, type PopularityContent } from "./domain";
 
 // Parse literal public data; never eval, import or execute a supplied TypeScript file.
@@ -48,6 +48,19 @@ export const prayerSelect = { id: true, title: true, content: true, category: tr
 export function prayerContent(row: { id: string; title: string; content: string; category: string | null }): PopularityContent {
   return validateContent({ contentType: "prayer", contentId: row.id, title: row.title, text: row.content, category: row.category });
 }
+export const saintSelect = {
+  id: true, slug: true, name: true, title: true, biography: true, country: true,
+  patronOf: true, canonizationYear: true, deathYear: true,
+} satisfies Prisma.SaintSelect;
+export function saintContent(row: Prisma.SaintGetPayload<{ select: typeof saintSelect }>): PopularityContent {
+  // The bounded public identity context is hashed in full: an oversized source fails before any paid call.
+  return validateContent({ contentType: "saint", contentId: row.id, title: row.name,
+    text: JSON.stringify({ slug: row.slug, biography: row.biography, country: row.country,
+      patronOf: row.patronOf, canonizationYear: row.canonizationYear, deathYear: row.deathYear }),
+    category: row.title,
+  });
+}
+
 export function createContentSource(client: PrismaClient | null, verseFile: string): ContentSource {
   return {
     async read(key: ContentKey): Promise<PopularityContent | null> {
@@ -55,6 +68,10 @@ export function createContentSource(client: PrismaClient | null, verseFile: stri
         return (await readVerses(verseFile)).find(item => item.contentId === key.contentId) ?? null;
       }
       if (!client) throw new PopularityError("DATABASE_REQUIRED");
+      if (key.contentType === "saint") {
+        const row = await client.saint.findUnique({ where: { id: key.contentId }, select: saintSelect });
+        return row ? saintContent(row) : null;
+      }
       const row = await client.prayer.findFirst({ where: { id: key.contentId, approved: true }, select: prayerSelect });
       return row ? prayerContent(row) : null;
     },

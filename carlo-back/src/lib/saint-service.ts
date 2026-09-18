@@ -19,7 +19,19 @@ export async function updateSaint(saintId:string,input:unknown) {
   return prisma.$transaction(async tx=>{
     const current=await tx.saint.findUnique({where:{id:saintId}});
     if(!current)throw new HttpError(404,"SAINT_NOT_FOUND");
-    const data=saintData({...saintSnapshot(current),...(input as Record<string,unknown>)});
+    const body=input as Record<string,unknown>;
+    const merged={...saintSnapshot(current),...body};
+    if(!Object.prototype.hasOwnProperty.call(body,"editorial")) {
+      // Existing legacy JSON is not a new editorial submission. Preserve it exactly
+      // when editing another field; new/changed editorial input stays strictly validated.
+      delete merged.editorial;
+      const editorial=current.editorial;
+      if(editorial && typeof editorial==='object' && !Array.isArray(editorial) &&
+         ['archangel','collective'].includes(String(editorial.kind)) &&
+         ['birthYear','deathYear','birthLat','birthLng','birthCountryCode','birthPlace'].some(key=>merged[key]!=null))
+        throw new HttpError(400,"NON_PERSON_BIRTH_NOT_APPLICABLE");
+    }
+    const data=saintData(merged);
     return tx.saint.update({where:{id:saintId},data});
   },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
 }
