@@ -1,7 +1,7 @@
 import { factStatusLabels, historicalYear, imageKindLabels, type Editorial } from "@/lib/editorial";
 import { countryName } from "@/lib/content-filters";
 import { TranslatedText } from "@/components/translated-text";
-import Image from "next/image";
+import { CatalogImage as Image } from "@/components/catalog-image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

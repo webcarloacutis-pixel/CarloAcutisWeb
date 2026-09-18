@@ -2,7 +2,7 @@
 import { T } from "@/components/t"
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { CatalogImage as Image } from "@/components/catalog-image"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

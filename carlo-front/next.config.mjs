@@ -1,7 +1,9 @@
-import { catalogStorageRewrites } from "./lib/catalog-storage.mjs";
+import { catalogStorageProvider, catalogStorageRewrites } from "./lib/catalog-storage.mjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Expose only the validated provider, never credentials, to catalogue images.
+  env: { NEXT_PUBLIC_CATALOG_STORAGE_PROVIDER: catalogStorageProvider() },
   async rewrites() {
     return {beforeFiles: catalogStorageRewrites(), afterFiles: ['ai','auth','conversations','discover-saint','descubrir-saint','saints','prayers','miracles','health','popularity'].map(route => ({source:`/${route}/:path*`,destination:`/api/${route}/:path*`})), fallback: []}
   },
