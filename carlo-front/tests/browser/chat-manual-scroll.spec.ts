@@ -59,14 +59,18 @@ for(const method of ['button','Enter'] as const)for(const many of [false,true]){
     await assertUnmoved(page,before,'send-and-receive');expect(calls).toBe(1)
   })
 }
-test('slow error preserves manual document and chat movement during the wait',async({page})=>{
+test('slow error preserves manual document and chat movement during the wait',async({page,browserName,isMobile})=>{
   let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve})
   await page.route('**/api/ai/chat',async route=>{await gate;await route.fulfill({status:504,json:{error:'AI_TIMEOUT'}})})
   await navigate(page,true);await prepare(page)
   const before=await startRecording(page);await send(page,'Enter');await expect(page.getByTestId('chat-status')).toContainText('Preparando')
   await assertUnmoved(page,before,'spinner-and-wait')
   // Deliberate manual actions are outside the stationary sampling interval.
-  await page.mouse.move(5,500);await page.mouse.wheel(0,120);await page.waitForTimeout(150)
+  // Mobile WebKit has no Playwright wheel action. Model a deliberate viewport
+  // displacement there; this checks position preservation, not a native swipe.
+  if(browserName==='webkit' && isMobile)await page.evaluate(()=>window.scrollBy({top:120,behavior:'instant'}))
+  else {await page.mouse.move(5,500);await page.mouse.wheel(0,120)}
+  await page.waitForTimeout(150)
   await page.getByTestId('chat-messages').evaluate(element=>{element.scrollTop=220})
   const moved=await startRecording(page);expect(moved.document).not.toBe(before.document);expect(moved.chat).toBe(220)
   release();await expect(page.getByTestId('chat-status')).toContainText('tardó demasiado');await assertUnmoved(page,moved,'error-after-manual-scroll')

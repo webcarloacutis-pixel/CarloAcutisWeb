@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { AIChatFullscreen } from "./ai-chat-fullscreen"
 import { postAiChat } from "@/lib/ai-client"
+import { renderToString } from "react-dom/server"
 import type { ChatMessage } from "@/contexts/user-context"
 const state = vi.hoisted(() => ({
   language: "es",
@@ -44,6 +45,18 @@ it("keeps session failure independent from a localized chat quota error",async()
   expect(postAiChat).toHaveBeenCalledOnce()
 })
 afterEach(cleanup)
+it("does not accept text or suggestions before hydration can preserve them", () => {
+  const template = document.createElement("template")
+  template.innerHTML = renderToString(<AIChatFullscreen />)
+  expect(template.content.querySelector("textarea")!.disabled).toBe(true)
+  expect(Array.from(template.content.querySelectorAll<HTMLButtonElement>("button[data-chat-suggestion]")).every(button => button.disabled)).toBe(true)
+  render(<AIChatFullscreen />)
+  const input = screen.getByLabelText("Mensaje para la IA") as HTMLTextAreaElement
+  expect(input.disabled).toBe(false)
+  fireEvent.change(input, {target:{value:"First message survives hydration"}})
+  expect(input.value).toBe("First message survives hydration")
+  expect((screen.getByLabelText("Enviar mensaje") as HTMLButtonElement).disabled).toBe(false)
+})
 it("does not scroll on send or reply and does not double-submit", async () => {
   const pending = deferred<{answer:string}>();vi.mocked(postAiChat).mockReturnValue(pending.promise)
   render(<AIChatFullscreen />);submit();fireEvent.submit(screen.getByLabelText("Mensaje para la IA").closest("form")!)

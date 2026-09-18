@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --site-header-height: 3.5rem;
   --background: 45 30% 96%;
   --foreground: 30 20% 15%;
   --card: 45 25% 92%;
@@ -23,6 +24,20 @@
   --input: 30 20% 82%;
   --ring: 35 60% 35%;
   --radius: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  :root { --site-header-height: 4rem; }
+}
+
+.chat-viewport {
+  height: calc(100vh - var(--site-header-height));
+  height: calc(var(--chat-visible-height, 100dvh) - var(--site-header-height));
+}
+
+.chat-input {
+  min-height: 44px;
+  max-height: min(8rem, calc(var(--chat-visible-height, 100dvh) * 0.2));
 }
 
 .dark {

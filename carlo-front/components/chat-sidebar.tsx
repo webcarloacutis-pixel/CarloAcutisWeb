@@ -54,19 +54,19 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
   }
 
   return (
-    <div className="h-full bg-card/95 backdrop-blur-sm border-r border-border flex flex-col w-[280px] sm:w-72 max-w-[90vw]">
+    <div className="h-full min-h-0 bg-card/95 backdrop-blur-sm border-r border-border flex flex-col w-64 max-w-[90vw]">
       <div className="p-2 sm:p-3 border-b border-border flex items-center gap-2">
         <Button disabled={loading || saving} onClick={async () => {
           if (isAuthenticated) {
             setSaving(true)
             try { if (await createConversation()) onClose?.() } finally { setSaving(false) }
           } else { onClose?.(); onOpenAuth() }
-        }} className="flex-1 bg-gradient-to-r from-primary to-amber-600 text-xs sm:text-sm h-10">
+        }} className="flex-1 min-w-0 whitespace-normal bg-gradient-to-r from-primary to-amber-600 text-sm min-h-11 h-auto leading-tight">
           <Plus className="w-4 h-4 mr-2" aria-hidden="true" />{t.newChat}
         </Button>
-        {onClose && <Button type="button" variant="ghost" size="icon" className="lg:hidden shrink-0" data-chat-close aria-label={translate("chat.closeHistory")} onClick={onClose}><X className="h-5 w-5" aria-hidden="true" /></Button>}
+        {onClose && <Button type="button" variant="ghost" size="icon" className="lg:hidden h-11 w-11 shrink-0" data-chat-close aria-label={translate("chat.closeHistory")} onClick={onClose}><X className="h-5 w-5" aria-hidden="true" /></Button>}
       </div>
-      <div className="flex-1 overflow-y-auto" aria-busy={loading}>
+      <div className="flex-1 min-h-0 overflow-y-auto" aria-busy={loading}>
         {loading && <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{translate("common.loading")}</p>}
         {error && <p className="px-4 py-3 text-sm text-destructive">{error}</p>}
         {isAuthenticated ? <div className="p-2">
@@ -88,7 +88,7 @@ export function ChatSidebar({ onOpenAuth, onClose }: ChatSidebarProps) {
           </li>)}</ul>
         </div> : !loading && <div className="p-4 text-center">
           <User className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" aria-hidden="true" /><p className="text-sm text-muted-foreground mb-4">{t.loginPrompt}</p>
-          <Button onClick={() => { onClose?.(); onOpenAuth() }} variant="outline" className="w-full">{t.login}</Button>
+          <Button onClick={() => { onClose?.(); onOpenAuth() }} variant="outline" className="w-full min-h-11">{t.login}</Button>
         </div>}
       </div>
       {isAuthenticated && user && <div className="p-3 border-t border-border">
