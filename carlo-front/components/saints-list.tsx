@@ -14,9 +14,11 @@ import { type PublicSaint } from "@/lib/content-filters"
 import { useLanguage } from '@/contexts/language-context'
 import { formatTranslation } from '@/lib/format-translation'
 import { GeographicName } from './geographic-name'
+import { rememberCatalogScroll, useCatalogScroll } from '@/lib/catalog-scroll'
 export type Saint = PublicSaint & { biographyExcerpt?: string | null; biographySourceHash?: string | null; popularityEstimate?: PopularityEstimateData | null }
 
 export function SaintsList({ saints, remoteTotal, returnTo }: { saints: Saint[]; remoteTotal?: number; returnTo?: string }) {
+  useCatalogScroll(returnTo)
   const { t } = useLanguage()
   const page = useCatalogPage(saints, 12)
   return <div className="space-y-8">
@@ -37,6 +39,7 @@ function LocalizedSaintCard({source,returnTo}:{source:Saint;returnTo?:string}){
   if(returnTo)detailQuery.set("returnTo",returnTo)
   if(localized.language!=="es" || returnTo && new URL(returnTo,"https://catalog.invalid").searchParams.has("lang"))detailQuery.set("lang",localized.language)
   return <Link prefetch={false}
+        onNavigate={rememberCatalogScroll}
         href={"/santos/" + encodeURIComponent(saint.slug) + (detailQuery.size ? "?" + detailQuery : "")}
         aria-label={formatTranslation(t('catalog.readBiography'), { name: saint.name })}
         className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">

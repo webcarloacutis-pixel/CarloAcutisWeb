@@ -62,7 +62,7 @@ test('image, heading, biography and free card space open one canonical detail an
   const restored=new URL((await back.getAttribute('href'))!,'http://localhost')
   expect(restored.searchParams.get('q')).toBe('José');expect(restored.searchParams.get('sort')).toBe('alphabetical')
   await page.goBack();await expect(link).toBeVisible();expect(new URL(page.url()).searchParams.get('q')).toBe('José')
-  expect(Math.abs(await page.evaluate(()=>scrollY)-before)).toBeLessThan(100)
+  await expect.poll(async()=>Math.abs(await page.evaluate(()=>scrollY)-before)).toBeLessThan(100)
  }
  expect(errors).toEqual([])
 })
@@ -90,6 +90,7 @@ test('ES→Chinese→English→ES changes full real biography and patronage, sur
  }
  await choose(page,'zh');await expect(biography).toContainText('2025年被册封为圣人');await page.reload();await expect(biography).toContainText('2025年被册封为圣人')
  await page.locator('main a[href^="/santos"]').first().click()
+  await expect(page).toHaveURL(/\/santos(?:\?|$)/);await expect(cards(page)).toHaveCount(12)
  await page.goBack();await expect(biography).toContainText('2025年被册封为圣人')
  expect(errors).toEqual([]);expect(ai).toEqual([]);await assertReleaseNetwork(network,test.info())
  await test.info().attach('local-language-switch-samples',{body:JSON.stringify({samples:timings,network:'loopback, normal selected-locale reads',paidCalls:0,coverage:'partial resources; no acceptance of all14 languages'}),contentType:'application/json'})
@@ -100,6 +101,6 @@ test('a503 prayer section remains recoverable without a global Server Component 
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name))
  await page.goto('/santos/san-jose?lang=es');await expect(page.getByTestId('saint-biography')).toContainText('Pío IX')
  await expect(page.getByRole('heading',{name:'No se pudo cargar el contenido',exact:true})).toHaveCount(0)
- const section=page.getByRole('alert');await expect(section).toBeVisible();expect(calls).toBe(1)
+ const section=page.getByRole('alert').filter({has:page.getByRole('button',{name:'Volver a intentar',exact:true})});await expect(section).toBeVisible();expect(calls).toBe(1)
  blocked=false;await section.getByRole('button',{name:'Volver a intentar',exact:true}).click();await expect(section).toHaveCount(0);expect(calls).toBe(2);expect(errors).toEqual([])
 })
