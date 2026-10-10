@@ -33,13 +33,13 @@ export function PrayersIntroduction() {
               <T k="supplemental.useLibrary" />
             </CardTitle>
           </CardHeader>
-          <CardContent lang="es">
+          <CardContent>
             <ul className="space-y-2 text-muted-foreground">
-              <li>• Busca por santo, ocasión o necesidad</li>
-              <li>• Explora las categorías temáticas</li>
-              <li>• Lee con devoción y recogimiento</li>
-              <li>• Adapta las oraciones a tu situación</li>
-              <li>• Practica la oración regularmente</li>
+              <li>• <T k="prayerHelp.search" /></li>
+              <li>• <T k="prayerHelp.categories" /></li>
+              <li>• <T k="prayerHelp.read" /></li>
+              <li>• <T k="prayerHelp.adapt" /></li>
+              <li>• <T k="prayerHelp.regular" /></li>
             </ul>
           </CardContent>
         </Card>

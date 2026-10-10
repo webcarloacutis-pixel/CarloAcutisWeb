@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test"
 import { languages } from "../../lib/i18n"
 import { chatTranslations } from "../../lib/chat-translations"
+import { translations } from "../../lib/translations"
+import { catalogTranslations } from "../../lib/catalog-translations"
+import { supplementalUiTranslations } from "../../lib/supplemental-ui-translations"
 
 /**
  * Release UI regressions against a LOCAL production build.
@@ -73,7 +76,7 @@ for (const path of ["/", "/santos", "/mapa", "/milagros", "/oraciones", "/versic
       await expect(page.getByText(/^\d+ santos encontrados; \d+ con ubicación documentada\.$/, { exact: true })).toBeVisible()
     } else if (path === "/milagros") {
       await expect(page.getByText("Cargando milagros…", { exact: true })).toHaveCount(0)
-      await expect(page.getByLabel("Filtrar milagros por santo")).toBeEnabled()
+      await expect(page.getByRole("combobox", { name: translations.es['nav.saints'], exact: true })).toBeEnabled()
     } else if (path === "/oraciones") {
       await expect(page.getByLabel("Buscar por título o contenido").filter({ visible: true })).toBeEnabled()
       await expect(page.getByRole("heading", { name: /Oraciones/ }).first()).toBeVisible()
@@ -104,6 +107,7 @@ test("unknown public route returns a real HTTP404", async ({ page }) => {
 
 for (const failure of ["upstream503", "nonJson", "invalidContract"] as const) {
   test(`catalogue ${failure}: visible failure, no false zero and explicit recovery`, async ({ page }) => {
+    const failureMessage = catalogTranslations.es[failure === 'upstream503' ? 'catalog.temporarilyUnavailable' : 'catalog.failed']
     let attempts = 0
     await page.route(url => url.pathname === "/api/saints", route => {
       attempts++
@@ -113,14 +117,14 @@ for (const failure of ["upstream503", "nonJson", "invalidContract"] as const) {
       return route.fulfill({ json: { items: null, total: 1, nextCursor: null, hasMore: false } })
     })
     await open(page, "/santos")
-    await expect(page.getByRole("alert").filter({ hasText: "No se pudo" })).toBeVisible()
+    await expect(page.getByRole("alert").filter({ hasText: failureMessage })).toBeVisible()
     await expect(page.getByText("0 santos encontrados", { exact: true })).toHaveCount(0)
     expect(attempts, "No hidden retry storm").toBe(1)
     await page.getByRole("button", { name: "Reintentar", exact: true }).click()
     await expect(page.getByRole("heading", { name: example.name, exact: true })).toBeVisible()
     await expect(page.getByText("1 santos encontrados", { exact: true })).toBeVisible()
     expect(attempts).toBe(2)
-    await expect(page.getByRole("alert").filter({ hasText: "No se pudo cargar el catálogo" })).toHaveCount(0)
+    await expect(page.getByRole("alert").filter({ hasText: failureMessage })).toHaveCount(0)
   })
 }
 
@@ -228,8 +232,8 @@ test("admin successful session renders tabs and logout revokes UI access (simula
     await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible()
   }
   await page.getByRole("button", { name: "Santos", exact: true }).click()
-  await expect(page.getByRole("button", { name: "Nuevo Santo", exact: true })).toBeVisible()
-  await page.getByRole("button", { name: "Cerrar Sesión", exact: true }).click()
+  await expect(page.getByRole("button", { name: supplementalUiTranslations.es['supplemental.newSaint'], exact: true })).toBeVisible()
+  await page.getByRole("button", { name: supplementalUiTranslations.es['supplemental.logout'], exact: true }).click()
   await expect(page).toHaveURL(/\/sanctum\/portal$/)
   expect(authenticated).toBe(false)
 })

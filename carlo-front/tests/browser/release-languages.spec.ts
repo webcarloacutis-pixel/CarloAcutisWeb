@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { catalogTranslations } from '../../lib/catalog-translations'
 import { supplementalUiTranslations } from '../../lib/supplemental-ui-translations'
+import { prayerHelpKeys, prayerLibraryHelpTranslations } from '../../lib/prayer-library-help-translations'
 import { observeReleaseNetwork, assertReleaseNetwork } from './release-network'
 
 test.skip(process.env.ACUTIS_RELEASE_BROWSER !== '1', 'Requires the guarded local release')
@@ -54,6 +55,7 @@ for (const language of ['en', 'ar'] as const) {
     await page.goto('/oraciones', { waitUntil: 'networkidle' })
     await expect(page.getByLabel(ui('searchPrayerText'), { exact: true }).filter({ visible: true })).toBeEnabled()
     await expect(page.getByText(prayers[0].title, { exact: true }).first()).toBeVisible()
+    for (const key of prayerHelpKeys) await expect(page.getByText(prayerLibraryHelpTranslations[language]['prayerHelp.' + key], { exact: true })).toBeVisible()
     await checkLayout()
     await page.screenshot({ path: test.info().outputPath(`prayers-${language}.png`), fullPage: true })
     await assertReleaseNetwork(network,test.info())

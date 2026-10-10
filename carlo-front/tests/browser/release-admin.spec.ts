@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { test, expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import { backendOrigin } from '../../lib/backend-origin'
 import { editorialForDisplay } from '../../lib/editorial-read'
+import { catalogTranslations } from '../../lib/catalog-translations'
 
 // Auth and catalog responses are real. This test never creates/deletes catalog
 // records or writes a production origin. Public catalog images may be read from
@@ -170,7 +171,7 @@ async function catalog(request: APIRequestContext): Promise<Catalog> {
 }
 
 async function openEditor(page: Page, row: Row): Promise<Locator> {
-  await page.getByPlaceholder('Buscar santos...', { exact: true }).fill(row.slug!)
+  await page.getByLabel(catalogTranslations.es['catalog.searchSaints'], { exact: true }).fill(row.slug!)
   const card = page.locator('div.rounded-xl.border.bg-card').filter({ has: page.getByRole('heading', { name: row.name!, exact: true }) })
   await expect(card).toHaveCount(1)
   const detail = page.waitForResponse(response => new URL(response.url()).pathname === '/api/saints/' + row.id && response.request().method() === 'GET')

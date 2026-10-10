@@ -7,6 +7,7 @@ import { chromeInterfaceTranslations } from './chrome-interface-translations'
 import { supplementalScriptureTranslations } from './supplemental-scripture-translations'
 import { pageShellTranslations } from './page-shell-translations'
 import { legacyInterfaceTranslations } from './legacy-interface-translations'
+import { prayerLibraryHelpTranslations } from './prayer-library-help-translations'
 export const translations: Record<string, Record<string, string>> = {
 
   es: {
@@ -3270,3 +3271,4 @@ for (const [language, entries] of Object.entries(chromeInterfaceTranslations)) O
 for (const [language, entries] of Object.entries(supplementalScriptureTranslations)) Object.assign(translations[language], entries)
 for (const [language, entries] of Object.entries(pageShellTranslations)) Object.assign(translations[language], entries)
 for (const [language, entries] of Object.entries(legacyInterfaceTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(prayerLibraryHelpTranslations)) Object.assign(translations[language], entries)
