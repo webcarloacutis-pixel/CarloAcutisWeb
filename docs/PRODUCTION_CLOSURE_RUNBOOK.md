@@ -106,7 +106,13 @@ Registrar deploy IDs y confirmar artefactos recuperables antes de publicar.
 Los nuevos contratos `view=cards` no funcionan con la antigua revisión 9dc6b576:
 si hay que volver ambos servicios, restaurar primero un frontend compatible,
 después el backend anterior y verificar el conjunto. Un backend nuevo compatible
-puede mantener el frontend anterior mientras se investiga un fallo del frontend.
+puede mantener las lecturas del frontend anterior mientras se investiga un fallo.
+Confirmar el SHA real del frontend en Render: la comparación estática con 9dc6b576
+es histórica. Su modal antiguo reenvía todos los campos, incluso valores
+normalizados; la preservación por omisión del nuevo PATCH no puede inferir su
+intención. No ejecutar escrituras administrativas durante la transición ni
+atribuir esa protección a un cliente antiguo. Antes de editar, cargar el frontend
+nuevo y comprobar su revisión.
 No avanzar de etapa cuando el deploy previo falla.
 
 [El rollback de Render](https://render.com/docs/rollbacks) recupera código y su
@@ -131,3 +137,10 @@ Existe un candidato mínimo de REVOKE probado localmente; requiere aprobación
 específica antes de producción. El CHECK positivo de `deathYear` también difiere
 de la capacidad BCE del validador y requiere decisión de esquema explícita.
 No modificar estos controles como efecto lateral de un despliegue de código.
+
+Sin cambiar el esquema, una escritura de santo con un año de fallecimiento BCE
+explícito que encuentra el rechazo exacto `Saint_deathYear_check` devuelve ahora
+400 `INVALID_NUMBER`. La aplicación conserva la fila y muestra un error localizado;
+no ofrece soporte de persistencia BCE. Otros errores de restricciones continúan
+siendo 500 y los fallos de conexión, 503. Mantener esa clasificación precisa y sus
+regresiones SQL; no convertir todos los errores Prisma en entradas inválidas.
