@@ -228,10 +228,11 @@ test("admin successful session renders tabs and logout revokes UI access (simula
   await page.getByRole("button", { name: "Acceder al Sanctum" }).click()
   await expect(page).toHaveURL(/\/admin$/)
   await expect(page.getByRole("heading", { name: "Panel de Administración Sagrado", exact: true })).toBeVisible()
+  const adminNavigation = page.getByRole("button", { name: "Resumen", exact: true }).locator("..")
   for (const tab of ["Resumen", "Santos", "Milagros", "Oraciones", "Configuración"]) {
-    await expect(page.getByRole("button", { name: tab, exact: true })).toBeVisible()
+    await expect(adminNavigation.getByRole("button", { name: tab, exact: true })).toBeVisible()
   }
-  await page.getByRole("button", { name: "Santos", exact: true }).click()
+  await adminNavigation.getByRole("button", { name: "Santos", exact: true }).click()
   await expect(page.getByRole("button", { name: supplementalUiTranslations.es['supplemental.newSaint'], exact: true })).toBeVisible()
   await page.getByRole("button", { name: supplementalUiTranslations.es['supplemental.logout'], exact: true }).click()
   await expect(page).toHaveURL(/\/sanctum\/portal$/)
