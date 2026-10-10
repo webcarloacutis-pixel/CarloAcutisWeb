@@ -264,6 +264,8 @@ test('real admin reads 179 editors and preserves raw SQL while editing complete 
   let after: Catalog | undefined
   let sqlAfter: SqlCatalog | undefined
   const restoredUpdatedAt = new Map<string, unknown>()
+  let primaryFailure: unknown
+  let hasPrimaryFailure = false
   try {
     await page.getByRole('button', { name: 'Santos', exact: true }).click()
     for (const row of before.Saint) {
@@ -322,48 +324,63 @@ test('real admin reads 179 editors and preserves raw SQL while editing complete 
       } finally { await publicContext.close() }
     }
     expect(pageErrors).toEqual([])
+  } catch (error) {
+    primaryFailure = error
+    hasPrimaryFailure = true
   } finally {
-    guardLocalTarget(baseURL)
     const cleanupErrors: unknown[] = []
+    let cleanupTargetVerified = false
+    try {
+      guardLocalTarget(baseURL)
+      cleanupTargetVerified = true
+    } catch (error) { cleanupErrors.push(error) }
     // Attempt each cleanup independently, then rethrow any failed assertion.
-    // A failed restore must not prevent checking conservation or ending login.
-    for (const row of selected) try {
-      if (writeAttempted.size > 0) {
-        const restored = await fetch(origin + '/api/saints/' + row.id, {
-          method: 'PATCH', headers: { Origin: origin, Cookie: cookieHeader, 'Content-Type': 'application/json' },
-          // Roll back only the field this test changed; never rewrite a legacy
-          // null, source array or tolerant editorial display value in cleanup.
-          body: JSON.stringify({ biography: row.biography }), signal: AbortSignal.timeout(20_000), redirect: 'error',
-        })
-        expect(restored.status, 'Restore the original biography in the local copy').toBe(200)
-        const restoredRow = await restored.json() as Row
-        expect(content(restoredRow), 'Rollback must preserve every original transport field including nulls, arrays and editorial').toEqual(content(row))
-        restoredUpdatedAt.set(row.id, restoredRow.updatedAt)
-      }
-    } catch (error) { cleanupErrors.push(error) }
-    try {
-      sqlAfter = await sqlCatalog(baseURL ?? origin)
-      expect(sqlSummary(sqlAfter), 'Every persisted column and SQL/JSON null class must be restored; only updatedAt is excluded').toEqual(sqlSummary(sqlBefore))
-    } catch (error) { cleanupErrors.push(error) }
-    try {
-      after = await catalog(request)
-      expect(summary(after), 'Content hashes exclude updatedAt; every catalog value must be restored').toEqual(summary(before))
-    } catch (error) { cleanupErrors.push(error) }
-    try {
-      const logout = await fetch(origin + '/api/auth/admin/logout', { method: 'POST', headers: { Origin: origin, Cookie: cookieHeader }, signal: AbortSignal.timeout(15_000), redirect: 'error' })
-      expect(logout.status).toBe(200)
-    } catch (error) { cleanupErrors.push(error) }
-    await testInfo.attach('local-admin-catalog-conservation', { contentType: 'application/json', body: JSON.stringify({
+    // A failed restore must not prevent checking conservation or ending login;
+    // failed target verification prevents every subsequent cleanup request.
+    if (cleanupTargetVerified) {
+      for (const row of selected) try {
+        if (writeAttempted.has(row.id)) {
+          const restored = await fetch(origin + '/api/saints/' + row.id, {
+            method: 'PATCH', headers: { Origin: origin, Cookie: cookieHeader, 'Content-Type': 'application/json' },
+            // Roll back only the field this test changed; never rewrite a legacy
+            // null, source array or tolerant editorial display value in cleanup.
+            body: JSON.stringify({ biography: row.biography }), signal: AbortSignal.timeout(20_000), redirect: 'error',
+          })
+          expect(restored.status, 'Restore the original biography in the local copy').toBe(200)
+          const restoredRow = await restored.json() as Row
+          expect(content(restoredRow), 'Rollback must preserve every original transport field including nulls, arrays and editorial').toEqual(content(row))
+          restoredUpdatedAt.set(row.id, restoredRow.updatedAt)
+        }
+      } catch (error) { cleanupErrors.push(error) }
+      try {
+        sqlAfter = await sqlCatalog(baseURL ?? origin)
+        expect(sqlSummary(sqlAfter), 'Every persisted column and SQL/JSON null class must be restored; only updatedAt is excluded').toEqual(sqlSummary(sqlBefore))
+      } catch (error) { cleanupErrors.push(error) }
+      try {
+        after = await catalog(request)
+        expect(summary(after), 'Content hashes exclude updatedAt; every catalog value must be restored').toEqual(summary(before))
+      } catch (error) { cleanupErrors.push(error) }
+      try {
+        const logout = await fetch(origin + '/api/auth/admin/logout', { method: 'POST', headers: { Origin: origin, Cookie: cookieHeader }, signal: AbortSignal.timeout(15_000), redirect: 'error' })
+        expect(logout.status).toBe(200)
+      } catch (error) { cleanupErrors.push(error) }
+    }
+    const failureName = (error: unknown) => error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(error.name) ? error.name : 'NonErrorThrown'
+    try { await testInfo.attach('local-admin-catalog-conservation', { contentType: 'application/json', body: JSON.stringify({
       frontendOrigin: origin, backendOrigin: backend, database: 'acutis_catalog_browser_test',
       checkedEditors, incompleteEditorialEditors: incomplete, catalogCreates: 0, catalogDeletes: 0, paidAiCalls: 0,
       contentHashExcludes: ['updatedAt'], before: summary(before), after: after ? summary(after) : null,
       independentSqlBefore: sqlSummary(sqlBefore), independentSqlAfter: sqlAfter ? sqlSummary(sqlAfter) : null,
       biographyWriteTargets: selected.length, biographyWritesAttempted: writeAttempted.size,
-      biographyRollbackTargets: writeAttempted.size > 0 ? selected.length : 0,
+      biographyRollbackTargets: cleanupTargetVerified ? selected.filter(row => writeAttempted.has(row.id)).length : 0,
       originalPartialEditorialAndNullStorageConserved: sqlAfter ? JSON.stringify(sqlSummary(sqlAfter)) === JSON.stringify(sqlSummary(sqlBefore)) : false,
+      primaryFailureName: hasPrimaryFailure ? failureName(primaryFailure) : null,
+      cleanupFailureNames: cleanupErrors.map(failureName), cleanupTargetVerified,
       cleanupFailureCount: cleanupErrors.length,
-      localUpdatedAtExpectedChanged: writeAttempted.size > 0 && selected.every(row => restoredUpdatedAt.has(row.id) && restoredUpdatedAt.get(row.id) !== row.updatedAt),
-    }, null, 2) })
-    if (cleanupErrors.length) throw cleanupErrors[0]
+      localUpdatedAtExpectedChanged: writeAttempted.size > 0 && selected.filter(row => writeAttempted.has(row.id)).every(row => restoredUpdatedAt.has(row.id) && restoredUpdatedAt.get(row.id) !== row.updatedAt),
+    }, null, 2) }) } catch (error) { cleanupErrors.push(error) }
+    const failures = [...(hasPrimaryFailure ? [primaryFailure] : []), ...cleanupErrors]
+    if (failures.length === 1) throw failures[0]
+    if (failures.length > 1) throw new AggregateError(failures, 'Local admin verification and cleanup failed; all failures are retained')
   }
 })
