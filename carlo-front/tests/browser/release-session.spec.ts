@@ -1,15 +1,32 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect, type Page } from '@playwright/test'
+import { observeReleaseNetwork, assertReleaseNetwork } from './release-network'
+import { backendOrigin } from '../../lib/backend-origin'
 
 // Real cookies and persistence are tested only against the disposable local release fixture.
 // Auth/conversation responses must never be intercepted. The only interception below
 // prevents an accidental paid AI call; this scenario never submits a chat prompt.
 test.skip(process.env.ACUTIS_RELEASE_BROWSER !== '1', 'Requires the disposable 179-saint release fixture')
 test.setTimeout(180_000)
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
 const origin = 'http://127.0.0.1:3197'
 const password = 'Synthetic-release-session-2026!'
 const mutationHeaders = { Origin: origin }
+
+function guardLocalTarget(baseURL: string | undefined) {
+  let db: URL | undefined
+  try { db = new URL(process.env.DATABASE_URL || '') } catch { /* Do not expose credentials in failed assertions. */ }
+  expect(process.env.ACUTIS_RELEASE_BROWSER === '1', 'Local release flag is required').toBe(true)
+  expect(baseURL === origin && process.env.ACUTIS_BROWSER_ORIGIN === origin, 'Exact local frontend is required').toBe(true)
+  expect(Boolean(db && ['postgres:', 'postgresql:'].includes(db.protocol) && db.hostname === '127.0.0.1' &&
+    db.port === '55439' && db.pathname === '/acutis_catalog_browser_test' &&
+    db.searchParams.get('schema') === 'public' && db.searchParams.get('sslmode') === 'require' &&
+    db.searchParams.get('sslaccept') === 'strict' && db.searchParams.has('sslcert')), 'Exact disposable TLS database is required').toBe(true)
+  expect(backendOrigin() === 'http://127.0.0.1:3198' && process.env.BACKEND_URL === 'http://127.0.0.1:3198', 'Exact local proxy backend is required').toBe(true)
+  expect(process.env.AI_ENABLED === 'false', 'Paid AI must be disabled for this fixture').toBe(true)
+  expect(/^[a-f0-9]{40}$/i.test(process.env.RENDER_GIT_COMMIT || ''), 'Explicit local revision is required').toBe(true)
+}
 
 async function openHistory(page: Page) {
   const history = page.locator('#chat-history')
@@ -52,7 +69,12 @@ async function logout(page: Page) {
 }
 
 test('real registration, session reload, logout and two-account history isolation', async ({ page, baseURL }) => {
-  expect(baseURL).toBe(origin)
+  guardLocalTarget(baseURL)
+  for (const target of [origin + '/api/ready', 'http://127.0.0.1:3198/ready']) {
+    const ready = await page.request.get(target)
+    expect(ready.status()).toBe(200)
+    expect(ready.headers()['x-backend-revision']).toBe(process.env.RENDER_GIT_COMMIT)
+  }
   const catalogBefore = await page.request.get('/api/saints?view=cards&limit=1')
   expect(catalogBefore.status()).toBe(200)
   expect((await catalogBefore.json()).total).toBe(179)
@@ -68,6 +90,7 @@ test('real registration, session reload, logout and two-account history isolatio
   const userMessage = `Pregunta privada sintética ${marker}`
   const assistantMessage = `Respuesta guardada de prueba ${marker}`
   const pageErrors: string[] = []
+  const network = observeReleaseNetwork(page)
   let aiRequests = 0
   page.on('pageerror', error => pageErrors.push(error.name))
   await page.addInitScript(() => localStorage.setItem('language', 'es'))
@@ -174,5 +197,6 @@ test('real registration, session reload, logout and two-account history isolatio
   expect((await (await page.request.get('/api/miracles?view=cards&limit=1')).json()).total).toBe(miracleTotal)
   expect(aiRequests).toBe(0)
   expect(pageErrors).toEqual([])
+  await assertReleaseNetwork(network, test.info())
   await test.info().attach('session-isolation', { contentType: 'application/json', body: JSON.stringify({ syntheticAccounts: 2, realAuthentication: true, interceptedAuthOrHistory: false, foreignReadAndWritesRejected: 5, paidAiCalls: 0, catalogWrites: 0 }) })
 })

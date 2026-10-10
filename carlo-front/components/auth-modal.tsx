@@ -16,7 +16,7 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { login, register, error: sessionError } = useUser()
-  const { language } = useLanguage()
+  const { language, t: translate } = useLanguage()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -344,7 +344,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
           </div>
           <button
-            aria-label="Cerrar acceso"
+            aria-label={translate("supplemental.closeAccess")}
             onClick={onClose}
             className="absolute top-2 sm:top-4 right-2 sm:right-4 p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
           >
@@ -450,7 +450,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               />
               <button
                 type="button"
-                aria-label={showPassword ? "Ocultar contrase?a" : "Mostrar contrase?a"}
+                aria-label={translate(showPassword ? "supplemental.hidePassword" : "supplemental.showPassword")}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -463,7 +463,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
           </div>
 
-          {!isLogin && <p className="text-xs text-muted-foreground">Usa al menos 12 caracteres (m?ximo 72 bytes).</p>}
+          {!isLogin && <p className="text-xs text-muted-foreground">{translate("supplemental.passwordHelp")}</p>}
           {/* Submit button */}
           <Button
             type="submit"

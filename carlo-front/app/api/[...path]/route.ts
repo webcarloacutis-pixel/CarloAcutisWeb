@@ -5,6 +5,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 const allowed = new Set(['saints','prayers','miracles','auth','conversations','ai','discover-saint','descubrir-saint','health','ready','popularity'])
 const privateHeaders = { 'Cache-Control': 'private, no-store' }
+// Fixed allowlist: never copy authentication, debug or hop-by-hop headers.
+const responseHeaderNames = ['content-type','cache-control','x-total-count','x-next-cursor','retry-after','vary','x-request-id','x-backend-revision',
+  'ratelimit','ratelimit-policy','ratelimit-limit','ratelimit-remaining','ratelimit-reset',
+  'x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-reset','x-ratelimit-policy']
 async function proxy(request: NextRequest, context: { params: Promise<{path: string[]}> }) {
   const { path } = await context.params
   const ai=path[0]==='ai'
@@ -51,15 +55,17 @@ async function proxy(request: NextRequest, context: { params: Promise<{path: str
   try {
     const upstream=await fetch(target,{method:request.method,headers,body:body as BodyInit,cache:'no-store',redirect:'manual',signal:AbortSignal.any([request.signal,timeout])})
     const out=new Headers()
-    for(const key of ['content-type','cache-control','x-total-count','x-next-cursor','retry-after','vary','x-request-id','x-backend-revision']) { const value=upstream.headers.get(key); if(value)out.set(key,value) }
-    for(const cookie of upstream.headers.getSetCookie()) out.append('set-cookie',cookie)
-    if(['auth','conversations','ai'].includes(path[0]) || !['GET','HEAD'].includes(request.method)) out.set('cache-control','private, no-store')
+    const connectionFields = new Set((upstream.headers.get('connection') || '').split(',').map(key => key.trim().toLowerCase()))
+    for(const key of responseHeaderNames) { const value=upstream.headers.get(key); if(value && !connectionFields.has(key))out.set(key,value) }
+    if(!connectionFields.has('set-cookie')) for(const cookie of upstream.headers.getSetCookie()) out.append('set-cookie',cookie)
+    if(!upstream.ok || ['auth','conversations','ai'].includes(path[0]) || !['GET','HEAD'].includes(request.method)) out.set('cache-control','private, no-store')
     out.set('X-Request-Id',requestId)
     log(upstream.ok?'OK':upstream.status<500?'UPSTREAM_REJECTED':'UPSTREAM_HTTP_ERROR',upstream.status)
     // Ingress HTML errors are not provider responses. Preserve status and hide the HTML.
     if(upstream.status>=400 && !upstream.headers.get('content-type')?.includes('application/json')) {
       await upstream.body?.cancel()
-      return Response.json({error:ai?'AI_UPSTREAM_UNAVAILABLE':'UPSTREAM_HTTP_ERROR',requestId},{status:upstream.status,headers:{...privateHeaders,'X-Request-Id':requestId}})
+      out.delete('content-type')
+      return Response.json({error:ai?'AI_UPSTREAM_UNAVAILABLE':'UPSTREAM_HTTP_ERROR',requestId},{status:upstream.status,headers:out})
     }
     return new Response(upstream.body,{status:upstream.status,headers:out})
   } catch { return request.signal.aborted ? unavailable('REQUEST_CANCELLED',499) : timeout.aborted ? unavailable('UPSTREAM_TIMEOUT',504) : unavailable('UPSTREAM_UNAVAILABLE') }

@@ -1,4 +1,5 @@
 import { Header } from "@/components/header"
+import { T } from "@/components/t"
 import { Footer } from "@/components/footer"
 import { PrayersIntroduction } from "@/components/prayers-introduction"
 import { PrayersSearch } from "@/components/prayers-search"
@@ -29,6 +30,6 @@ export default async function OracionesPage({ searchParams }: { searchParams: Pr
       <PrayersCategories prayers={prayers} />
       <ScrollToResults />
       <FeaturedPrayers prayers={featured} />
-      <section id="resultados" className="scroll-mt-24 space-y-4" aria-label="Resultados de oraciones"><h2 className="font-playfair text-2xl" aria-live="polite">{filtered.length} oraciones encontradas</h2><PrayersResults prayers={filtered} /></section>
+      <section id="resultados" className="scroll-mt-24 space-y-4" aria-labelledby="prayer-results-title"><h2 id="prayer-results-title" className="font-playfair text-2xl" aria-live="polite"><T k="supplemental.prayersCount" values={{ count: filtered.length }} /></h2><PrayersResults prayers={filtered} /></section>
     </main><Footer /></div>
 }

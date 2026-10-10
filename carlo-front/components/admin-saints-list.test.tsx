@@ -2,10 +2,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { AdminSaintsList } from './admin-saints-list'
+import { translations } from '@/lib/translations'
 
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 vi.mock('./catalog-image', () => ({ CatalogImage: () => null }))
+vi.mock('@/contexts/language-context', () => ({ useLanguage: () => ({ language: 'es', t: (key: string) => translations.es[key] || key }) }))
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); refresh.mockClear() })
 
 it('manages the last of 3000 saints with bounded cards and deletes through the authenticated API proxy', async () => {
@@ -18,7 +20,7 @@ it('manages the last of 3000 saints with bounded cards and deletes through the a
   try {
     render(<AdminSaintsList saints={saints} onAddNew={vi.fn()} onEdit={vi.fn()} />)
     expect(screen.getAllByRole('button', { name: /^Editar$/ })).toHaveLength(12)
-    fireEvent.change(screen.getByPlaceholderText('Buscar santos...'), { target: { value: '2999' } })
+    fireEvent.change(screen.getByRole('textbox', { name: translations.es['catalog.searchSaints'] }), { target: { value: '2999' } })
     expect(screen.getAllByRole('button', { name: /^Editar$/ })).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar Synthetic 2999' }))
     await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/saints/fixture-2999', { method: 'DELETE', credentials: 'include' }))

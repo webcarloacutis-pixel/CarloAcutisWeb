@@ -1,0 +1,40 @@
+{
+  "name": "braces",
+  "upstreamVersion": "3.0.3",
+  "source": "https://registry.npmjs.org/braces/-/braces-3.0.3.tgz",
+  "sourceIntegrity": "sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==",
+  "license": "MIT",
+  "upstreamAdvisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+  "upstreamProposal": "https://github.com/micromatch/braces/pull/87",
+  "upstreamProposalCommit": "d44b9b1ee12e7804d4232d5a47a4a0c61d2fbefe",
+  "patchKind": "local depth guards on unmodified npm 3.0.3 sources; not an upstream released fix",
+  "patchSha256": "b3ec90a846ca470f559e10ab0678d82a05843d90b461aebb2f741cfb6c013a80",
+  "sourceFileSha256": {
+    "index.js": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4",
+    "package.json": "56f08b888a4f30dc7cf8a7dbb36ffe92b737912ba36abe9d069d32167c957ac7",
+    "LICENSE": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2",
+    "README.md": "947b0fc3cc12eaaa070207126213fbdf9ab2bf8cd13dcc6e4007b36b79309866",
+    "lib/compile.js": "dc98f22eee3d511785d92a00758d5f0d48efed5f5813bdecc2de430c529b5c9f",
+    "lib/constants.js": "c18ac5adb57308f1ce42a28552da3a31f5d83709743ebd9a636336813a744d4b",
+    "lib/expand.js": "41ccc196ebfa7b7781a634e721eb744e4e7bcb54cba427a7e3d6806a1b9e58f7",
+    "lib/parse.js": "e572166565f15fa6ad9865ae49d678218e32aabfd1b3720f6d0d43d39800d310",
+    "lib/stringify.js": "379f22d77bfa1478341ccd49c5e4267464aabcbba03558bab332aac23fc6f23a",
+    "lib/utils.js": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7"
+  },
+  "patchedFileSha256": {
+    "index.js": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4",
+    "package.json": "56f08b888a4f30dc7cf8a7dbb36ffe92b737912ba36abe9d069d32167c957ac7",
+    "LICENSE": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2",
+    "README.md": "947b0fc3cc12eaaa070207126213fbdf9ab2bf8cd13dcc6e4007b36b79309866",
+    "lib/compile.js": "a6183579e38b20ba17d4a4fc10a0a49ac10f55dff63c16085f642f454cefa989",
+    "lib/constants.js": "c18ac5adb57308f1ce42a28552da3a31f5d83709743ebd9a636336813a744d4b",
+    "lib/expand.js": "aec5b4fb4cb74b3c950ce422213ef2520c7e9de862ec1921acba60bebf5f929f",
+    "lib/parse.js": "b38bebe3412afc5f4fc60ee7d83dec49e6c762ca390eec0df704cc9e06f199a9",
+    "lib/stringify.js": "c9e92b1bb9ab4edb5cfa65bfd79c1fb9475fdd7497fda40ccf7be5f432720d09",
+    "lib/utils.js": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7",
+    "lib/depth.js": "751df36f6c4ed26341e8ed2d9293750c15ff5ddf2a9eca505b741dbb5adaa5e7"
+  },
+  "sourceFileHashFormat": "sha256 raw bytes from original npm braces@3.0.3 package",
+  "patchedFileHashFormat": "sha256 UTF-8 text with CRLF normalized to LF",
+  "patchHashFormat": "sha256 UTF-8 text with CRLF normalized to LF"
+}

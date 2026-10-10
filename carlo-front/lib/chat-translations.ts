@@ -510,3 +510,25 @@ export const chatTranslations: Record<string, Record<string, string>> = {
     "chat.operationFailed": "Nie udało się zakończyć operacji."
   }
 }
+
+// Capacity and idempotency are application states, separate from provider rate limiting.
+const applicationFeedback: Record<string, [string, string, string]> = {
+  es: ['El servicio de IA está ocupado. Inténtalo más tarde.', 'La solicitud anterior sigue en curso. Espera antes de enviar otra.', 'Esta solicitud cambió. Envía un mensaje nuevo.'],
+  en: ['The AI service is busy. Please try again later.', 'The previous request is still in progress. Please wait before sending another.', 'This request changed. Send a new message.'],
+  fr: ['Le service IA est occupé. Réessayez plus tard.', 'La demande précédente est encore en cours. Attendez avant d’en envoyer une autre.', 'Cette demande a changé. Envoyez un nouveau message.'],
+  pt: ['O serviço de IA está ocupado. Tente novamente mais tarde.', 'A solicitação anterior ainda está em andamento. Aguarde antes de enviar outra.', 'Esta solicitação mudou. Envie uma nova mensagem.'],
+  it: ['Il servizio IA è occupato. Riprova più tardi.', 'La richiesta precedente è ancora in corso. Attendi prima di inviarne un’altra.', 'Questa richiesta è cambiata. Invia un nuovo messaggio.'],
+  de: ['Der KI-Dienst ist ausgelastet. Bitte versuche es später erneut.', 'Die vorherige Anfrage läuft noch. Bitte warte, bevor du eine weitere sendest.', 'Diese Anfrage hat sich geändert. Sende eine neue Nachricht.'],
+  zh: ['人工智能服务繁忙，请稍后再试。', '上一个请求仍在处理中，请等待后再发送新的请求。', '此请求已更改，请发送新消息。'],
+  hi: ['एआई सेवा व्यस्त है। कृपया बाद में फिर प्रयास करें।', 'पिछला अनुरोध अभी जारी है। दूसरा भेजने से पहले प्रतीक्षा करें।', 'यह अनुरोध बदल गया है। नया संदेश भेजें।'],
+  ar: ['خدمة الذكاء الاصطناعي مشغولة. حاول لاحقًا.', 'الطلب السابق لا يزال قيد التنفيذ. انتظر قبل إرسال طلب آخر.', 'تغيّر هذا الطلب. أرسل رسالة جديدة.'],
+  ru: ['Сервис ИИ занят. Повторите попытку позже.', 'Предыдущий запрос ещё выполняется. Подождите перед отправкой нового.', 'Этот запрос изменился. Отправьте новое сообщение.'],
+  ja: ['AIサービスが混み合っています。後でもう一度お試しください。', '前のリクエストを処理中です。次を送信する前にお待ちください。', 'このリクエストは変更されました。新しいメッセージを送信してください。'],
+  ko: ['AI 서비스가 혼잡합니다. 나중에 다시 시도해 주세요.', '이전 요청이 아직 진행 중입니다. 다른 요청을 보내기 전에 기다려 주세요.', '이 요청이 변경되었습니다. 새 메시지를 보내 주세요.'],
+  tr: ['Yapay zekâ hizmeti meşgul. Lütfen daha sonra tekrar deneyin.', 'Önceki istek hâlâ sürüyor. Başka bir istek göndermeden önce bekleyin.', 'Bu istek değişti. Yeni bir mesaj gönderin.'],
+  vi: ['Dịch vụ AI đang bận. Vui lòng thử lại sau.', 'Yêu cầu trước vẫn đang được xử lý. Vui lòng chờ trước khi gửi yêu cầu khác.', 'Yêu cầu này đã thay đổi. Hãy gửi tin nhắn mới.'],
+  pl: ['Usługa AI jest zajęta. Spróbuj ponownie później.', 'Poprzednie żądanie nadal trwa. Poczekaj przed wysłaniem kolejnego.', 'To żądanie się zmieniło. Wyślij nową wiadomość.'],
+}
+for (const [language, [busy, inProgress, requestConflict]] of Object.entries(applicationFeedback)) {
+  Object.assign(chatTranslations[language], { 'chat.busy': busy, 'chat.inProgress': inProgress, 'chat.requestConflict': requestConflict })
+}

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest"
-import { publicRequest, PUBLIC_READ_TIMEOUT_MS } from "./public-request"
+import { publicRequest, PublicReadError, PUBLIC_READ_TIMEOUT_MS } from "./public-request"
 afterEach(()=>vi.restoreAllMocks())
 it("allows an 18 second backend response instead of cutting off at 15 seconds",async()=>{
   const timer=vi.spyOn(AbortSignal,'timeout').mockReturnValue(new AbortController().signal)
@@ -27,4 +27,14 @@ it("never turns network failure into an empty catalog or logs an error message",
 it.each([['TimeoutError','CATALOG_TIMEOUT'],['AbortError','CATALOG_CANCELLED']])('classifies an external %s deadline/cancellation separately',async(name,code)=>{
   const signal=AbortSignal.abort(new DOMException('Synthetic cancellation',name))
   await expect(publicRequest('http://example.invalid/saints',{signal},vi.fn().mockRejectedValue(signal.reason))).rejects.toMatchObject({code})
+})
+
+it.each([429, 503, 401])('keeps HTTP%s for localized UI classification without exposing technical errors', async status => {
+  vi.spyOn(console, 'info').mockImplementation(() => {})
+  let error: PublicReadError | undefined
+  try { await publicRequest('https://fixture.invalid/saints', {}, vi.fn().mockResolvedValue(new Response('fixture private body', {status}))) }
+  catch (cause) { error = cause as PublicReadError }
+  expect(error).toBeInstanceOf(PublicReadError)
+  expect(error).toMatchObject({code:'CATALOG_HTTP_ERROR', status})
+  expect(error?.message).not.toMatch(/CATALOG_|fixture|[a-f0-9]{8}-/)
 })

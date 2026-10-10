@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react"
-import { afterEach, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { AdminPrayersStatsCard } from "./admin-prayers-stats-card"
+import { LanguageProvider } from '@/contexts/language-context'
+import { translations } from '@/lib/translations'
 
+beforeEach(()=>localStorage.setItem('language','es'))
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 it("counts pending prayers beyond100 from the private total using two one-row requests", async () => {
@@ -17,23 +20,25 @@ it("counts pending prayers beyond100 from the private total using two one-row re
     })
   })
   vi.stubGlobal("fetch", fetcher)
-  render(<AdminPrayersStatsCard />)
+  render(<LanguageProvider><AdminPrayersStatsCard /></LanguageProvider>)
   expect(await screen.findByText("79 aprobadas")).toBeTruthy()
   expect(screen.getByText("179")).toBeTruthy()
   expect(fetcher).toHaveBeenCalledTimes(2)
 })
 
-it("shows unauthorized totals as an error without claiming a zero total", async () => {
-  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: "NOT_AUTHENTICATED" }, { status: 401 })))
-  render(<AdminPrayersStatsCard />)
-  expect(await screen.findByRole("alert")).toBeTruthy()
+it.each([[401,'catalog.accessDenied'],[503,'catalog.temporarilyUnavailable']] as const)("distinguishes status %i without claiming a zero total", async (status,key) => {
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: "private diagnostic" }, { status })))
+  render(<LanguageProvider><AdminPrayersStatsCard /></LanguageProvider>)
+  const alert=await screen.findByRole("alert")
+  expect(alert.textContent).toBe(translations.es[key])
   expect(screen.queryByText("0")).toBeNull()
   expect(screen.queryByText("0 aprobadas")).toBeNull()
+  expect(screen.queryByText(/private diagnostic/)).toBeNull()
 })
 
 it("reports an empty complete collection only after both valid responses", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => Response.json([], { headers: { "X-Total-Count": "0" } })))
-  render(<AdminPrayersStatsCard />)
+  render(<LanguageProvider><AdminPrayersStatsCard /></LanguageProvider>)
   expect(await screen.findByText("0 aprobadas")).toBeTruthy()
   expect(screen.getByText("0")).toBeTruthy()
   expect(screen.queryByRole("alert")).toBeNull()

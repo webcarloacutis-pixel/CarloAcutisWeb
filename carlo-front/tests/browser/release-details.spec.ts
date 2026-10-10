@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { observeReleaseNetwork, assertReleaseNetwork } from './release-network'
 
 test.skip(process.env.ACUTIS_RELEASE_BROWSER !== '1', 'Requires the isolated restored public snapshot')
 test.use({trace:'off'})
@@ -22,6 +23,7 @@ test.describe('all existing detail batches', () => {
     test.setTimeout(180_000);page.setDefaultNavigationTimeout(30_000)
     const results:Record<string,unknown>[]=[]
     const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name))
+    const network=observeReleaseNetwork(page)
     for(const row of records.slice(batch*10,batch*10+10)){
       const started=Date.now()
       const response=await page.goto('/santos/'+row.slug,{waitUntil:'domcontentloaded'})
@@ -37,12 +39,14 @@ test.describe('all existing detail batches', () => {
       results.push({id:row.id,slug:row.slug,decoded:true,durationMs:Date.now()-started})
     }
     expect(results).toHaveLength(batch===17?9:10)
+    await assertReleaseNetwork(network,test.info())
     await test.info().attach('existing-detail-batch',{body:JSON.stringify(results),contentType:'application/json'})
   })
 })
 
 for(const [width,height] of [[1366,768],[1440,900],[768,1024],[360,800],[390,844],[430,932]]) {
   test(`legacy detail and complete portrait fit ${width}x${height}`,async({page})=>{
+    const network=observeReleaseNetwork(page)
     await page.setViewportSize({width,height})
     await page.goto('/santos/santa-felicidad',{waitUntil:'networkidle'})
     await expect(page.getByRole('heading',{level:1,name:'Santa Felicidad',exact:true})).toBeVisible()
@@ -54,6 +58,7 @@ for(const [width,height] of [[1366,768],[1440,900],[768,1024],[360,800],[390,844
     await page.screenshot({path:test.info().outputPath(`felicidad-${width}.png`),fullPage:true})
     await page.getByRole('link',{name:'Volver a Santos',exact:true}).focus()
     await expect(page.getByRole('link',{name:'Volver a Santos',exact:true})).toBeFocused()
+    await assertReleaseNetwork(network,test.info())
   })
 }
 

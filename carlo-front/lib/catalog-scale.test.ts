@@ -51,7 +51,7 @@ describe("complete catalogue reads at scale", () => {
     const controller = new AbortController()
     const fetcher = vi.fn((_input, init) => { expect(init?.signal?.aborted).toBe(true); return Promise.reject(new DOMException("Aborted", "AbortError")) })
     controller.abort()
-    await expect(fetchPublicCollection("/api/saints", { signal: controller.signal }, fetcher)).rejects.toThrow("CATALOG_CANCELLED")
+    await expect(fetchPublicCollection("/api/saints", { signal: controller.signal }, fetcher)).rejects.toMatchObject({ code: 'CATALOG_CANCELLED' })
     const totalFetcher = vi.fn().mockResolvedValue(response([{ id: "1" }], 3000, "next"))
     expect(await fetchCollectionTotal("/api/miracles/all", {}, totalFetcher)).toBe(3000)
     expect(String(totalFetcher.mock.calls[0][0])).toContain("limit=1")

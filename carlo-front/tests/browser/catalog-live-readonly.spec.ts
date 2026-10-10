@@ -1,5 +1,8 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import { catalogEntries as entries } from './catalog-data';
+import { catalogTranslations } from '../../lib/catalog-translations';
+import { supplementalUiTranslations } from '../../lib/supplemental-ui-translations';
+import { translations } from '../../lib/translations';
 
 
 async function collectVisibleLinks(page: Page, links: Locator, label: string, total: number, size: number) {
@@ -29,7 +32,7 @@ test('existing catalogue supports complete pagination, search, reload, country a
   await page.goto('/santos');
   await expect(page.getByText(`${entries.length} santos encontrados`, { exact: true })).toBeVisible();
   const cards = page.locator('main').getByRole('link', { name: /^Ver biografía de / });
-  await collectVisibleLinks(page, cards, 'Paginación de santos', entries.length, 12);
+  await collectVisibleLinks(page, cards, catalogTranslations.es['catalog.pagination'] + ': ' + translations.es['nav.saints'], entries.length, 12);
   const chosen = [...entries].sort((a, b) => b.name.length - a.name.length)[0];
   const search = page.getByLabel('Buscar santos', { exact: true }).filter({ visible: true });
   await search.fill(chosen.name);
@@ -49,7 +52,7 @@ test('existing catalogue supports complete pagination, search, reload, country a
 test('existing map retains all catalogue links and documented location labels', async ({ page }) => {
   await page.goto('/mapa');
   await expect(page.getByRole('status').filter({ hasText: `${entries.length} santos encontrados;` })).toBeVisible();
-  await collectVisibleLinks(page, page.getByRole('link', { name: /^Ver detalles de / }), 'Paginación de santos del mapa', entries.length, 20);
+  await collectVisibleLinks(page, page.getByRole('link', { name: /^Ver detalles de / }), catalogTranslations.es['catalog.pagination'] + ': ' + supplementalUiTranslations.es['supplemental.mapSaints'], entries.length, 20);
   await expect(page.getByLabel('Mapa de lugares de nacimiento. Usa las flechas y las teclas más y menos para navegar.', { exact: true })).toBeVisible();
   await expect(page.getByRole('status').filter({ hasText: `${entries.length} santos encontrados;` })).toBeVisible();
 });

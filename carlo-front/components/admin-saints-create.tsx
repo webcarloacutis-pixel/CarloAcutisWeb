@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/language-context"
 
 import { catalogWriteError } from "@/lib/catalog-write-error";
 import { useState } from "react";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 export function AdminSaintsCreate() {
+  const { t } = useLanguage()
   const router = useRouter();
   const baseUrl = '';
 
@@ -21,7 +23,7 @@ export function AdminSaintsCreate() {
   async function onCreate() {
     setMsg(null);
     if (!slug.trim() || !name.trim()) {
-      setMsg("Slug y nombre son obligatorios.");
+      setMsg("supplemental.slugNameRequired");
       return;
     }
 
@@ -38,10 +40,10 @@ export function AdminSaintsCreate() {
       });
 
       if (!res.ok) {
-        throw new Error(await catalogWriteError(res, `Error ${res.status}`));
+        throw new Error(await catalogWriteError(res, "supplemental.writeFailed"));
       }
 
-      setMsg("✓ Santo creado.");
+      setMsg("supplemental.created");
       setSlug("");
       setName("");
       setCountry("");
@@ -50,7 +52,7 @@ export function AdminSaintsCreate() {
       window.dispatchEvent(new Event("catalog:saints-changed"));
       router.refresh();
     } catch (e: any) {
-      setMsg(`Error: ${e?.message ?? "Error creando santo"}`);
+      setMsg(e?.message?.startsWith("catalog.") ? e.message : "supplemental.writeFailed");
     } finally {
       setLoading(false);
     }
@@ -59,44 +61,44 @@ export function AdminSaintsCreate() {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle className="font-playfair">Crear Santo</CardTitle>
+        <CardTitle className="font-playfair">{t("supplemental.createSaint")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="slug">Slug</Label>
+          <Label htmlFor="slug">{t("supplemental.slug")}</Label>
           <Input
             id="slug"
-            placeholder="ej: carlo-acutis"
+            placeholder={t("supplemental.slug")}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
           />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="name">Nombre</Label>
+          <Label htmlFor="name">{t("supplemental.name")}</Label>
           <Input
             id="name"
-            placeholder="ej: Carlo Acutis"
+            placeholder={t("supplemental.name")}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="country">País</Label>
+          <Label htmlFor="country">{t("supplemental.country")}</Label>
           <Input
             id="country"
-            placeholder="ej: Italia"
+            placeholder={t("supplemental.country")}
             value={country}
             onChange={(e) => setCountry(e.target.value)}
           />
         </div>
 
         <Button onClick={onCreate} disabled={loading}>
-          {loading ? "Creando..." : "Crear"}
+          {loading ? t("supplemental.creating") : t("supplemental.create")}
         </Button>
 
-        {msg && <p className="text-sm text-muted-foreground">{msg}</p>}
+        {msg && <p className="text-sm text-muted-foreground">{t(msg)}</p>}
       </CardContent>
     </Card>
   );

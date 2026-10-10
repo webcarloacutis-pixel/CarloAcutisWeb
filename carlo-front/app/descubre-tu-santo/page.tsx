@@ -3,6 +3,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { SaintMatcherIntroduction } from "@/components/saint-matcher-introduction"
 import { SaintMatcherForm } from "@/components/saint-matcher-form"
+import { T } from '@/components/t'
 
 export default function DescubreTuSantoPage() {
   return (
@@ -12,7 +13,7 @@ export default function DescubreTuSantoPage() {
         <div className="max-w-4xl mx-auto">
           <SaintMatcherIntroduction />
 
-          <Suspense fallback={<div className="text-center py-8">Cargando...</div>}>
+          <Suspense fallback={<div className="text-center py-8"><T k="common.loading" /></div>}>
             <SaintMatcherForm />
           </Suspense>
         </div>

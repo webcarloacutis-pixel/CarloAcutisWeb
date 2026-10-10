@@ -16,7 +16,7 @@ export function Footer() {
           <div className="col-span-1 md:col-span-2">
             <Link prefetch={false} href="/" className="flex items-center space-x-2 mb-4">
               <Cross className="h-8 w-8 text-primary" />
-              <span className="font-playfair text-xl font-bold text-foreground">Santos y Milagros</span>
+              <span className="font-playfair text-xl font-bold text-foreground"><T k="brand.title" /></span>
             </Link>
             <p className="text-muted-foreground text-pretty max-w-md"><T k="footer.description" /></p>
           </div>

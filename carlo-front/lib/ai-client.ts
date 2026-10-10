@@ -1,10 +1,10 @@
 import { apiUrl } from './api-url'
-export type AiErrorCode='AI_DISABLED'|'AI_CONFIGURATION_MISSING'|'AI_PROVIDER_AUTH'|'AI_MODEL_UNAVAILABLE'|'AI_RATE_LIMIT'|'AI_QUOTA_EXCEEDED'|'AI_TIMEOUT'|'AI_UPSTREAM_UNAVAILABLE'|'AI_RESPONSE_INVALID'|'AI_PERSISTENCE_FAILED'
+export type AiErrorCode='AI_DISABLED'|'AI_CONFIGURATION_MISSING'|'AI_PROVIDER_AUTH'|'AI_MODEL_UNAVAILABLE'|'AI_RATE_LIMIT'|'AI_QUOTA_EXCEEDED'|'AI_TIMEOUT'|'AI_UPSTREAM_UNAVAILABLE'|'AI_RESPONSE_INVALID'|'AI_PERSISTENCE_FAILED'|'DATABASE_UNAVAILABLE'|'RATE_LIMITED'|'AI_BUSY'|'AI_REQUEST_IN_PROGRESS'|'AI_REQUEST_CONFLICT'|'NOT_AUTHENTICATED'|'AUTH_NOT_CONFIGURED'
 export type ApiError=Error & {status?:number;code?:AiErrorCode;requestId?:string}
-const codes=new Set<AiErrorCode>(['AI_DISABLED','AI_CONFIGURATION_MISSING','AI_PROVIDER_AUTH','AI_MODEL_UNAVAILABLE','AI_RATE_LIMIT','AI_QUOTA_EXCEEDED','AI_TIMEOUT','AI_UPSTREAM_UNAVAILABLE','AI_RESPONSE_INVALID','AI_PERSISTENCE_FAILED'])
+const codes=new Set<AiErrorCode>(['AI_DISABLED','AI_CONFIGURATION_MISSING','AI_PROVIDER_AUTH','AI_MODEL_UNAVAILABLE','AI_RATE_LIMIT','AI_QUOTA_EXCEEDED','AI_TIMEOUT','AI_UPSTREAM_UNAVAILABLE','AI_RESPONSE_INVALID','AI_PERSISTENCE_FAILED','DATABASE_UNAVAILABLE','RATE_LIMITED','AI_BUSY','AI_REQUEST_IN_PROGRESS','AI_REQUEST_CONFLICT','NOT_AUTHENTICATED','AUTH_NOT_CONFIGURED'])
 export function chatErrorKey(error:unknown) {
   const code=(error as ApiError)?.code
-  const keys:Partial<Record<AiErrorCode,string>>={AI_DISABLED:'chat.disabled',AI_CONFIGURATION_MISSING:'chat.configuration',AI_PROVIDER_AUTH:'chat.providerAuth',AI_MODEL_UNAVAILABLE:'chat.modelUnavailable',AI_RATE_LIMIT:'chat.rateLimit',AI_QUOTA_EXCEEDED:'chat.quota',AI_TIMEOUT:'chat.timeout',AI_RESPONSE_INVALID:'chat.invalid',AI_PERSISTENCE_FAILED:'chat.persistence'}
+  const keys:Partial<Record<AiErrorCode,string>>={AI_DISABLED:'chat.disabled',AI_CONFIGURATION_MISSING:'chat.configuration',AI_PROVIDER_AUTH:'chat.providerAuth',AI_MODEL_UNAVAILABLE:'chat.modelUnavailable',AI_RATE_LIMIT:'chat.rateLimit',RATE_LIMITED:'chat.rateLimit',AI_BUSY:'chat.busy',AI_REQUEST_IN_PROGRESS:'chat.inProgress',AI_REQUEST_CONFLICT:'chat.requestConflict',NOT_AUTHENTICATED:'chat.sessionExpired',AUTH_NOT_CONFIGURED:'catalog.temporarilyUnavailable',AI_QUOTA_EXCEEDED:'chat.quota',AI_TIMEOUT:'chat.timeout',AI_RESPONSE_INVALID:'chat.invalid',AI_PERSISTENCE_FAILED:'chat.persistence',DATABASE_UNAVAILABLE:'catalog.temporarilyUnavailable'}
   return (code && keys[code]) || ((error as ApiError)?.status===429?'chat.rateLimit':'chat.unavailable')
 }
 // No automatic retries of chargeable user operations.

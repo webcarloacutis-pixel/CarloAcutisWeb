@@ -1,3 +1,4 @@
+import { T } from "@/components/t"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Heart, BookOpen, Star } from "lucide-react"
 
@@ -8,10 +9,10 @@ export function PrayersIntroduction() {
         <CardHeader>
           <CardTitle className="font-playfair text-2xl flex items-center gap-2">
             <Heart className="h-6 w-6 text-primary" />
-            El Poder de la Oración de los Santos
+            <T k="supplemental.powerPrayer" />
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent lang="es">
           <p className="text-muted-foreground leading-relaxed text-pretty mb-4">
             Las oraciones de los santos son tesoros espirituales forjados en la experiencia de hombres y mujeres que
             vivieron en íntima unión con Dios. Estas oraciones han sido probadas por el tiempo y han llevado consuelo,
@@ -29,10 +30,10 @@ export function PrayersIntroduction() {
           <CardHeader>
             <CardTitle className="font-playfair flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-secondary" />
-              Cómo Usar Esta Biblioteca
+              <T k="supplemental.useLibrary" />
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent lang="es">
             <ul className="space-y-2 text-muted-foreground">
               <li>• Busca por santo, ocasión o necesidad</li>
               <li>• Explora las categorías temáticas</li>
@@ -47,10 +48,10 @@ export function PrayersIntroduction() {
           <CardHeader>
             <CardTitle className="font-playfair flex items-center gap-2">
               <Star className="h-5 w-5 text-accent" />
-              Beneficios Espirituales
+              <T k="supplemental.spiritualBenefits" />
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent lang="es">
             <ul className="space-y-2 text-muted-foreground">
               <li>• Fortalecimiento de la fe</li>
               <li>• Consuelo en momentos difíciles</li>

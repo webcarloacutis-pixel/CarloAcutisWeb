@@ -2,11 +2,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { SaintsCatalog } from "./saints-catalog"
+import { translations } from '@/lib/translations'
 
 const navigation = vi.hoisted(() => ({ query: "" }))
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(navigation.query) }))
 vi.mock("@/components/catalog-image", () => ({ CatalogImage: () => <span data-testid="synthetic-image" /> }))
-vi.mock("@/contexts/language-context", () => ({ useLanguage: () => ({ language: "es", t: (key: string) => key }) }))
+vi.mock("@/contexts/language-context", () => ({ useLanguage: () => ({ language: "es", t: (key: string) => translations.es[key] || key }) }))
 vi.mock("@/components/translated-text", () => ({ TranslatedText: ({ text }: { text: string }) => <>{text}</> }))
 vi.mock("@/components/world-map-leaflet", () => ({ WorldMapLeaflet: () => null }))
 

@@ -4,8 +4,9 @@ import { afterEach, expect, it, vi } from "vitest"
 import { MiraclesList } from "@/components/miracles-list"
 import { SaintMiracles } from "@/components/saint-miracles"
 import { AdminMiraclesList } from "@/components/admin-miracles-list"
+import { translations } from './translations'
 
-vi.mock("@/contexts/language-context", () => ({ useLanguage: () => ({ language: "es", t: (key: string) => key }) }))
+vi.mock("@/contexts/language-context", () => ({ useLanguage: () => ({ language: "es", t: (key: string) => translations.es[key] || key }) }))
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 function fixture() {
   return {

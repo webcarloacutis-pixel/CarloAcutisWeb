@@ -18,3 +18,14 @@ it("keeps every saint in an overlapping birthplace accessible", () => {
   expect([...popup.querySelectorAll("a")].map((link) => link.textContent)).toEqual(["Francisco", "Clara", "Ver santos nacidos en Italia"])
   expect(popup.textContent).toContain("Ubicación aproximada de la ciudad")
 })
+
+it("localizes the popup controls and country while preserving the authentic name", () => {
+  const group = Array.from({ length: 21 }, (_, index) => ({ id: String(index), slug: "carlo-" + index, name: "Carlo Acutis", birthPlace: "Londres", birthCountryCode: "GB", birthPrecision: "city" }))
+  const popup = createBirthPopup(group, document, "fr")
+  expect(popup.textContent).toContain("Carlo Acutis")
+  expect(popup.textContent).toContain("Royaume-Uni")
+  expect([...popup.querySelectorAll("button")].map(button => button.textContent)).toEqual(["Précédent", "Suivant"])
+  expect(popup.textContent).toContain("1–20 sur 21")
+  popup.querySelectorAll("button")[1].click()
+  expect(popup.textContent).toContain("21–21 sur 21")
+})

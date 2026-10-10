@@ -2,8 +2,8 @@ const responseContext = new WeakMap<Response, { requestId: string; started: numb
 
 export const PUBLIC_READ_TIMEOUT_MS = 35_000
 export class PublicReadError extends Error {
-  constructor(readonly code: string, readonly requestId: string) {
-    super("No se pudo cargar el catálogo completo. " + code + " " + requestId)
+  constructor(readonly code: string, readonly requestId: string, readonly status = 0) {
+    super("No se pudo cargar el catálogo completo. Vuelve a intentarlo.")
   }
 }
 /** Bounded public reads. No user/session/provider dependency and no automatic retry. */
@@ -16,7 +16,7 @@ export async function publicRequest(url: string, options: RequestInit = {}, fetc
   try {
     const response = await fetcher(url, { ...options, headers, redirect: "manual", signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout })
     status = response.status
-    if (!response.ok && !(allowNotFound && response.status === 404)) { code = "CATALOG_HTTP_ERROR"; throw new PublicReadError(code, requestId) }
+    if (!response.ok && !(allowNotFound && response.status === 404)) { code = "CATALOG_HTTP_ERROR"; throw new PublicReadError(code, requestId, status) }
     responseContext.set(response, { requestId, started })
     return response
   } catch (error) {
@@ -27,6 +27,16 @@ export async function publicRequest(url: string, options: RequestInit = {}, fetc
   } finally {
     if (typeof window === "undefined") console.info("PUBLIC_READ", { requestId, stage: "SERVER_READ", code, httpStatus: status, durationMs: Math.round(performance.now() - started) })
   }
+}
+
+/** Safe UI classification. Upstream bodies and exception messages stay out of visitor-facing text. */
+export function catalogErrorKey(error: unknown): string {
+  if (error instanceof PublicReadError) {
+    if (error.status === 429) return 'catalog.rateLimited'
+    if (error.status === 401 || error.status === 403) return 'catalog.accessDenied'
+    if (error.status >= 500 || ['CATALOG_TIMEOUT', 'CATALOG_UNAVAILABLE'].includes(error.code)) return 'catalog.temporarilyUnavailable'
+  }
+  return 'catalog.failed'
 }
 
 /** Do not log parse errors/bodies: provider responses may contain private information. */

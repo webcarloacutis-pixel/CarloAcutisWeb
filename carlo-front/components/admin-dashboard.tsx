@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/language-context"
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ type AdminDashboardProps = {
 type TabKey = "resumen" | "santos" | "milagros" | "oraciones" | "config";
 
 export function AdminDashboard({ saints }: AdminDashboardProps) {
+  const { t } = useLanguage()
   const [tab, setTab] = useState<TabKey>("resumen");
 
 
@@ -50,10 +52,10 @@ async function openEdit(s: Saint) {
   try {
     setEditError(null);
     const response = await fetch(apiUrl("/saints/" + encodeURIComponent(s.id)), { cache: "no-store", credentials: "include" });
-    if (!response.ok) throw new Error("No se pudo cargar la ficha completa para editar.");
+    if (!response.ok) throw new Error("supplemental.loadFailed");
     setEditing(await response.json());
     setModalOpen(true);
-  } catch (error) { setEditError(error instanceof Error ? error.message : "No se pudo cargar la ficha."); }
+  } catch (error) { setEditError("supplemental.loadFailed"); }
 }
 
 function closeModal() {
@@ -71,7 +73,7 @@ function closeModal() {
 
   return (
     <div className="space-y-6">
-      {editError && <p role="alert">{editError}</p>}
+      {editError && <p role="alert">{t(editError)}</p>}
       {/* Tabs */}
       <div className="flex flex-wrap items-center justify-center gap-2 rounded-lg border bg-white/40 p-2">
         <Button
@@ -80,32 +82,28 @@ function closeModal() {
           className={tab === "resumen" ? "" : "bg-transparent"}
           onClick={() => setTab("resumen")}
         >
-          Resumen
-        </Button>
+          {t("supplemental.summary")}</Button>
         <Button
           type="button"
           variant={tab === "santos" ? "default" : "outline"}
           className={tab === "santos" ? "" : "bg-transparent"}
           onClick={() => setTab("santos")}
         >
-          Santos
-        </Button>
+          {t("nav.saints")}</Button>
         <Button
           type="button"
           variant={tab === "milagros" ? "default" : "outline"}
           className={tab === "milagros" ? "" : "bg-transparent"}
           onClick={() => setTab("milagros")}
         >
-          Milagros
-        </Button>
+          {t("nav.miracles")}</Button>
         <Button
           type="button"
           variant={tab === "oraciones" ? "default" : "outline"}
           className={tab === "oraciones" ? "" : "bg-transparent"}
           onClick={() => setTab("oraciones")}
         >
-          Oraciones
-        </Button>
+          {t("nav.prayers")}</Button>
 
         <Button
           type="button"
@@ -113,8 +111,7 @@ function closeModal() {
           className={tab === "config" ? "" : "bg-transparent"}
           onClick={() => setTab("config")}
         >
-          Configuración
-        </Button>
+          {t("supplemental.settings")}</Button>
       </div>
 
       {/* Contenido */}
@@ -124,12 +121,12 @@ function closeModal() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Santos</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("nav.saints")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{totalSaints ?? "—"}</div>
-            {totalPage.error && <div role="alert"><p>{totalPage.error}</p><Button onClick={totalPage.retry}>Reintentar totales</Button></div>}
-            <p className="text-sm text-muted-foreground">Santos documentados</p>
+            {totalPage.error && <div role="alert"><p>{t(totalPage.error)}</p><Button onClick={totalPage.retry}>{t("content.retry")}</Button></div>}
+            <p className="text-sm text-muted-foreground">{t("supplemental.manageHelp")}</p>
           </CardContent>
         </Card>
 
@@ -139,20 +136,20 @@ function closeModal() {
 
           <Card className="md:col-span-2">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold">Acciones Rápidas</h3>
+              <h3 className="text-lg font-semibold">{t("supplemental.quickActions")}</h3>
               <div className="mt-4 flex flex-col gap-2">
                 <Button type="button" onClick={() => setTab("santos")}>
-                  + Agregar / Gestionar Santos
+                  {t("supplemental.manageSaints")}
                 </Button>
                 
                 <Button type="button" variant="outline" className="bg-transparent" onClick={() => setTab("oraciones")}>
-                  + Agregar / Gestionar Oraciones
+                  {t("supplemental.managePrayers")}
                 </Button>
 <Button type="button" variant="outline" className="bg-transparent" onClick={() => setTab("milagros")}>
-                  Registrar Milagro (próximo)
+                  {t("supplemental.newMiracle")}
                 </Button>
                 <Button type="button" variant="outline" className="bg-transparent" onClick={() => setTab("config")}>
-                  Configuración (próximo)
+                  {t("supplemental.settings")}
                 </Button>
               </div>
             </CardContent>
@@ -160,9 +157,9 @@ function closeModal() {
 
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold">Actividad Reciente</h3>
+              <h3 className="text-lg font-semibold">{t("supplemental.summary")}</h3>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <p>— (próximo)</p>
+                <p>{t("supplemental.noActivity")}</p>
               </div>
             </CardContent>
           </Card>
@@ -183,8 +180,8 @@ function closeModal() {
       {tab === "config" && (
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold">Configuración</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Aquí irá la configuración del admin después.</p>
+            <h3 className="text-lg font-semibold">{t("supplemental.settings")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{t("supplemental.comingSoon")}</p>
           </CardContent>
         </Card>
       )}

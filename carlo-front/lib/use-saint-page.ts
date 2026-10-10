@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { createSaintPageCache, requestSaintPage, type SaintPage } from "./saint-pages"
+import { catalogErrorKey } from './public-request'
 
 export function useSaintPage(url: string, enabled = true) {
   const cache = useRef(createSaintPageCache())
@@ -22,7 +23,7 @@ export function useSaintPage(url: string, enabled = true) {
           setState({ url, page, error: null })
         })
         .catch(error => {
-          if (!controller.signal.aborted) setState({ url, page: null, error: error instanceof Error ? error.message : "No se pudo cargar la página del catálogo." })
+          if (!controller.signal.aborted) setState({ url, page: null, error: catalogErrorKey(error) })
         })
         .finally(() => { if (!controller.signal.aborted) setBusy(false) })
     }, saved ? 0 : 180)

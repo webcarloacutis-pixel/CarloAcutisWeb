@@ -1,7 +1,8 @@
 import { validPopularityEstimate, type PopularityEstimateData } from "@/lib/popularity-display"
+import { T } from "@/components/t"
 export function PopularityEstimate({ estimate }: { estimate?: PopularityEstimateData | null }) {
   return <div className="text-xs text-muted-foreground space-y-1">
-    <p>{validPopularityEstimate(estimate) ? "Popularidad estimada por IA: " + estimate.score + "/100" : "Popularidad estimada por IA: sin estimación disponible"}</p>
-    {validPopularityEstimate(estimate) && <p>Estimación editorial de familiaridad cultural; no mide visitas, votos ni eficacia. Modelo: {estimate.model}. Método: {estimate.methodologyVersion}. Fecha: {new Date(estimate.generatedAt).toISOString().slice(0, 10)}.</p>}
+    <p>{validPopularityEstimate(estimate) ? <T k="chrome.popularityScore" values={{score:estimate.score}} /> : <T k="chrome.popularityMissing" />}</p>
+    {validPopularityEstimate(estimate) && <p><T k="chrome.popularityHelp" values={{model:estimate.model,method:estimate.methodologyVersion,date:new Date(estimate.generatedAt).toISOString().slice(0, 10)}} /></p>}
   </div>
 }

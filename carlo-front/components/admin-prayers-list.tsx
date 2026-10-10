@@ -1,4 +1,7 @@
 "use client"
+import { formatTranslation } from "@/lib/format-translation"
+import { catalogErrorKey } from "@/lib/public-request"
+import { useLanguage } from "@/contexts/language-context"
 
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -15,6 +18,7 @@ import {
 } from "@/lib/prayers-utils"
 
 export function AdminPrayersList() {
+  const { t } = useLanguage()
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<PrayerApi[]>([])
@@ -43,7 +47,7 @@ export function AdminPrayersList() {
       setError(null)
       setItems(data)
     } catch (e: any) {
-      setError(e?.message ? String(e.message) : "Error cargando oraciones")
+      setError(catalogErrorKey(e))
     } finally {
       setLoading(false)
     }
@@ -52,7 +56,7 @@ export function AdminPrayersList() {
   useEffect(() => {
     let active=true
     getPrayers().then(data=>{if(active){setItems(data);setError(null)}})
-      .catch(()=>{if(active)setError('No se pudieron cargar las oraciones.')})
+      .catch(error=>{if(active)setError(catalogErrorKey(error))})
       .finally(()=>{if(active)setLoading(false)})
     return ()=>{active=false}
   }, [])
@@ -83,7 +87,7 @@ export function AdminPrayersList() {
   const onCreate = async () => {
     try {
       if (!cTitle.trim() || !cContent.trim()) {
-        alert("Título y contenido son obligatorios.")
+        alert(t("supplemental.titleContentRequired"))
         return
       }
       setCreating(true)
@@ -100,7 +104,7 @@ export function AdminPrayersList() {
       setCApproved(false)
       await reload()
     } catch (e: any) {
-      alert(e?.message ? String(e.message) : "Error creando oración")
+      alert(t(e?.message?.startsWith("catalog.") ? e.message : "supplemental.writeFailed"))
     } finally {
       setCreating(false)
     }
@@ -110,7 +114,7 @@ export function AdminPrayersList() {
     if (!editingId) return
     try {
       if (!eTitle.trim() || !eContent.trim()) {
-        alert("Título y contenido son obligatorios.")
+        alert(t("supplemental.titleContentRequired"))
         return
       }
       setSaving(true)
@@ -123,20 +127,20 @@ export function AdminPrayersList() {
       setEditOpen(false)
       await reload()
     } catch (e: any) {
-      alert(e?.message ? String(e.message) : "Error guardando oración")
+      alert(t(e?.message?.startsWith("catalog.") ? e.message : "supplemental.writeFailed"))
     } finally {
       setSaving(false)
     }
   }
 
   const onDelete = async (id: string, title: string) => {
-    if (!confirm(`¿Eliminar la oración "${title}"?`)) return
+    if (!confirm(formatTranslation(t("supplemental.deleteNamed"), { name: title }))) return
     try {
       await deletePrayer(id)
-      alert("Oración eliminada.")
+      alert(t("supplemental.deleted"))
       await reload()
     } catch (e: any) {
-      alert(e?.message ? String(e.message) : "Error eliminando oración")
+      alert(t(e?.message?.startsWith("catalog.") ? e.message : "supplemental.writeFailed"))
     }
   }
 
@@ -145,7 +149,7 @@ export function AdminPrayersList() {
       await updatePrayer(p.id, { approved: !p.approved })
       await reload()
     } catch (e: any) {
-      alert(e?.message ? String(e.message) : "Error cambiando aprobación")
+      alert(t(e?.message?.startsWith("catalog.") ? e.message : "supplemental.writeFailed"))
     }
   }
 
@@ -153,24 +157,23 @@ export function AdminPrayersList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-playfair text-3xl font-bold">Gestión de Oraciones</h2>
+          <h2 className="font-playfair text-3xl font-bold">{t("supplemental.managePrayers")}</h2>
           <p className="text-muted-foreground">
-            {loading ? "Cargando..." : `${items.length} oraciones • ${approvedCount} aprobadas`}
+            {loading ? t("common.loading") : error ? "—" : formatTranslation(t("supplemental.prayerSummary"), { count: items.length, approved: approvedCount })}
           </p>
-          {error ? <p className="text-sm text-destructive mt-2">{error}</p> : null}
+          {error ? <p role="alert" className="text-sm text-destructive mt-2">{t(error)}</p> : null}
         </div>
 
         <Button className="bg-primary" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Oración
-        </Button>
+          {t("supplemental.newPrayer")}</Button>
       </div>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           className="pl-10"
-          placeholder="Buscar oraciones..."
+          placeholder={t("supplemental.searchPrayers")} aria-label={t("supplemental.searchPrayers")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -184,23 +187,23 @@ export function AdminPrayersList() {
                 <div className="min-w-0">
                   <CardTitle className="text-lg">{p.title}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {p.category ? `Categoría: ${p.category}` : "Sin categoría"} • {p.approved ? "Aprobada" : "No aprobada"}
+                    {p.category ? `${t("supplemental.category")}: ${p.category}` : t("supplemental.noCategory")} • {p.approved ? t("catalog.approved") : t("supplemental.notApproved")}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant={p.approved ? "secondary" : "outline"} onClick={() => toggleApproved(p)}>
-                    {p.approved ? "Quitar aprobación" : "Aprobar"}
+                    {p.approved ? t("supplemental.unapprove") : t("supplemental.approve")}
                   </Button>
 
                   <Button size="sm" variant="outline" onClick={() => openEdit(p)}>
                     <Edit className="h-3 w-3 mr-1" />
-                    Editar
-                  </Button>
+                    {t("common.edit")}</Button>
 
                   <Button
                     size="sm"
                     variant="outline"
+                    aria-label={formatTranslation(t("supplemental.deleteLabel"), { name: p.title })}
                     onClick={() => onDelete(p.id, p.title)}
                     className="text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
                   >
@@ -223,30 +226,29 @@ export function AdminPrayersList() {
           <div className="w-full max-w-2xl rounded-lg bg-background p-6">
             <div className="flex items-start justify-between gap-2 mb-4">
               <div>
-                <div className="text-lg font-semibold">Nueva Oración</div>
-                <p className="text-sm text-muted-foreground">Registra una oración en el sistema</p>
+                <div className="text-lg font-semibold">{t("supplemental.newPrayer")}</div>
+                <p className="text-sm text-muted-foreground">{t("supplemental.prayerCreateHelp")}</p>
               </div>
               <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
-                Cerrar
-              </Button>
+                {t("common.close")}</Button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="text-sm font-medium">Título</label>
-                <Input value={cTitle} onChange={(e) => setCTitle(e.target.value)} disabled={creating} />
+                <label className="text-sm font-medium">{t("supplemental.title")}</label>
+                <Input aria-label={t("supplemental.title")} value={cTitle} onChange={(e) => setCTitle(e.target.value)} disabled={creating} />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Categoría</label>
-                <Input value={cCategory} onChange={(e) => setCCategory(e.target.value)} disabled={creating} />
+                <label className="text-sm font-medium">{t("supplemental.category")}</label>
+                <Input aria-label={t("supplemental.category")} value={cCategory} onChange={(e) => setCCategory(e.target.value)} disabled={creating} />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Contenido</label>
+                <label className="text-sm font-medium">{t("supplemental.content")}</label>
                 <textarea
                   className="w-full min-h-[140px] rounded-md border bg-background p-3 text-sm"
-                  value={cContent}
+                  aria-label={t("supplemental.content")} value={cContent}
                   onChange={(e) => setCContent(e.target.value)}
                   disabled={creating}
                 />
@@ -254,15 +256,14 @@ export function AdminPrayersList() {
 
               <div className="flex items-center gap-2">
                 <Checkbox id="create-approved" checked={cApproved} onCheckedChange={(v) => setCApproved(!!v)} />
-                <label htmlFor="create-approved" className="text-sm font-medium">Aprobada</label>
+                <label htmlFor="create-approved" className="text-sm font-medium">{t("catalog.approved")}</label>
               </div>
 
               <div className="flex items-center gap-2 justify-end">
                 <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
-                  Cancelar
-                </Button>
+                  {t("common.cancel")}</Button>
                 <Button onClick={onCreate} disabled={creating}>
-                  {creating ? "Creando..." : "Crear"}
+                  {creating ? t("supplemental.creating") : t("supplemental.create")}
                 </Button>
               </div>
             </div>
@@ -276,30 +277,29 @@ export function AdminPrayersList() {
           <div className="w-full max-w-2xl rounded-lg bg-background p-6">
             <div className="flex items-start justify-between gap-2 mb-4">
               <div>
-                <div className="text-lg font-semibold">Editar Oración</div>
-                <p className="text-sm text-muted-foreground">Actualiza la oración seleccionada</p>
+                <div className="text-lg font-semibold">{t("supplemental.editPrayer")}</div>
+                <p className="text-sm text-muted-foreground">{t("supplemental.updateHelp")}</p>
               </div>
               <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
-                Cerrar
-              </Button>
+                {t("common.close")}</Button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="text-sm font-medium">Título</label>
-                <Input value={eTitle} onChange={(e) => setETitle(e.target.value)} disabled={saving} />
+                <label className="text-sm font-medium">{t("supplemental.title")}</label>
+                <Input aria-label={t("supplemental.title")} value={eTitle} onChange={(e) => setETitle(e.target.value)} disabled={saving} />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Categoría</label>
-                <Input value={eCategory} onChange={(e) => setECategory(e.target.value)} disabled={saving} />
+                <label className="text-sm font-medium">{t("supplemental.category")}</label>
+                <Input aria-label={t("supplemental.category")} value={eCategory} onChange={(e) => setECategory(e.target.value)} disabled={saving} />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Contenido</label>
+                <label className="text-sm font-medium">{t("supplemental.content")}</label>
                 <textarea
                   className="w-full min-h-[140px] rounded-md border bg-background p-3 text-sm"
-                  value={eContent}
+                  aria-label={t("supplemental.content")} value={eContent}
                   onChange={(e) => setEContent(e.target.value)}
                   disabled={saving}
                 />
@@ -307,15 +307,14 @@ export function AdminPrayersList() {
 
               <div className="flex items-center gap-2">
                 <Checkbox id="edit-approved" checked={eApproved} onCheckedChange={(v) => setEApproved(!!v)} />
-                <label htmlFor="edit-approved" className="text-sm font-medium">Aprobada</label>
+                <label htmlFor="edit-approved" className="text-sm font-medium">{t("catalog.approved")}</label>
               </div>
 
               <div className="flex items-center gap-2 justify-end">
                 <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>
-                  Cancelar
-                </Button>
+                  {t("common.cancel")}</Button>
                 <Button onClick={onSave} disabled={saving}>
-                  {saving ? "Guardando..." : "Guardar cambios"}
+                  {saving ? t("supplemental.saving") : t("supplemental.saveChanges")}
                 </Button>
               </div>
             </div>

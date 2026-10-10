@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { requestMiraclePage, type MiraclePage } from "./miracle-pages"
+import { catalogErrorKey } from './public-request'
 
 function resourcePath(url: string) { return new URL(url || "/", "http://catalog.invalid").pathname }
 /** Per-mount cache with separate public/admin resources; the auth guard unmounts private views on logout. */
@@ -24,7 +25,7 @@ export function useMiraclePage(url: string) {
           while (cache.current.size > 24) cache.current.delete(cache.current.keys().next().value!)
           setState({ url, page, error: null })
         })
-        .catch(error => { if (!controller.signal.aborted) setState({ url, page: null, error: error instanceof Error ? error.message : "No se pudo cargar la página de milagros." }) })
+        .catch(error => { if (!controller.signal.aborted) setState({ url, page: null, error: catalogErrorKey(error) }) })
         .finally(() => { if (!controller.signal.aborted) setBusy(false) })
     }, saved && saved.expires > Date.now() ? 0 : 180)
     return () => { clearTimeout(timer); controller.abort() }

@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { badgeVariants } from "@/components/ui/badge"
 import { Loader2, Sparkles } from "lucide-react"
 import { SaintMatcherResults, type DiscoverSaintResult } from "@/components/saint-matcher-results"
-
-const API = ('').replace(/\/$/, "")
+import { useLanguage } from "@/contexts/language-context"
+import { apiUrl } from "@/lib/api-url"
+import { chatErrorKey } from "@/lib/ai-client"
 
 const personalityTraits = [
   "Compasivo","Determinado","Humilde","Valiente","Paciente","Generoso","Contemplativo","Activo",
@@ -22,7 +23,22 @@ const challenges = [
   "Timidez","Materialismo","Vanidad",
 ]
 
+function isDiscoverSaintResult(value: unknown): value is DiscoverSaintResult {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const result = value as Record<string, unknown>
+  if (typeof result.summary !== 'string' || !Array.isArray(result.matches)) return false
+  return result.matches.every((value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    const match = value as Record<string, unknown>
+    return typeof match.slug === 'string' && Boolean(match.slug.trim())
+      && typeof match.name === 'string' && Boolean(match.name.trim())
+      && (match.id === undefined || typeof match.id === 'string')
+      && (match.score === undefined || typeof match.score === 'number' && Number.isFinite(match.score))
+  }) && (result.termsUsed === undefined || Array.isArray(result.termsUsed) && result.termsUsed.every(term => typeof term === 'string'))
+}
+
 export function SaintMatcherForm() {
+  const { t } = useLanguage()
   const [description, setDescription] = useState("")
   const [selectedTraits, setSelectedTraits] = useState<string[]>([])
   const [selectedChallenges, setSelectedChallenges] = useState<string[]>([])
@@ -47,10 +63,12 @@ export function SaintMatcherForm() {
     setError(null)
 
     try {
-      const r = await fetch(`${API}/discover-saint`, {
+      const r = await fetch(apiUrl('/discover-saint'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        cache: 'no-store',
+        signal: AbortSignal.timeout(35_000),
         body: JSON.stringify({
           about: description,
           qualities: selectedTraits,
@@ -58,15 +76,23 @@ export function SaintMatcherForm() {
         }),
       })
 
-      const data = await r.json().catch(() => ({}))
-      if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`)
+      const data: unknown = await r.json().catch(() => null)
+      if (!r.ok) {
+        const code = data && typeof data === 'object' && 'error' in data && typeof data.error === 'string' ? data.error : undefined
+        const providerCodes = new Set(['AI_DISABLED','AI_CONFIGURATION_MISSING','AI_PROVIDER_AUTH','AI_MODEL_UNAVAILABLE','AI_QUOTA_EXCEEDED','AI_TIMEOUT','AI_RESPONSE_INVALID','AI_PERSISTENCE_FAILED'])
+        const key = r.status === 429 ? 'catalog.rateLimited' : r.status === 401 || r.status === 403 ? 'catalog.accessDenied'
+          : code && providerCodes.has(code) ? chatErrorKey({ code, status: r.status })
+          : r.status >= 500 ? 'catalog.temporarilyUnavailable' : 'catalog.failed'
+        throw new Error(key)
+      }
 
-      setResult(data as DiscoverSaintResult)
+      if (!isDiscoverSaintResult(data)) throw new Error('chat.invalid')
+      setResult(data)
       setShowResults(true)
     } catch (e: unknown) {
       setResult(null)
       setShowResults(false)
-      setError(e instanceof Error ? e.message : "Error")
+      setError(e instanceof Error && /^(catalog|chat)\./.test(e.message) ? e.message : 'catalog.temporarilyUnavailable')
     } finally {
       setIsAnalyzing(false)
     }
@@ -89,27 +115,28 @@ export function SaintMatcherForm() {
     <div className="space-y-6">
       <Card className="border-amber-200">
         <CardHeader>
-          <CardTitle className="font-playfair text-xl text-gray-900">Cuéntanos sobre ti</CardTitle>
+          <CardTitle className="font-playfair text-xl text-gray-900">{t('supplemental.aboutYou')}</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Describe tu personalidad, valores y experiencias de vida
+            <label htmlFor="affinity-description" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('supplemental.personalityPrompt')}
             </label>
             <Textarea
-              placeholder="Ejemplo: Soy una persona que valora mucho la familia y la justicia..."
+              id="affinity-description"
+              placeholder={t('supplemental.personalityPrompt')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-32 resize-none"
             />
-            <p className="text-xs text-gray-500 mt-1">Mínimo 20 caracteres para un análisis más preciso</p>
+            <p className="text-xs text-gray-500 mt-1">{t('supplemental.personalityHint')}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Selecciona tus principales cualidades</label>
+            <p className="block text-sm font-medium text-gray-700 mb-3">{t('supplemental.qualitiesTitle')}</p>
             <div className="flex flex-wrap gap-2">
-              {personalityTraits.map((trait) => (
+              {personalityTraits.map((trait, index) => (
                 <button
                   key={trait}
                   type="button"
@@ -121,16 +148,16 @@ export function SaintMatcherForm() {
                   }`}
                   onClick={() => toggleTrait(trait)}
                 >
-                  {trait}
+                  {t('supplemental.trait' + index)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Áreas donde buscas crecimiento</label>
+            <p className="block text-sm font-medium text-gray-700 mb-3">{t('supplemental.growthTitle')}</p>
             <div className="flex flex-wrap gap-2">
-              {challenges.map((challenge) => (
+              {challenges.map((challenge, index) => (
                 <button
                   key={challenge}
                   type="button"
@@ -142,7 +169,7 @@ export function SaintMatcherForm() {
                   }`}
                   onClick={() => toggleChallenge(challenge)}
                 >
-                  {challenge}
+                  {t('supplemental.challenge' + index)}
                 </button>
               ))}
             </div>
@@ -157,17 +184,17 @@ export function SaintMatcherForm() {
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analizando tu personalidad...
+                {t('supplemental.analyzing')}
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Descubrir mis santos afines
+                {t('supplemental.discover')}
               </>
             )}
           </Button>
 
-          {error && <div className="text-sm text-red-600">{error}</div>}
+          {error && <div role="alert" className="text-sm text-red-600">{t(error)}</div>}
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,12 @@
 import { chatTranslations } from "./chat-translations"
 import { serviceTranslations } from "./service-translations"
+import { catalogTranslations } from './catalog-translations'
+import { supplementalUiTranslations } from './supplemental-ui-translations'
+import { editorialInterfaceTranslations } from './editorial-interface-translations'
+import { chromeInterfaceTranslations } from './chrome-interface-translations'
+import { supplementalScriptureTranslations } from './supplemental-scripture-translations'
+import { pageShellTranslations } from './page-shell-translations'
+import { legacyInterfaceTranslations } from './legacy-interface-translations'
 export const translations: Record<string, Record<string, string>> = {
 
   es: {
@@ -3256,3 +3263,10 @@ export type LanguageCode = keyof typeof translations
 // Shared language resources: chat consumes the website provider and selector.
 for (const [language, entries] of Object.entries(chatTranslations)) Object.assign(translations[language], entries)
 for (const [language, entries] of Object.entries(serviceTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(catalogTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(supplementalUiTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(editorialInterfaceTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(chromeInterfaceTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(supplementalScriptureTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(pageShellTranslations)) Object.assign(translations[language], entries)
+for (const [language, entries] of Object.entries(legacyInterfaceTranslations)) Object.assign(translations[language], entries)

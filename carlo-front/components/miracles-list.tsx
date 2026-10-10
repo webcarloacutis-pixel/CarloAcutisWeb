@@ -15,8 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, MapPin, Calendar, Users, Search, Filter } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useLanguage } from '@/contexts/language-context'
 
 export function MiraclesList() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSaint, setSelectedSaint] = useState("Todos los santos")
   const [selectedType, setSelectedType] = useState("Todos los tipos")
@@ -28,7 +30,7 @@ export function MiraclesList() {
     query: searchTerm, saintId: selectedSaint === "Todos los santos" ? undefined : selectedSaint,
     type: selectedType === "Todos los tipos" ? undefined : selectedType, approved: verifiedOnly ? true : undefined,
   }, cursor)))
-  const { loading } = result
+  const loading = result.loading || names.loading
   const error = result.error || names.error
   const page = result.page || (loading ? result.previousPage : null)
   const saints = names.items
@@ -39,12 +41,12 @@ export function MiraclesList() {
   function filterChanged(change: () => void) { change(); setCursor(null) }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy={loading}>
       <Card className="bg-card/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            Filtrar Milagros
+            {t('catalog.filterMiracles')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -52,24 +54,24 @@ export function MiraclesList() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Buscar milagros..." aria-label="Buscar milagros" maxLength={200}
+                placeholder={t('catalog.searchMiracles') + '…'} aria-label={t('catalog.searchMiracles')} maxLength={200}
                 value={searchTerm}
                 onChange={(e) => filterChanged(() => setSearchTerm(e.target.value))}
                 className="pl-10"
               />
             </div>
 
-            <select aria-label="Filtrar milagros por santo" value={selectedSaint} onChange={event => filterChanged(() => setSelectedSaint(event.target.value))} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option value="Todos los santos">Todos los santos</option>
+            <select disabled={names.loading} aria-label={t('nav.saints')} value={selectedSaint} onChange={event => filterChanged(() => setSelectedSaint(event.target.value))} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="Todos los santos">{t('catalog.allSaints')}</option>
               {saints.map(saint => <option key={saint.id} value={saint.id}>{saint.name}</option>)}
             </select>
 
             <Select value={selectedType} onValueChange={value => filterChanged(() => setSelectedType(value))}>
-              <SelectTrigger aria-label="Filtrar milagros por tipo">
-                <SelectValue placeholder="Todos los tipos" />
+              <SelectTrigger aria-label={t('catalog.allTypes')}>
+                <SelectValue placeholder={t('catalog.allTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Todos los tipos">Todos los tipos</SelectItem>
+                <SelectItem value="Todos los tipos">{t('catalog.allTypes')}</SelectItem>
                 {(page?.metadata.facets.types || []).map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}
@@ -86,7 +88,7 @@ export function MiraclesList() {
               disabled={loading}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              Solo aprobados en el catálogo
+              {t('catalog.onlyApproved')}
             </Button>
 
             <Button
@@ -104,13 +106,13 @@ export function MiraclesList() {
             </Button>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <Badge variant="secondary">{page?.total ?? "—"} milagros encontrados</Badge>
-            <Badge variant="outline">{page?.metadata.approvedTotal ?? "—"} aprobados en el catálogo</Badge>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary"><T k="catalog.miraclesCount" values={{ count: page?.total ?? '—' }} /></Badge>
+            <Badge variant="outline"><T k="catalog.approvedCount" values={{ count: page?.metadata.approvedTotal ?? '—' }} /></Badge>
           </div>
 
-          {loading ? <p className="mt-3 text-sm text-muted-foreground">Cargando milagros...</p> : null}
-          {error ? <div role="alert" className="mt-3 space-y-2"><p className="text-sm text-destructive whitespace-pre-wrap">{error}</p><Button onClick={() => { result.retry(); if (names.error) names.retry() }}>Reintentar</Button>{cursor && <Button onClick={() => setCursor(null)}>Volver a la primera página</Button>}</div> : null}
+          {loading ? <p role="status" className="mt-3 text-sm text-muted-foreground">{t('catalog.miraclesLoading')}</p> : null}
+          {error ? <div role="alert" className="mt-3 space-y-2"><p className="text-sm text-destructive whitespace-pre-wrap">{t(error)}</p><Button onClick={() => { result.retry(); if (names.error) names.retry() }}>{t('content.retry')}</Button>{cursor && <Button onClick={() => setCursor(null)}>{t('catalog.firstPage')}</Button>}</div> : null}
         </CardContent>
       </Card>
 
@@ -118,22 +120,22 @@ export function MiraclesList() {
         <Card>
           <CardContent className="text-center py-12">
             <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-playfair text-xl font-semibold mb-2">No se encontraron milagros</h3>
-            <p className="text-muted-foreground">Intenta ajustar los filtros de búsqueda</p>
+            <h3 className="font-playfair text-xl font-semibold mb-2">{t('catalog.miraclesEmpty')}</h3>
+            <p className="text-muted-foreground">{t('catalog.adjustFilters')}</p>
           </CardContent>
         </Card>
       ) : (
         filteredMiracles.map((miracle) => (
           <Card key={`${miracle.saintName}-${miracle.id}`} className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <CardTitle className="font-playfair text-xl mb-2 flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-secondary" />
                     {miracle.title}
                   </CardTitle>
                   <p className="text-muted-foreground">
-                    Atribuido a{" "}
+                    {t('catalog.attributedTo')}{" "}
                     <Link prefetch={false} href={miracle.saintSlug ? "/santos/" + encodeURIComponent(miracle.saintSlug) : "/santos"} className="text-primary hover:underline font-medium">
                       {miracle.saintName}
                     </Link>
@@ -145,13 +147,13 @@ export function MiraclesList() {
                       {miracle.type}
                     </Badge>
                   ) : null}
-                  {miracle.verified && <Badge variant="secondary">Aprobado en el catálogo</Badge>}
+                  {miracle.verified && <Badge variant="secondary">{t('catalog.approved')}</Badge>}
                 </div>
               </div>
             </CardHeader>
 
             <CardContent>
-              <p className="text-muted-foreground mb-4 leading-relaxed text-pretty">{miracle.description}</p>
+              <p className="text-muted-foreground mb-4 leading-relaxed text-pretty whitespace-pre-wrap break-words">{miracle.description}</p>
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                 {miracle.date && (
@@ -169,14 +171,14 @@ export function MiraclesList() {
                 {miracle.witnesses && miracle.witnesses.length > 0 && (
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    <span>{miracle.witnesses.length} testigos</span>
+                    <span><T k="catalog.witnessCount" values={{ count: miracle.witnesses.length }} /></span>
                   </div>
                 )}
               </div>
 
               {miracle.witnesses && miracle.witnesses.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Testigos:</p>
+                  <p className="text-sm font-medium text-foreground mb-2">{t('catalog.witnesses')}:</p>
                   <div className="flex flex-wrap gap-1">
                     {miracle.witnesses.map((witness, witnessIndex) => (
                       <Badge key={witnessIndex} variant="outline" className="text-xs">

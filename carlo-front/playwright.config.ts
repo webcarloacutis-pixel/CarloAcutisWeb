@@ -2,9 +2,11 @@ import {defineConfig,devices} from '@playwright/test'
 import {resolve} from 'node:path'
 import {existsSync} from 'node:fs'
 const root=resolve(__dirname,'..')
-const chromium=resolve(root,'.tools/playwright/chromium-1243/chrome-win64/chrome.exe')
-const firefox=resolve(root,'.tools/playwright/firefox-1543/firefox/firefox.exe')
-const webkit=resolve(root,'.tools/playwright/webkit-2359/Playwright.exe')
+// Optional local installed binaries keep isolated worktrees independent of a shared cache.
+const browserRoot=process.env.ACUTIS_BROWSER_BIN_ROOT || resolve(root,'.tools/playwright')
+const chromium=resolve(browserRoot,'chromium-1243/chrome-win64/chrome.exe')
+const firefox=resolve(browserRoot,'firefox-1543/firefox/firefox.exe')
+const webkit=resolve(browserRoot,'webkit-2359/Playwright.exe')
 export default defineConfig({
  testDir:'./tests/browser',timeout:45000,expect:{timeout:10000},fullyParallel:false,workers:1,retries:0,
  outputDir:process.env.PLAYWRIGHT_OUTPUT_DIR || '../.audit/acutis-production/local/browser-results',

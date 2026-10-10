@@ -72,7 +72,7 @@ for (const path of ["/", "/santos", "/mapa", "/milagros", "/oraciones", "/versic
       await expect(page.locator(".leaflet-container")).toBeVisible()
       await expect(page.getByText(/^\d+ santos encontrados; \d+ con ubicación documentada\.$/, { exact: true })).toBeVisible()
     } else if (path === "/milagros") {
-      await expect(page.getByText("Cargando milagros...", { exact: true })).toHaveCount(0)
+      await expect(page.getByText("Cargando milagros…", { exact: true })).toHaveCount(0)
       await expect(page.getByLabel("Filtrar milagros por santo")).toBeEnabled()
     } else if (path === "/oraciones") {
       await expect(page.getByLabel("Buscar por título o contenido").filter({ visible: true })).toBeEnabled()
@@ -89,7 +89,7 @@ for (const path of ["/", "/santos", "/mapa", "/milagros", "/oraciones", "/versic
       }
     } else {
       await expect(page.getByRole("button", { name: "Descubrir mis santos afines", exact: true })).toBeDisabled()
-      await page.getByPlaceholder("Ejemplo: Soy una persona que valora mucho la familia y la justicia...").fill("Descripción sintética para probar el formulario sin enviar datos personales.")
+      await page.getByLabel("Describe tu personalidad, valores y experiencias de vida", { exact: true }).fill("Descripción sintética para probar el formulario sin enviar datos personales.")
       await expect(page.getByRole("button", { name: "Descubrir mis santos afines", exact: true })).toBeEnabled()
     }
     await noOverflow(page)
@@ -181,7 +181,7 @@ test("discovery result/reset and rejected request are visible (simulated HTTP co
   await challenge.focus()
   await page.keyboard.press("Space")
   await expect(challenge).toHaveAttribute("aria-pressed", "true")
-  const describe = page.getByPlaceholder("Ejemplo: Soy una persona que valora mucho la familia y la justicia...")
+  const describe = page.getByLabel("Describe tu personalidad, valores y experiencias de vida", { exact: true })
   await describe.fill("Descripción sintética para probar afinidad sin usar información personal.")
   await page.getByRole("button", { name: "Descubrir mis santos afines" }).click()
   await expect(page.getByText("Synthetic affinity explanation", { exact: true })).toBeVisible()
@@ -189,7 +189,8 @@ test("discovery result/reset and rejected request are visible (simulated HTTP co
   await page.getByRole("button", { name: "Hacer nuevo análisis" }).click()
   await describe.fill("Segunda descripción sintética para comprobar rechazo controlado.")
   await page.getByRole("button", { name: "Descubrir mis santos afines" }).click()
-  await expect(page.getByText("RATE_LIMITED", { exact: true })).toBeVisible()
+  await expect(page.getByRole("alert")).toHaveText("Hay demasiadas solicitudes. Espera antes de reintentar.")
+  await expect(page.getByText("RATE_LIMITED", { exact: true })).toHaveCount(0)
   expect(requests).toBe(2)
 })
 
@@ -201,10 +202,10 @@ for (const actor of ["anonymous", "normalUser"] as const) {
     await page.goto("/admin", { waitUntil: "networkidle" })
     await expect(page).toHaveURL(/\/sanctum\/portal$/)
     await expect(page.getByRole("heading", { name: "Panel de Administración Sagrado" })).toHaveCount(0)
-    await page.getByLabel("Email", { exact: true }).fill("release@example.invalid")
+    await page.getByLabel("Correo electrónico", { exact: true }).fill("release@example.invalid")
     await page.getByLabel("Contraseña", { exact: true }).fill("Synthetic-not-a-real-secret-2026!")
     await page.getByRole("button", { name: "Acceder al Sanctum" }).click()
-    await expect(page.getByRole("alert").filter({ hasText: "No se pudo" })).toBeVisible()
+    await expect(page.getByRole("alert")).toHaveText("No tienes acceso a este contenido. Comprueba tu sesión.")
     await expect(page).toHaveURL(/\/sanctum\/portal$/)
     await expect(page.getByLabel("Contraseña", { exact: true })).toHaveValue("")
   })
@@ -218,7 +219,7 @@ test("admin successful session renders tabs and logout revokes UI access (simula
   await page.route(url => ["/api/saints", "/api/miracles", "/api/miracles/all"].includes(url.pathname), route => route.fulfill({ json: collection([]) }))
   await page.route(url => ["/prayers", "/api/prayers", "/api/prayers/all", "/api/prayers/approved"].includes(url.pathname), route => route.fulfill({ headers: { "X-Total-Count": "0" }, json: [] }))
   await page.goto("/sanctum/portal", { waitUntil: "networkidle" })
-  await page.getByLabel("Email", { exact: true }).fill("release-admin@example.invalid")
+  await page.getByLabel("Correo electrónico", { exact: true }).fill("release-admin@example.invalid")
   await page.getByLabel("Contraseña", { exact: true }).fill("Synthetic-not-a-real-secret-2026!")
   await page.getByRole("button", { name: "Acceder al Sanctum" }).click()
   await expect(page).toHaveURL(/\/admin$/)

@@ -1,4 +1,6 @@
 "use client"
+import { formatTranslation } from "@/lib/format-translation"
+import { useLanguage } from "@/contexts/language-context"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +19,7 @@ interface MiracleFormProps {
 }
 
 export function MiracleForm({ onClose, onSave, miracle }: MiracleFormProps) {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     title: miracle?.title || "",
     description: miracle?.description || "",
@@ -58,78 +61,76 @@ export function MiracleForm({ onClose, onSave, miracle }: MiracleFormProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-playfair text-3xl font-bold">{miracle ? "Editar Milagro" : "Nuevo Milagro"}</h2>
-          <p className="text-muted-foreground">Documente el milagro con todos los detalles</p>
+          <h2 className="font-playfair text-3xl font-bold">{miracle ? t("supplemental.editMiracle") : t("supplemental.newMiracle")}</h2>
+          <p className="text-muted-foreground">{t("supplemental.miracleHelp")}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleSave} className="bg-primary">
             <Save className="h-4 w-4 mr-2" />
-            Guardar
-          </Button>
+            {t("common.save")}</Button>
           <Button variant="outline" onClick={onClose}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
+            {t("common.back")}</Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Información del Milagro</CardTitle>
+          <CardTitle>{t("supplemental.newMiracle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Título del Milagro *</Label>
+            <Label htmlFor="title">{t("supplemental.title")}</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Los estigmas de Cristo"
+              placeholder={t("supplemental.title")}
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción Completa *</Label>
+            <Label htmlFor="description">{t("supplemental.description")}</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Describa detalladamente el milagro..."
+              placeholder={t("supplemental.description")}
               className="min-h-[200px]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Fecha del Milagro</Label>
+              <Label htmlFor="date">{t("supplemental.date")}</Label>
               <Input
                 id="date"
                 value={formData.date}
                 onChange={(e) => handleInputChange("date", e.target.value)}
-                placeholder="14 de septiembre de 1224"
+                placeholder={t("supplemental.date")}
               />
             </div>
             <div>
-              <Label htmlFor="location">Lugar</Label>
+              <Label htmlFor="location">{t("supplemental.location")}</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
-                placeholder="Monte Alverna, Italia"
+                placeholder={t("supplemental.location")}
               />
             </div>
           </div>
 
           <div>
-            <Label>Testigos</Label>
+            <Label>{t("catalog.witnesses")}</Label>
             <div className="flex gap-2 mb-2">
               <Input
-                value={newWitness}
+                aria-label={t("catalog.witnesses")} value={newWitness}
                 onChange={(e) => setNewWitness(e.target.value)}
-                placeholder="Nombre del testigo..."
+                placeholder={t("supplemental.name")}
                 onKeyPress={(e) => e.key === "Enter" && addWitness()}
               />
-              <Button onClick={addWitness} size="sm">
+              <Button aria-label={t("supplemental.addWitness")} onClick={addWitness} size="sm">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -138,7 +139,7 @@ export function MiracleForm({ onClose, onSave, miracle }: MiracleFormProps) {
 
                 <Badge key={index} variant="secondary" className="flex items-center gap-1">
                   {witness}
-                  <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => removeWitness(index)} />
+                  <button type="button" aria-label={formatTranslation(t("supplemental.removeWitness"), { name: witness })} onClick={() => removeWitness(index)}><X aria-hidden="true" className="h-3 w-3 hover:text-destructive" /></button>
                 </Badge>
               ))}
             </div>
@@ -150,7 +151,7 @@ export function MiracleForm({ onClose, onSave, miracle }: MiracleFormProps) {
               checked={formData.verified}
               onCheckedChange={(checked) => handleInputChange("verified", checked)}
             />
-            <Label htmlFor="verified">Verificado por la Iglesia Católica</Label>
+            <Label htmlFor="verified">{t("catalog.approved")}</Label>
           </div>
         </CardContent>
       </Card>

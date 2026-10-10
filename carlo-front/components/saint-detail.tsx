@@ -1,6 +1,7 @@
 import { editorialForDisplay } from "@/lib/editorial-read";
-import { factStatusLabels, historicalYear, imageKindLabels, type Editorial } from "@/lib/editorial";
-import { countryName } from "@/lib/content-filters";
+import { historicalYear, type Editorial } from "@/lib/editorial";
+import { T } from './t';
+import { GeographicName } from './geographic-name';
 import { TranslatedText } from "@/components/translated-text";
 import { CatalogImage as Image } from "@/components/catalog-image";
 import Link from "next/link";
@@ -66,7 +67,7 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
       <Button asChild variant="ghost" className="mb-6">
         <Link prefetch={false} href="/santos">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver a Santos
+          <T k="catalog.backSaints" />
         </Link>
       </Button>
 
@@ -76,7 +77,7 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
           <div className="relative aspect-[3/4] max-h-[32rem] rounded-lg overflow-hidden bg-muted">
             <Image src={saint.image || "/placeholder.svg"} alt={saint.editorial?.image?.alt || saint.name} fill className="object-contain" sizes="(max-width: 1024px) 100vw, 360px" loading="eager" fetchPriority="high" />
           </div>
-          {saint.editorial?.image && <p className="mt-2 text-xs text-muted-foreground break-words">{imageKindLabels[saint.editorial.image.kind]}. {saint.editorial.image.attribution}. Versión redimensionada en WebP · <a className="underline" href={saint.editorial.image.sourceUrl} target="_blank" rel="noopener noreferrer">Procedencia</a> · <a className="underline" href={saint.editorial.image.licenseUrl} target="_blank" rel="noopener noreferrer">{saint.editorial.image.license}</a></p>}
+          {saint.editorial?.image && <p className="mt-2 text-xs text-muted-foreground break-words"><T k={'catalog.image.' + saint.editorial.image.kind} />. {saint.editorial.image.attribution}. <T k="catalog.resizedImage" /> · <a className="underline" href={saint.editorial.image.sourceUrl} target="_blank" rel="noopener noreferrer"><T k="catalog.imageSource" /></a> · <a className="underline" href={saint.editorial.image.licenseUrl} target="_blank" rel="noopener noreferrer">{saint.editorial.image.license}</a></p>}
         </div>
 
         <div className="lg:col-span-2">
@@ -88,32 +89,32 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
             {saint.feastDay && (
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">Fiesta:</span>
+                <span className="text-muted-foreground"><T k="saints.feastDay" />:</span>
                 <span className="font-medium">{saint.feastDay}</span>
               </div>
             )}
 
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-muted-foreground" />
-              <span className="text-muted-foreground">Lugar de nacimiento:</span>
-              <span className="font-medium">{saint.editorial?.birthplaceStatus === "not-applicable" ? "No aplicable" : <>{saint.birthPlace ? saint.birthPlace + ", " : ""}{countryName(saint.birthCountryCode)}{saint.editorial && <> · {factStatusLabels[saint.editorial.birthplaceStatus]}</>}</>}</span>
+              <span className="text-muted-foreground"><T k="catalog.birthPlace" />:</span>
+              <span className="font-medium">{saint.editorial?.birthplaceStatus === "not-applicable" ? <T k="catalog.fact.not-applicable" /> : <>{saint.birthPlace ? saint.birthPlace + ", " : ""}<GeographicName code={saint.birthCountryCode} />{saint.editorial && <> · <T k={'catalog.fact.' + saint.editorial.birthplaceStatus} /></>}</>}</span>
             </div>
 
-            {saint.editorial ? ([['birthDate','Nacimiento'],['deathDate','Fallecimiento']] as const).map(([key,label])=><div key={key} className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground">{label}:</span><span className="font-medium">{saint.editorial![key].text || factStatusLabels[saint.editorial![key].status]}{saint.editorial![key].text && ` · ${factStatusLabels[saint.editorial![key].status]}`}</span></div>) : <>
-              {saint.birthYear != null && <div>Nacimiento: {historicalYear(saint.birthYear)}</div>}
-              {saint.deathYear != null && <div>Fallecimiento: {historicalYear(saint.deathYear)}</div>}
+            {saint.editorial ? ([['birthDate','catalog.birth'],['deathDate','catalog.death']] as const).map(([key,label])=><div key={key} className="flex flex-wrap items-center gap-2"><span className="text-muted-foreground"><T k={label} />:</span><span className="font-medium">{saint.editorial![key].text}{saint.editorial![key].text && ' · '}<T k={'catalog.fact.' + saint.editorial![key].status} /></span></div>) : <>
+              {saint.birthYear != null && <div><T k="catalog.birth" />: {historicalYear(saint.birthYear)}</div>}
+              {saint.deathYear != null && <div><T k="catalog.death" />: {historicalYear(saint.deathYear)}</div>}
             </>}
             {saint.canonizationYear && (
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">Canonización:</span>
+                <span className="text-muted-foreground"><T k="catalog.canonization" />:</span>
                 <span className="font-medium">{saint.canonizationYear}</span>
               </div>
             )}
           </div>
 
           <div className="mb-6">
-            <h3 className="font-playfair text-lg font-semibold mb-3">Patrono de:</h3>
+            <h3 className="font-playfair text-lg font-semibold mb-3"><T k="saints.patronOf" />:</h3>
             <div className="flex flex-wrap gap-2">
               {patronOf.length ? (
                 patronOf.map((patron, index) => (
@@ -134,17 +135,17 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
         <CardHeader>
           <CardTitle className="font-playfair flex items-center gap-2">
             <Heart className="h-5 w-5 text-primary" />
-            Biografía
+            <T k="saints.biography" />
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed text-pretty whitespace-pre-wrap break-words">
-            <TranslatedText allowTranslation text={saint.biography ?? "Biografía en construcción…"} />
+            {saint.biography ? <TranslatedText allowTranslation text={saint.biography} /> : <T k="catalog.notDocumented" />}
           </p>
         </CardContent>
       </Card>
 
-      {saint.editorial && <Card className="mb-8"><CardHeader><CardTitle className="font-playfair">Fuentes y notas</CardTitle></CardHeader><CardContent className="space-y-4 break-words"><p>{saint.editorial.ecclesialStatus}</p>{saint.editorial.notes && <p className="whitespace-pre-wrap text-muted-foreground">{saint.editorial.notes}</p>}<ul className="space-y-3">{saint.editorial.sources.map((source,index)=><li key={source.url+index}><a className="font-medium underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><p className="text-sm text-muted-foreground">{source.institution} · Consulta: {source.accessedAt}</p><p className="text-sm">{source.claims.join("; ")}</p></li>)}</ul></CardContent></Card>}
+      {saint.editorial && <Card className="mb-8"><CardHeader><CardTitle className="font-playfair"><T k="catalog.sourcesNotes" /></CardTitle></CardHeader><CardContent className="space-y-4 break-words"><p>{saint.editorial.ecclesialStatus}</p>{saint.editorial.notes && <p className="whitespace-pre-wrap text-muted-foreground">{saint.editorial.notes}</p>}<ul className="space-y-3">{saint.editorial.sources.map((source,index)=><li key={source.url+index}><a className="font-medium underline" href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a><p className="text-sm text-muted-foreground">{source.institution} · <T k="catalog.consulted" />: {source.accessedAt}</p><p className="text-sm">{source.claims.join("; ")}</p></li>)}</ul></CardContent></Card>}
 
       <SaintMiracles key={saint.id} saintId={saint.id} />
 
@@ -154,7 +155,7 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
           <CardHeader>
             <CardTitle className="font-playfair flex items-center gap-2">
               <Heart className="h-5 w-5 text-accent" />
-              Oraciones
+            <T k="nav.prayers" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -164,7 +165,7 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
                   <h4 className="font-playfair text-lg font-semibold text-foreground mb-2">{prayer.title}</h4>
                   {prayer.occasion && (
                     <p className="text-sm text-muted-foreground mb-3">
-                      <strong>Ocasión:</strong> {prayer.occasion}
+                      <strong><T k="catalog.occasion" />:</strong> {prayer.occasion}
                     </p>
                   )}
                   <div className="bg-muted/30 p-4 rounded-lg">
@@ -182,7 +183,7 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
       {symbols.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-playfair">Símbolos Asociados</CardTitle>
+            <CardTitle className="font-playfair"><T k="catalog.symbols" /></CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">

@@ -1,3 +1,5 @@
+"use client"
+import { useLanguage } from "@/contexts/language-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -11,11 +13,11 @@ type Prayer = {
 };
 
 export function PrayersResults({ prayers }: { prayers: Prayer[] }) {
+  const { t } = useLanguage()
   if (!prayers || prayers.length === 0) {
     return (
       <div className="text-center text-muted-foreground">
-        No se encontraron oraciones con esos filtros.
-      </div>
+        {t("supplemental.prayersEmpty")}</div>
     );
   }
 

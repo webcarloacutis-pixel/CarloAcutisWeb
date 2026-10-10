@@ -10,7 +10,7 @@ export default async function SaintsPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center mb-12"><div className="ornate-divider w-32 mx-auto mb-8" />
         <h1 className="font-playfair text-4xl md:text-5xl font-bold text-foreground mb-4"><T k="saints.title" /></h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">Descubre las historias extraordinarias de hombres y mujeres que dedicaron sus vidas a Dios y se convirtieron en ejemplos de santidad para toda la humanidad.</p>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty"><T k="pageShell.saintsDescription" /></p>
         <div className="ornate-divider w-32 mx-auto mt-8" /></div>
       <SaintsCatalog />
     </main><Footer /></div>

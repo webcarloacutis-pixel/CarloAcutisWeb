@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react"
-import { afterEach, expect, it } from "vitest"
+import { afterEach, expect, it, vi } from "vitest"
 import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 import { createBirthPopup } from "@/lib/birth-popup"
 import type { PublicSaint } from "@/lib/content-filters"
+import { translations } from '@/lib/translations'
+vi.mock('@/contexts/language-context', () => ({ useLanguage: () => ({ language: 'es', t: (key: string) => translations.es[key] || key }) }))
 afterEach(cleanup)
 
 it.each([0, 7, 79, 100, 101, 179, 1000, 2999, 3000])("keeps DOM windows bounded at %i records and exposes the final record", count => {

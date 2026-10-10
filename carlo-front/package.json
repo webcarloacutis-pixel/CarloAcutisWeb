@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/apply-braces-security.mjs --check && next build",
+    "postinstall": "node scripts/apply-braces-security.mjs",
+    "test:dependency-security": "node scripts/apply-braces-security.mjs --check && node scripts/check-braces-security.mjs --package=node_modules/braces",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -53,7 +55,7 @@
     "input-otp": "1.4.1",
     "leaflet": "1.9.4",
     "lucide-react": "^0.454.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "next-themes": "^0.4.6",
     "react": "19.2.8",
     "react-day-picker": "9.8.0",
@@ -77,7 +79,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "autoprefixer": "^10.4.23",
     "eslint": "10.10.0",
-    "eslint-config-next": "16.3.5",
+    "eslint-config-next": "16.3.8",
     "jsdom": "30.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1",
@@ -86,6 +88,12 @@
     "typescript": "^5",
     "typescript-eslint": "8.70.0",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "braces": "3.0.3",
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2",
+    "postcss-selector-parser": "7.1.6"
   },
   "engines": {
     "node": "24.x"

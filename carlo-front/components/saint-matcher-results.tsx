@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, RefreshCw, ArrowRight } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
+import { formatTranslation } from "@/lib/format-translation"
 
 export type DiscoverSaintMatch = {
   id?: string
@@ -26,6 +28,7 @@ export function SaintMatcherResults({
   result: DiscoverSaintResult
   onReset: () => void
 }) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -35,12 +38,12 @@ export function SaintMatcherResults({
           </div>
         </div>
 
-        <h2 className="font-playfair text-3xl font-bold text-gray-900 mb-2">Tus Santos Afines</h2>
-        <p className="text-gray-600 mb-4">Hemos encontrado santos que comparten características contigo</p>
+        <h2 className="font-playfair text-3xl font-bold text-gray-900 mb-2">{t('supplemental.resultsHeading')}</h2>
+        <p className="text-gray-600 mb-4">{t('supplemental.resultsHelp')}</p>
 
         <Button onClick={onReset} variant="outline" className="bg-transparent">
           <RefreshCw className="mr-2 h-4 w-4" />
-          Hacer nuevo análisis
+          {t('supplemental.resetAffinity')}
         </Button>
       </div>
 
@@ -59,21 +62,21 @@ export function SaintMatcherResults({
                   <CardTitle className="font-playfair text-xl text-gray-900">{m.name}</CardTitle>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Ranking #{idx + 1}
+                      {formatTranslation(t('supplemental.ranking'), { count: idx + 1 })}
                     </Badge>
                     {typeof m.score === "number" && (
                       <Badge variant="outline" className="text-xs">
-                        score: {m.score}
+                        {formatTranslation(t('supplemental.score'), { score: m.score })}
                       </Badge>
                     )}
                   </div>
                 </div>
 
                 <Link prefetch={false}
-                  href={`/santos/${m.slug}`}
+                  href={`/santos/${encodeURIComponent(m.slug)}`}
                   className="inline-flex items-center text-sm font-medium text-amber-700 hover:text-amber-800"
                 >
-                  Ver santo <ArrowRight className="ml-1 h-4 w-4" />
+                  {t('supplemental.viewSaint')} <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
             </CardHeader>

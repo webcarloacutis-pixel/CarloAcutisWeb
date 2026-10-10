@@ -47,7 +47,7 @@ return (
 
 
           {/* Desktop Navigation */}
-          <nav aria-label="Navegación principal" className="hidden xl:flex space-x-3 xl:space-x-4">
+          <nav aria-label={t("chrome.mainNavigation")} className="hidden xl:flex space-x-3 xl:space-x-4">
             {navigation.map((item) => (
               <Link prefetch={false}
                 key={item.name}
@@ -70,7 +70,7 @@ return (
               {t("nav.saints")}
             </Link>
             <LanguageSelector />
-            <Button ref={menuButton} variant="ghost" size="sm" aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={isMenuOpen} aria-controls="mobile-navigation" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-11 w-11 p-2">
+            <Button ref={menuButton} variant="ghost" size="sm" aria-label={t(isMenuOpen ? "chrome.closeMenu" : "chrome.openMenu")} aria-expanded={isMenuOpen} aria-controls="mobile-navigation" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-11 w-11 p-2">
               {isMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
             </Button>
           </div>
@@ -78,7 +78,7 @@ return (
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav id="mobile-navigation" aria-label="Navegación móvil" className="xl:hidden absolute inset-x-0 top-full max-h-[calc(100dvh-var(--site-header-height))] overflow-y-auto bg-card border-b border-border shadow-lg">
+          <nav id="mobile-navigation" aria-label={t("chrome.mobileNavigation")} className="xl:hidden absolute inset-x-0 top-full max-h-[calc(100dvh-var(--site-header-height))] overflow-y-auto bg-card border-b border-border shadow-lg">
             <div className="px-3 sm:px-4 py-2 border-t border-border">
               {navigation.map((item) => (
                 <Link prefetch={false}

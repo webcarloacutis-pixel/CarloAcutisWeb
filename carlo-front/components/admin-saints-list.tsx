@@ -1,4 +1,6 @@
 "use client";
+import { formatTranslation } from "@/lib/format-translation"
+import { useLanguage } from "@/contexts/language-context"
 import { apiUrl } from "@/lib/api-url";
 import { CatalogPagination, useCatalogPage } from "./catalog-pagination"
 import { SaintPagePagination } from "./saint-page-pagination"
@@ -36,6 +38,7 @@ type AdminSaintsListProps = {
 };
 
 export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor, query, onQuery, busy }: AdminSaintsListProps) {
+  const { t, language } = useLanguage()
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +59,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
   const page = useCatalogPage(filteredSaints)
 
   async function onDelete(id: string) {
-    const ok = confirm("¿Seguro que quieres eliminar este santo?");
+    const ok = confirm(t("supplemental.deleteConfirm"));
     if (!ok) return;
 
     setDeletingId(id);
@@ -64,14 +67,13 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
       const res = await fetch(apiUrl(`/saints/${encodeURIComponent(id)}`), { method: "DELETE", credentials: "include" });
 
       if (!res.ok && res.status !== 204) {
-        const text = await res.text();
-        throw new Error(text || `Error ${res.status}`);
+        throw new Error("supplemental.writeFailed");
       }
 
       window.dispatchEvent(new Event("catalog:saints-changed"));
       router.refresh();
     } catch (e: any) {
-      alert(e?.message ?? "Error eliminando santo");
+      alert(t("supplemental.writeFailed"));
     } finally {
       setDeletingId(null);
     }
@@ -81,29 +83,28 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-playfair text-3xl font-bold">Gestión de Santos</h2>
-          <p className="text-muted-foreground">Administre la información de todos los santos</p>
+          <h2 className="font-playfair text-3xl font-bold">{t("supplemental.manageSaints")}</h2>
+          <p className="text-muted-foreground">{t("supplemental.manageHelp")}</p>
         </div>
 
         <Button onClick={onAddNew} className="bg-primary">
           <Plus className="h-4 w-4 mr-2" />
-          Nuevo Santo
-        </Button>
+          {t("supplemental.newSaint")}</Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative flex-1 min-w-0 basis-48 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Buscar santos..."
+            placeholder={t("catalog.searchSaints")}
             value={query ?? searchTerm}
             onChange={(e) => onQuery ? onQuery(e.target.value) : setSearchTerm(e.target.value)}
             maxLength={200}
-            aria-label="Buscar santos del administrador"
+            aria-label={t("catalog.searchSaints")}
             className="pl-10"
           />
         </div>
-        <Badge variant="secondary">{remotePage?.total ?? filteredSaints.length} santos encontrados</Badge>
+        <Badge variant="secondary">{formatTranslation(t("catalog.saintsCount"), { count: remotePage?.total ?? filteredSaints.length })}</Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -127,7 +128,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-2 left-2 right-2">
                 <h3 className="font-playfair text-lg font-bold text-white truncate">{_saint.name}</h3>
-                <p className="text-white/80 text-xs truncate">slug: {_saint.slug}</p>
+                <p className="text-white/80 text-xs truncate">{t("supplemental.slug")}: {_saint.slug}</p>
               </div>
             </div>
 
@@ -135,7 +136,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>{new Date(_saint.createdAt).toLocaleDateString()}</span>
+                  <span>{new Date(_saint.createdAt).toLocaleDateString(language)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -151,13 +152,12 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
                   onClick={() => onEdit(_saint)}
                 >
                   <Edit className="h-3 w-3 mr-1" />
-                  Editar
-                </Button>
+                  {t("common.edit")}</Button>
 
                 <Button
                   size="sm"
                   variant="outline"
-                  aria-label={`Eliminar ${_saint.name}`}
+                  aria-label={formatTranslation(t("supplemental.deleteLabel"), { name: _saint.name })}
                   onClick={() => onDelete(_saint.id)}
                   disabled={deletingId === _saint.id}
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
@@ -170,7 +170,7 @@ export function AdminSaintsList({ saints, onAddNew, onEdit, remotePage, onCursor
           );
         })}
       </div>
-      {remotePage && onCursor ? <SaintPagePagination page={remotePage} onCursor={onCursor} label="santos del administrador" disabled={busy} /> : <CatalogPagination {...page} label="santos del administrador" />}
+      {remotePage && onCursor ? <SaintPagePagination page={remotePage} onCursor={onCursor} label={t("supplemental.adminSaints")} disabled={busy} /> : <CatalogPagination {...page} label={t("supplemental.adminSaints")} />}
     </div>
   );
 }

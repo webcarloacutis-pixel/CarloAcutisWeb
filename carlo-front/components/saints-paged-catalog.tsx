@@ -8,8 +8,10 @@ import { apiUrl } from "@/lib/api-url"
 import { readSaintFilters, type SaintFilters } from "@/lib/content-filters"
 import { canonicalFilterCountry, saintFilterCountries, saintPageUrl } from "@/lib/saint-pages"
 import { useSaintPage } from "@/lib/use-saint-page"
+import { useLanguage } from '@/contexts/language-context'
 
 export function SaintsPagedCatalog() {
+  const { t } = useLanguage()
   const params = useSearchParams()
   const parsed = readSaintFilters(new URLSearchParams(params.toString()))
   const cursor = params.get("cursor") || ""
@@ -32,10 +34,10 @@ export function SaintsPagedCatalog() {
   }
   return <section aria-busy={loading} style={{ overflowAnchor: "none" }}>
     <SaintsFilters filters={filters} countries={countries} onChange={(next, replace) => navigate(next, null, replace)} />
-    {loading && <p role="status">Cargando catálogo de santos…</p>}
-    {error && <div role="alert" className="space-y-3"><p>{error}</p><Button onClick={retry}>Reintentar</Button>{cursor && <Button variant="outline" onClick={() => navigate(filters)}>Volver a la primera página</Button>}</div>}
+    {loading && <p role="status">{t('catalog.saintsLoading')}</p>}
+    {error && <div role="alert" className="space-y-3"><p>{t(error)}</p><Button onClick={retry}>{t('content.retry')}</Button>{cursor && <Button variant="outline" onClick={() => navigate(filters)}>{t('catalog.firstPage')}</Button>}</div>}
     {page && !error && <>
-      <p className="text-sm text-muted-foreground mb-4">{page.rankingMode === "ai-estimate" ? "Orden: popularidad estimada por IA. Las fichas sin estimación aparecen al final." : "Orden alfabético. Aún no hay estimaciones de popularidad por IA disponibles."}</p>
+      <p className="text-sm text-muted-foreground mb-4">{t(page.rankingMode === 'ai-estimate' ? 'catalog.orderAi' : 'catalog.orderAlphabetical')}</p>
       <SaintsList saints={page.items} remoteTotal={page.total} />
       <SaintPagePagination page={page} onCursor={next => navigate(filters, next)} disabled={loading} />
     </>}
