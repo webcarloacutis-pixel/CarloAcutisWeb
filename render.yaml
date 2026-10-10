@@ -1,4 +1,7 @@
-# Prepared only. Do not create services or deploy without the owner approving Render costs.
+# Historical proposal only. Do not apply for the production-closure repair.
+# That repair uses the existing public acutis-api-staging and acutis-front-staging
+# services, with current settings verified in Render before a manual deploy.
+# Do not create services or deploy this blueprint without the owner approving Render costs.
 # Fresh names avoid changing the type/region of an existing service implicitly.
 services:
   - type: pserv
