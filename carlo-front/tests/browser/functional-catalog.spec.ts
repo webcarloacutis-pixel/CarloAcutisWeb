@@ -48,7 +48,7 @@ test('image, heading, biography and free card space open one canonical detail an
  test.setTimeout(120000)
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name))
  for(const zone of ['image','heading','biography','space']){
-  await page.goto('/santos?q=Jos%C3%A9&sort=alphabetical&lang=es')
+  await page.goto('/santos?q=Jos%C3%A9&sort=alphabetical&lang=es',{waitUntil:'domcontentloaded'})
   const link=cards(page).filter({has:page.getByRole('heading',{name:'San José',exact:true})}).first()
   await expect(link).toBeVisible()
   const href=await link.getAttribute('href');expect(new URL(href!,'http://localhost').pathname).toBe('/santos/san-jose')
@@ -71,12 +71,13 @@ test('image, heading, biography and free card space open one canonical detail an
 })
 test('keyboard focus and native modified/middle links retain canonical new-tab navigation',async({page,context})=>{
  test.skip(Boolean(test.info().project.use.hasTouch),'Touch opening is exercised in the card-zone journey')
- await page.goto('/santos?q=Carlo&lang=es');const link=cards(page).first();await expect(link).toBeVisible()
+ await page.goto('/santos?q=Carlo&lang=es',{waitUntil:'domcontentloaded'});const link=cards(page).first();await expect(link).toBeVisible()
  let focused=false
  for(let index=0;index<50;index++){await page.keyboard.press('Tab');focused=await link.evaluate(node=>node===document.activeElement);if(focused)break}
  expect(focused).toBe(true);expect(await link.evaluate(node=>getComputedStyle(node).boxShadow)).not.toBe('none')
- await page.keyboard.press('Enter');await expect(page.getByRole('heading',{level:1,name:'San Carlo Acutis',exact:true})).toBeVisible();await page.goBack()
- for(const action of ['Control','middle'] as const){
+ await page.keyboard.press('Enter');await expect(page.getByRole('heading',{level:1,name:'San Carlo Acutis',exact:true})).toBeVisible();await page.goBack({waitUntil:'domcontentloaded'});await expect(link).toBeVisible()
+ const modifier=await page.evaluate(()=>/Mac/.test(navigator.platform))?'Meta':'Control'
+ for(const action of [modifier,'middle'] as const){
   const opened=context.waitForEvent('page')
   await link.click(action==='middle'?{button:'middle'}:{modifiers:[action]})
   const tab=await opened;await tab.waitForLoadState('domcontentloaded');expect(new URL(tab.url()).pathname).toBe('/santos/san-carlo-acutis');await tab.close()
