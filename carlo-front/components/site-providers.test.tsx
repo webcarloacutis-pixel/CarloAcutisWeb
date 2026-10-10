@@ -4,6 +4,7 @@ import { hydrateRoot, type Root } from 'react-dom/client'
 import { afterEach, expect, it, vi } from 'vitest'
 import { SiteProviders } from './site-providers'
 import { useUser } from '@/contexts/user-context'
+import { waitFor } from '@testing-library/react'
 
 afterEach(()=>vi.unstubAllGlobals())
 it('waits for the suspended public tree to hydrate before bootstrapping the session',async()=>{
@@ -25,7 +26,9 @@ it('waits for the suspended public tree to hydrate before bootstrapping the sess
     root=hydrateRoot(element,tree,{onRecoverableError:error=>errors.push(error)})
     await new Promise(resolve=>setTimeout(resolve,100))
     expect(fetcher,'Session effects must not race a deferred server-rendered subtree').toHaveBeenCalledTimes(0)
-    blocked=false;release();await new Promise(resolve=>setTimeout(resolve,100))
+    blocked=false;release()
+    // Await the actual bounded session result, not an assumed100ms React scheduling interval under parallel builds.
+    await waitFor(()=>expect(element.textContent).toContain('Anonymous visitor'))
     expect(fetcher).toHaveBeenCalledTimes(1)
     expect(element.textContent).toContain('Anonymous visitor')
     expect(errors).toEqual([])

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-049",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Antonio de Padua",
+      "sourceHash": "23a354d740cde6b88b1b13bd52aa30dd",
+      "text": "圣安多尼·帕多瓦",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Sacerdote franciscano y doctor de la Iglesia",
+      "sourceHash": "baccdfa9f6f8d1f53b9eeb511673605b",
+      "text": "方济各会司铎与教会圣师",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Antonio nació en Lisboa hacia 1195 y recibió el nombre de Fernando. Ingresó primero entre los canónigos agustinos y estudió en Lisboa y Coimbra. La llegada de las reliquias de los franciscanos muertos en Marruecos influyó en su decisión de incorporarse a aquella fraternidad en 1220. Su proyecto de misión africana quedó interrumpido por la enfermedad y terminó llegando a Italia.\n\nParticipó en el capítulo franciscano de 1221 y desarrolló una actividad intensa como predicador y maestro en Italia y Francia. Francisco de Asís aprobó su enseñanza teológica a los hermanos, vinculándola al espíritu de oración. Sus Sermones recogen una lectura bíblica orientada a la conversión y a la vida cristiana. Murió cerca de Padua el 13 de junio de 1231 y fue canonizado al año siguiente. El lirio y el Niño Jesús pertenecen a su representación devocional tradicional.",
+      "sourceHash": "a37288363cf5af6a899c2cb57b9e1527",
+      "text": "安多尼约于1195年出生在里斯本，原名费尔南多。他最初加入奥思定咏祷司铎会，并在里斯本和科英布拉求学。在摩洛哥遇害的方济各会士的圣髑抵达后，他受到触动，于1220年决定加入这个兄弟团体。他前往非洲传教的计划因患病而中断，最终抵达意大利。\n\n他参加了1221年的方济各会总会，并在意大利和法国广泛从事宣讲与教学。亚西西的方济各认可他为弟兄们讲授神学，同时强调教学应与祈祷精神相结合。他的《讲道集》包含以悔改和基督徒生活为导向的圣经解读。他于1231年6月13日在帕多瓦附近去世，次年被册封为圣人。百合与圣婴耶稣属于他传统的敬礼图像。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "13 de junio",
+      "sourceHash": "2a5581aae6df9c36ade9e522cfe5d10c",
+      "text": "6月13日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Lisboa",
+      "sourceHash": "9b643420ea438dc4825a5e74470e4222",
+      "text": "里斯本",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Lirio",
+      "sourceHash": "653aaf29d6a8a6568c8dfc2766019fef",
+      "text": "百合",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Niño Jesús",
+      "sourceHash": "2f0264c345fc8ebe26fc6a5da3b3f3a4",
+      "text": "圣婴耶稣",
+      "review": "assistant"
+    }
+  }
+}

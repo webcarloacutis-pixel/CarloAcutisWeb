@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-023",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Miguel Arcángel",
+      "sourceHash": "dce3143549ac02aec692c845f1941e16",
+      "text": "圣弥额尔总领天使",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Arcángel, defensor del pueblo de Dios",
+      "sourceHash": "3196ae9f77271d43c8e923fc93959552",
+      "text": "总领天使，天主子民的护卫者",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Miguel es una figura angélica de las Escrituras, no una persona con una biografía terrestre. La tradición cristiana interpreta su nombre como una pregunta que reconoce la soberanía de Dios. Daniel lo vincula con la protección del pueblo; la carta de Judas y el Apocalipsis desarrollan otras escenas de su enfrentamiento con el mal.\n\nEn Apocalipsis 12, Miguel y sus ángeles combaten al dragón, identificado con el adversario que acusa y engaña. El pasaje pertenece al lenguaje simbólico de las visiones apocalípticas. Su representación con armas expresa esa función espiritual y no documenta una campaña militar humana. La Iglesia de Oriente y la de Occidente han mantenido su veneración mediante templos, celebraciones e imágenes.\n\nSu fiesta se celebra con Gabriel y Rafael el 29 de septiembre. La devoción asociada a Miguel invita a resistir el mal y a confiar en Dios. Por su condición angélica, los campos de nacimiento, muerte y geografía natal se clasifican como no aplicables.",
+      "sourceHash": "9dccaf96f876558fbcfafe9f8dd4fc1c",
+      "text": "弥额尔是圣经中的天使形象，并非拥有尘世生平的人物。基督宗教传统把他的名字解释为一个承认天主主权的问句。《达尼尔书》将他与保护天主子民联系起来；《犹达书》和《默示录》则描绘了他与邪恶对抗的其他场景。\n\n在《默示录》第12章，弥额尔和他的天使与巨龙交战；巨龙被指认为控告并欺骗人的敌对者。这段经文属于末世异象的象征语言。他携带武器的形象表达的是这一属灵职能，并非人类军事行动的历史记录。东方和西方教会通过圣堂、庆日与图像，持续保持对他的敬礼。\n\n他的庆日于9月29日与加俾额尔和辣法耳共同庆祝。与弥额尔有关的敬礼邀请人抵抗邪恶、信赖天主。由于他是天使，出生、死亡以及出生地理信息等字段均归为不适用。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de septiembre",
+      "sourceHash": "00b3cde671fca9a2c5eaf8c110e20308",
+      "text": "9月29日",
+      "review": "assistant"
+    }
+  }
+}

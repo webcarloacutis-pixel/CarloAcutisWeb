@@ -42,6 +42,19 @@ it("encodes global filters and opaque cursor without accepting a giant page size
   expect(Object.fromEntries(value.searchParams)).toEqual({ view: "cards", limit: "12", q: "María & paz", continent: "europe", country: "IT", century: "16-20", cursor: "opaque_abc" })
 })
 
+it("accepts editorial pages without statistical claims and keeps explicit sort in separate page/cache scopes", () => {
+  expect(validateSaintPage({ ...fixture(), rankingMode: "editorial" }, 12, "").rankingMode).toBe("editorial")
+  expect(validateSaintPage({ ...fixture(), rankingMode: "alphabetical" }, 12, "").rankingMode).toBe("alphabetical")
+  const filters = { query: "José", country: "", continent: "", century: "" }
+  const editorial = saintPageUrl(filters)
+  const alphabetical = saintPageUrl(filters, "", 12, "alphabetical")
+  expect(new URL(editorial, "http://fixture.invalid").searchParams.has("sort")).toBe(false)
+  expect(new URL(alphabetical, "http://fixture.invalid").searchParams.get("sort")).toBe("alphabetical")
+  const cache = createSaintPageCache()
+  cache.set(editorial, { ...fixture(), rankingMode: "editorial" })
+  expect(cache.get(alphabetical)).toBeUndefined()
+})
+
 it("rejects duplicate IDs, repeated cursor, bad totals and malformed facets", () => {
   const good = fixture()
   expect(() => validateSaintPage({ ...good, items: [good.items[0], good.items[0]] }, 12, "")).toThrow()

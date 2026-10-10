@@ -3,16 +3,18 @@ import { countryName, matchesContinent, normalizeText, type PublicSaint, type Sa
 import type { PopularityEstimateData } from "./popularity-display"
 
 export const SAINT_CARD_PAGE_SIZE = 12
+export type SaintCatalogOrder = "editorial" | "alphabetical" | "ai-estimate"
 export type SaintCard = PublicSaint & { biographyExcerpt?: string | null; createdAt: string; updatedAt: string; popularityEstimate: PopularityEstimateData | null }
 export type SaintPage = {
   items: SaintCard[]; total: number; nextCursor: string | null; previousCursor: string | null;
   hasMore: boolean; hasPrevious: boolean; offset: number; revision: string;
-  rankingMode: "ai-estimate" | "alphabetical-unrated";
+  rankingMode: "editorial" | "alphabetical" | "ai-estimate" | "alphabetical-unrated";
   metadata: { facets: { countries: { code: string; continent: string | null }[] } };
 }
 
-export function saintPageUrl(filters: SaintFilters, cursor = "", size = SAINT_CARD_PAGE_SIZE) {
+export function saintPageUrl(filters: SaintFilters, cursor = "", size = SAINT_CARD_PAGE_SIZE, order: SaintCatalogOrder = "editorial") {
   const params = new URLSearchParams({ view: "cards", limit: String(size) })
+  if (order !== "editorial") params.set("sort", order)
   if (filters.query) params.set("q", filters.query.slice(0, 200))
   if (filters.continent) params.set("continent", filters.continent.slice(0, 200))
   if (filters.country) params.set("country", filters.country.slice(0, 200))
@@ -30,7 +32,7 @@ export function validateSaintPage(value: unknown, size: number, currentCursor: s
       typeof value.revision !== "string" || !value.revision ||
       !cursorValue(value.nextCursor) || !cursorValue(value.previousCursor) ||
       typeof value.hasMore !== "boolean" || typeof value.hasPrevious !== "boolean" ||
-      !["ai-estimate", "alphabetical-unrated"].includes(String(value.rankingMode))) throw new Error("La página del catálogo no es válida.")
+      !["editorial", "alphabetical", "ai-estimate", "alphabetical-unrated"].includes(String(value.rankingMode))) throw new Error("La página del catálogo no es válida.")
   const ids = new Set<string>()
   for (const item of value.items) {
     if (!record(item) || typeof item.id !== "string" || !item.id || ids.has(item.id) || typeof item.name !== "string" || typeof item.slug !== "string") throw new Error("La página del catálogo contiene fichas inválidas o repetidas.")

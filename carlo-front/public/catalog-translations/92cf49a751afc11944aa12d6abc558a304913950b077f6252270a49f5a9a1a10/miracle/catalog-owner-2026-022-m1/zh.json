@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-022-m1",
+  "locale": "zh",
+  "fields": {
+    "title": {
+      "source": "La recuperación del habla al nombrar a Juan",
+      "sourceHash": "abf51ac6d4cb5bef821f35b1e15eaa6f",
+      "text": "确定若翰的名字后恢复说话",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Relato bíblico",
+      "sourceHash": "333d9cc5a09ff8b51fcecc85621e5c51",
+      "text": "圣经叙事",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Lucas 1,59–64 relata que, después de confirmar por escrito el nombre de su hijo, Zacarías vuelve a hablar y bendice a Dios. Se conserva la naturaleza narrativa y religiosa del testimonio. Fuente consultada: https://bible.usccb.org/bible/luke/1. Publicación editorial; no equivale a una certificación científica ni a un decreto eclesiástico moderno.",
+      "sourceHash": "35baf4d560348b37f155f255211b302e",
+      "text": "《路加福音》1:59–64记述，匝加利亚以书面确认儿子的名字后，恢复说话，并赞美天主。这里保留这一见证的叙事与宗教性质。查阅来源：https://bible.usccb.org/bible/luke/1。此为编辑性发表，不等同于科学认证或现代教会法令。",
+      "review": "assistant"
+    }
+  }
+}

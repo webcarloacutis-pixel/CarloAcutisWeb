@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-049",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Antonio de Padua",
+      "sourceHash": "23a354d740cde6b88b1b13bd52aa30dd",
+      "text": "Saint Anthony of Padua",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Sacerdote franciscano y doctor de la Iglesia",
+      "sourceHash": "baccdfa9f6f8d1f53b9eeb511673605b",
+      "text": "Franciscan priest and Doctor of the Church",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Antonio nació en Lisboa hacia 1195 y recibió el nombre de Fernando. Ingresó primero entre los canónigos agustinos y estudió en Lisboa y Coimbra. La llegada de las reliquias de los franciscanos muertos en Marruecos influyó en su decisión de incorporarse a aquella fraternidad en 1220. Su proyecto de misión africana quedó interrumpido por la enfermedad y terminó llegando a Italia.\n\nParticipó en el capítulo franciscano de 1221 y desarrolló una actividad intensa como predicador y maestro en Italia y Francia. Francisco de Asís aprobó su enseñanza teológica a los hermanos, vinculándola al espíritu de oración. Sus Sermones recogen una lectura bíblica orientada a la conversión y a la vida cristiana. Murió cerca de Padua el 13 de junio de 1231 y fue canonizado al año siguiente. El lirio y el Niño Jesús pertenecen a su representación devocional tradicional.",
+      "sourceHash": "a37288363cf5af6a899c2cb57b9e1527",
+      "text": "Anthony was born in Lisbon around 1195 and was given the name Fernando. He first joined the Augustinian canons and studied in Lisbon and Coimbra. The arrival of the relics of the Franciscans killed in Morocco influenced his decision to join that fraternity in 1220. His plan for a mission in Africa was interrupted by illness, and he eventually reached Italy.\n\nHe took part in the Franciscan chapter of 1221 and carried out extensive work as a preacher and teacher in Italy and France. Francis of Assisi approved his teaching of theology to the brothers, connecting it to the spirit of prayer. His Sermons contain a reading of the Bible directed toward conversion and Christian life. He died near Padua on June 13, 1231, and was canonized the following year. The lily and the Child Jesus belong to his traditional devotional depiction.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "13 de junio",
+      "sourceHash": "2a5581aae6df9c36ade9e522cfe5d10c",
+      "text": "June 13",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Lisboa",
+      "sourceHash": "9b643420ea438dc4825a5e74470e4222",
+      "text": "Lisbon",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Lirio",
+      "sourceHash": "653aaf29d6a8a6568c8dfc2766019fef",
+      "text": "Lily",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Niño Jesús",
+      "sourceHash": "2f0264c345fc8ebe26fc6a5da3b3f3a4",
+      "text": "Child Jesus",
+      "review": "assistant"
+    }
+  }
+}

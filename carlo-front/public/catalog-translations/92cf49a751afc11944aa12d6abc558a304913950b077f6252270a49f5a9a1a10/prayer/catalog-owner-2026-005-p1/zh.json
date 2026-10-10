@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "prayer",
+  "id": "catalog-owner-2026-005-p1",
+  "locale": "zh",
+  "fields": {
+    "title": {
+      "source": "Padre nuestro — Mateo 6,9–13 (edición histórica)",
+      "sourceHash": "a1d3e94c82852fcd315ecd95eb546322",
+      "text": "天主经——玛窦福音6:9–13（历史版本）",
+      "review": "assistant"
+    },
+    "category": {
+      "source": "Tradicionales",
+      "sourceHash": "ca338c7d166e641f0f4a5277d354bea5",
+      "text": "传统祈祷",
+      "review": "assistant"
+    },
+    "saintName": {
+      "source": "San Mateo",
+      "sourceHash": "7b638611c44945ecf3458feacb974b67",
+      "text": "圣玛窦",
+      "review": "assistant"
+    },
+    "occasion": {
+      "source": "Oración cotidiana; versión histórica",
+      "sourceHash": "4e466f87497669e13b4008fd50ebdb81",
+      "text": "日常祈祷；历史版本",
+      "review": "assistant"
+    },
+    "content": {
+      "source": "Padre nuestro, que estás en los cielos: santificado sea el tu nombre.\nVenga el tu reino. Hágase tu voluntad, como en el cielo, así también en la tierra.\nEl pan nuestro de cada día dánosle hoy.\nY perdónanos nuestras deudas, así como nosotros perdonamos a nuestros deudores.\nY no nos dejes caer en la tentación. Mas líbranos de mal. Amén.\n\nOración enseñada por Jesús y transmitida en el Evangelio de Mateo. Edición de Félix Torres Amat, 1836; texto histórico de dominio público, con acentos actualizados y corrección de una errata de transcripción. Fuente: https://es.wikisource.org/wiki/La_Sagrada_Biblia_(XIII)/Mateo",
+      "sourceHash": "15a3932606e1381f71fcbdf440d11f2e",
+      "text": "我们在天上的父：愿你的名受尊崇。\n愿你的国来临。愿你的旨意承行，在地上如同在天上。\n求你今天赐给我们每日所需的食粮。\n求你宽恕我们的债，如同我们宽恕欠我们债的人。\n不要让我们陷于诱惑，而要救我们脱离邪恶。阿们。\n\n这篇祈祷由耶稣教导，并在《玛窦福音》中传下。费利克斯·托雷斯·阿马特1836年版本；属于公有领域的历史文本，西班牙语原文的重音符号已更新，并纠正了一处转录错误。来源：https://es.wikisource.org/wiki/La_Sagrada_Biblia_(XIII)/Mateo",
+      "review": "assistant"
+    }
+  }
+}

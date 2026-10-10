@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-016",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Judas Tadeo",
+      "sourceHash": "0d8a75b834a76ac2f8d5fb39b40fbd22",
+      "text": "Saint Jude Thaddeus",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol",
+      "sourceHash": "e423a4d72a22222e91e1fe5937c68246",
+      "text": "Apostle",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Judas Tadeo es el apóstol distinto de Judas Iscariote. La tradición armoniza el nombre Tadeo de algunas listas con Judas, relacionado con Santiago, de otras. El cuarto Evangelio conserva una pregunta suya durante la cena: desea comprender por qué Jesús se manifestará a los discípulos y no al mundo.\n\nA su nombre se atribuye también una breve carta del Nuevo Testamento, preocupada por la fidelidad comunitaria. Tradiciones posteriores lo unen a Simón en la evangelización y el martirio en Persia; la celebración común del 28 de octubre recoge esa memoria. Los detalles de esos relatos no permiten establecer aquí un nacimiento o una muerte con fecha cierta. Las dos menciones de Judas Tadeo en el listado del propietario corresponden a esta misma identidad.",
+      "sourceHash": "44327e345464a873c7cd7edc653fdd38",
+      "text": "Jude Thaddeus is the apostle distinct from Judas Iscariot. Tradition reconciles the name Thaddeus in some lists with Jude, associated with James, in others. The fourth Gospel preserves a question he asks during the supper: he wishes to understand why Jesus will reveal himself to the disciples and not to the world.\n\nA short New Testament letter concerned with the faithfulness of the community is also attributed to his name. Later traditions associate him with Simon in evangelization and martyrdom in Persia; their shared celebration on October 28 preserves that memory. The details of these accounts do not allow a birth or death with a certain date to be established here. The two mentions of Jude Thaddeus in the owner's list refer to this same identity.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "28 de octubre",
+      "sourceHash": "c1489e932c439bb4884d36c6df0e60b0",
+      "text": "October 28",
+      "review": "assistant"
+    }
+  }
+}

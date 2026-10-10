@@ -6,10 +6,17 @@ import { HttpError } from "./errors";
 import { CATALOG_PAGE_SIZE } from "./catalog-limits";
 import { compareSaintRank, publicSaintEstimate, saintRankingRevision } from "../popularity/ranking";
 import type { EstimateRow } from "../popularity/domain";
+import { compareEditorialSaints, editorialOrderRevision } from "../catalog/saint-editorial-order";
 
 const regionNames = new Intl.DisplayNames(["es"], { type: "region" });
 const knownContinents = ["europe", "asia", "africa", "north-america", "south-america", "oceania", "antarctica"];
 export interface SaintCatalogFilters { query: string; continent: string; country: string; century: string }
+export type SaintCatalogOrder = "editorial" | "alphabetical" | "ai-estimate";
+export function readSaintCatalogOrder(value: unknown): SaintCatalogOrder {
+  if (value === undefined || value === "editorial") return "editorial";
+  if (value === "alphabetical" || value === "ai-estimate") return value;
+  throw new HttpError(400, "INVALID_SORT");
+}
 type MetadataSaint = { id: string; name: string; updatedAt: Date; birthContinent: string | null; birthCountryCode: string | null; deathYear: number | null };
 type Cursor = { v: 1; after: string; revision: string; scope: string };
 
@@ -95,7 +102,8 @@ export async function readSaintCards(req: Request) {
   if (typeof rawLimit !== "string" || !/^\d+$/.test(rawLimit) || Number(rawLimit) < 1 || Number(rawLimit) > CATALOG_PAGE_SIZE) throw new HttpError(400, "INVALID_LIMIT");
   const limit = Number(rawLimit);
   const filters = readSaintCatalogFilters(req.query);
-  const scope = createHash("sha256").update(JSON.stringify(["saint-catalog-v1", view, filters])).digest("hex");
+  const order = readSaintCatalogOrder(req.query.sort);
+  const scope = createHash("sha256").update(JSON.stringify(["saint-catalog-v2", view, filters, order])).digest("hex");
   const cursor = cursorFrom(req.query.cursor, scope);
   return prisma.$transaction(async tx => {
     // Full biographies stay in PostgreSQL until selecting the requested page. Metadata is bounded by catalogue capacity.
@@ -106,7 +114,9 @@ export async function readSaintCards(req: Request) {
     } });
     const estimates: EstimateRow[] = rows.map(row => ({ ...row, contentType: "saint" }));
     const estimateById = new Map(estimates.map(row => [row.contentId, publicSaintEstimate(row)]));
-    const revision = saintRankingRevision(saints, estimates);
+    const revision = createHash("md5").update(JSON.stringify([
+      saintRankingRevision(saints, estimates), order, order === "editorial" ? editorialOrderRevision : null,
+    ])).digest("hex");
     if (cursor && cursor.revision !== revision) throw new HttpError(409, "CATALOG_CHANGED");
     let matchingQuery: Set<string> | undefined;
     if (filters.query) {
@@ -119,7 +129,9 @@ export async function readSaintCards(req: Request) {
       matchingQuery = new Set(matching.map(row => row.id));
     }
     const ranked = saints.filter(saint => (!matchingQuery || matchingQuery.has(saint.id)) && matchesSaintMetadata(saint, filters))
-      .map(saint => ({ ...saint, popularityScore: estimateById.get(saint.id)?.score ?? null })).sort(compareSaintRank);
+      .map(saint => ({ ...saint, popularityScore: estimateById.get(saint.id)?.score ?? null }))
+      .sort(order === "editorial" ? compareEditorialSaints : order === "alphabetical"
+        ? (a, b) => compareSaintRank({ ...a, popularityScore: null }, { ...b, popularityScore: null }) : compareSaintRank);
     const position = cursor ? ranked.findIndex(saint => saint.id === cursor.after) : -1;
     if (cursor && position === -1) throw new HttpError(400, "INVALID_CURSOR");
     const selected = ranked.slice(position + 1, position + 1 + limit);
@@ -128,12 +140,13 @@ export async function readSaintCards(req: Request) {
       ? await tx.saint.findMany({ where: selectedWhere, select: mapSelect })
       : await tx.saint.findMany({ where: selectedWhere, select: cardSelect });
     const detailById = new Map(detailRows.map(saint => [saint.id, saint]));
-    const excerpts = view === "cards" && selected.length ? await tx.$queryRaw<{ id: string; biographyExcerpt: string | null }[]>(Prisma.sql`
-      SELECT "id", left("biography", 600) AS "biographyExcerpt" FROM "Saint" WHERE "id" IN (${Prisma.join(selected.map(saint => saint.id))})
+    const excerpts = view === "cards" && selected.length ? await tx.$queryRaw<{ id: string; biographyExcerpt: string | null; biographySourceHash: string | null }[]>(Prisma.sql`
+      SELECT "id", left("biography", 600) AS "biographyExcerpt", md5("biography") AS "biographySourceHash" FROM "Saint" WHERE "id" IN (${Prisma.join(selected.map(saint => saint.id))})
     `) : [];
     const excerptById = new Map(excerpts.map(row => [row.id, row.biographyExcerpt]));
+    const hashById = new Map(excerpts.map(row => [row.id, row.biographySourceHash]));
     const items = selected.map(saint => ({ ...detailById.get(saint.id)!,
-      ...(view === "cards" ? { biographyExcerpt: excerptById.get(saint.id) ?? null } : {}),
+      ...(view === "cards" ? { biographyExcerpt: excerptById.get(saint.id) ?? null, biographySourceHash: hashById.get(saint.id) ?? null } : {}),
       popularityEstimate: estimateById.get(saint.id) ?? null }));
     const hasMore = position + 1 + items.length < ranked.length;
     const encodeCursor = (after: string) => Buffer.from(JSON.stringify({ v: 1, after, revision, scope } satisfies Cursor)).toString("base64url");
@@ -148,7 +161,8 @@ export async function readSaintCards(req: Request) {
       .sort((a, b) => a.code < b.code ? -1 : a.code > b.code ? 1 : String(a.continent).localeCompare(String(b.continent)));
     const rankedKnown = saints.some(saint => !!estimateById.get(saint.id));
     return { items, total: ranked.length, nextCursor, hasMore, revision, offset, hasPrevious, previousCursor,
-      rankingMode: rankedKnown ? "ai-estimate" as const : "alphabetical-unrated" as const,
+      rankingMode: order === "editorial" ? "editorial" as const : order === "alphabetical" ? "alphabetical" as const
+        : rankedKnown ? "ai-estimate" as const : "alphabetical-unrated" as const,
       metadata: { facets: { countries } } };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }

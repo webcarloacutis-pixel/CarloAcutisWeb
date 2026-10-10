@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-106",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Francisco de Asís",
+      "sourceHash": "53cf33568bf97412739febe342ddb6f0",
+      "text": "圣方济各·亚西西",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Fundador de los Hermanos Menores",
+      "sourceHash": "3b4930510a5181a268a3aba8f645473f",
+      "text": "小兄弟会创立者",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Francisco de Asís abrazó una vida de pobreza evangélica, fraternidad y predicación itinerante. Fundó la familia franciscana y su espiritualidad destacó la paz, la humildad y el cuidado de la creación.",
+      "sourceHash": "914193a46ca39fc51ef8192df9afa5e6",
+      "text": "亚西西的方济各选择了福音式的贫穷、弟兄情谊和巡回宣讲的生活。他创立了方济各大家庭，其灵修强调和平、谦逊以及对受造界的关怀。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "4 de octubre",
+      "sourceHash": "8eca42bb0967602240613bb1ab4b5b13",
+      "text": "10月4日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Asís, Italia",
+      "sourceHash": "e3ad7281c67dc24279009a86965cec6b",
+      "text": "意大利亚西西",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Ecología",
+      "sourceHash": "11574a5718b1af71331a522f20c7db01",
+      "text": "生态",
+      "review": "assistant"
+    },
+    "patronOf.1": {
+      "source": "Animales",
+      "sourceHash": "0c5f607e50bd8c3dcd2bcfb9903c646b",
+      "text": "动物",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Estigmas",
+      "sourceHash": "434a5e68f1867716a551d43230c05915",
+      "text": "五伤",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Hábito franciscano",
+      "sourceHash": "8c745533b4ee8f2f8fb83af6c4a0ccdb",
+      "text": "方济各会会衣",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "本条目于2026年扩展时加入。未知资料保留为null；圣徒传记传统和奇迹分别标注，以免与教会正式认可混淆。",
+      "review": "assistant"
+    }
+  }
+}

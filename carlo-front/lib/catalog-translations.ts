@@ -246,3 +246,26 @@ const miracleAccountLabels:Record<string,string>={
   tr:'mucize anlatıları',vi:'những câu chuyện phép lạ',pl:'relacje o cudach',
 }
 for(const [language,label] of Object.entries(miracleAccountLabels)) catalogTranslations[language]['catalog.miracleAccounts']=label
+
+// Editorial positions are presentation priorities, never visit counts or AI scores.
+const editorialOrderLabels: Record<string, [string, string]> = {
+  es: ['Destacados · orden editorial', 'Orden alfabético'],
+  en: ['Featured · editorial order', 'Alphabetical order'],
+  fr: ['À la une · ordre éditorial', 'Ordre alphabétique'],
+  pt: ['Destaques · ordem editorial', 'Ordem alfabética'],
+  it: ['In evidenza · ordine editoriale', 'Ordine alfabetico'],
+  de: ['Empfohlen · redaktionelle Reihenfolge', 'Alphabetische Reihenfolge'],
+  zh: ['精选 · 编辑排序', '按字母排序'],
+  hi: ['विशेष चयन · संपादकीय क्रम', 'वर्णानुक्रम'],
+  ar: ['مختارات · ترتيب تحريري', 'الترتيب الأبجدي'],
+  ru: ['Избранное · редакционный порядок', 'Алфавитный порядок'],
+  ja: ['注目 · 編集順', 'アルファベット順'],
+  ko: ['추천 · 편집 순서', '알파벳순'],
+  tr: ['Öne çıkanlar · editoryal sıralama', 'Alfabetik sıralama'],
+  vi: ['Nổi bật · thứ tự biên tập', 'Thứ tự bảng chữ cái'],
+  pl: ['Wyróżnione · kolejność redakcyjna', 'Kolejność alfabetyczna'],
+}
+for (const [language, [editorial, alphabetical]] of Object.entries(editorialOrderLabels)) {
+  catalogTranslations[language]['catalog.orderEditorial'] = editorial
+  catalogTranslations[language]['catalog.orderAlphabeticalExplicit'] = alphabetical
+}

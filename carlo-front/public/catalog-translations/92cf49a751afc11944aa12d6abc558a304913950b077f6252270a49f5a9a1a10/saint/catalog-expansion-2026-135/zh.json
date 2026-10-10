@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-135",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Pío de Pietrelcina",
+      "sourceHash": "b7a1be6d46efd709ede96923d127297f",
+      "text": "圣庇护·皮耶特雷尔奇纳",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Sacerdote capuchino conocido como Padre Pío",
+      "sourceHash": "3965eb1bbcbd3e149863ad0b508abbaf",
+      "text": "被称为庇护神父的嘉布遣会司铎",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Pío de Pietrelcina fue sacerdote capuchino, confesor y director espiritual. Su ministerio estuvo asociado al santuario de San Giovanni Rotondo y a una intensa devoción popular.",
+      "sourceHash": "33d4c037313ac4283b0176c4ed7ed03b",
+      "text": "皮耶特雷尔奇纳的庇护是一位嘉布遣会司铎、听告解的神父与灵修导师。他的牧职与圣乔瓦尼罗通多圣所，以及热切的民间敬礼联系在一起。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "23 de septiembre",
+      "sourceHash": "1055158f333373fc95444988db86d919",
+      "text": "9月23日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Pietrelcina, Italia",
+      "sourceHash": "bf34f74a05fc3d865161caf05ded5bea",
+      "text": "意大利皮耶特雷尔奇纳",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Voluntarios de defensa civil",
+      "sourceHash": "140f68774dfb128201977685af722383",
+      "text": "民防志愿者",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Estigmas",
+      "sourceHash": "434a5e68f1867716a551d43230c05915",
+      "text": "五伤",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Hábito capuchino",
+      "sourceHash": "3687d195bfdc158b7c256b433599852f",
+      "text": "嘉布遣会会衣",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "本条目于2026年扩展时加入。未知资料保留为null；圣徒传记传统和奇迹分别标注，以免与教会正式认可混淆。",
+      "review": "assistant"
+    }
+  }
+}

@@ -4,7 +4,9 @@ import { prisma } from "./prisma";
 import { createSaint, updateSaint } from "./saint-service";
 import { integrationDatabaseEnabled } from "./test-database";
 
-const enabled = integrationDatabaseEnabled();
+// This fixture belongs to the empty capacity database, not the separate repair/browser copies.
+// Keep the beforeAll identity/TLS checks intact when that exact profile is selected.
+const enabled = integrationDatabaseEnabled() && new URL(process.env.DATABASE_URL!).pathname === "/acutis_catalog_capacity_test";
 let targetVerified = false;
 const prefix = "editorial-regression-" + randomUUID() + "-";
 const id = (name: string) => prefix + name;

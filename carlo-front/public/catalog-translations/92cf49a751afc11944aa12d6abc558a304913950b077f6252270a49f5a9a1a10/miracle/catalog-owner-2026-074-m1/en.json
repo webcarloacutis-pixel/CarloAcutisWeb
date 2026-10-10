@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-074-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "Licuación comunicada en la fiesta de san Genaro",
+      "sourceHash": "498aa5ea294ce1bdc9c89a184d00f9c6",
+      "text": "Reported liquefaction on the feast of Saint Januarius",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Fenómeno devocional comunicado",
+      "sourceHash": "7bcc34e0c791f38967869024527b7356",
+      "text": "Reported devotional phenomenon",
+      "review": "assistant"
+    },
+    "date": {
+      "source": "2025-09-19",
+      "sourceHash": "31d9070bb66a87edbcea130716996081",
+      "text": "2025-09-19",
+      "review": "assistant"
+    },
+    "location": {
+      "source": "Catedral de Nápoles",
+      "sourceHash": "1f6c3f2fb58bcf33954a5179844f677a",
+      "text": "Cathedral of Naples",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Durante la celebración napolitana del 19 de septiembre de 2025 se anunció la licuación de la reliquia atribuida a Genaro. La noticia registra el acontecimiento litúrgico y su interpretación devocional, sin aportar una pericia científica del contenido de las ampollas. Fuente consultada: https://www.vaticannews.va/it/chiesa/news/2025-09/napoli-cardinale-battaglia-sangue-san-gennaro-bambini-gaza.html. Aprobado para publicación editorial; esta ficha no afirma una validación científica ni un decreto eclesiástico de reconocimiento del suceso.",
+      "sourceHash": "fbc48057cb4ad3e30c270c0900dd4dbb",
+      "text": "During the celebration in Naples on September 19, 2025, the liquefaction of the relic attributed to Januarius was announced. The report records the liturgical event and its devotional interpretation, without providing a scientific examination of the contents of the vials. Source consulted: https://www.vaticannews.va/it/chiesa/news/2025-09/napoli-cardinale-battaglia-sangue-san-gennaro-bambini-gaza.html. Approved for editorial publication; this entry does not claim scientific validation or an ecclesiastical decree recognizing the event.",
+      "review": "assistant"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-018",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "Santa María Magdalena",
+      "sourceHash": "6cf99446a5803f159493ae3aa7369508",
+      "text": "圣玛利亚·玛达肋纳",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Discípula de Jesús",
+      "sourceHash": "13ad63267e737aa966e0b01ec406c1ad",
+      "text": "耶稣的门徒",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "María Magdalena debe su denominación a Magdala, una población de Galilea. El Evangelio de Juan le concede un papel decisivo en la mañana de Pascua: acude al sepulcro, encuentra a Jesús, reconoce que la llama por su nombre y recibe el encargo de anunciarlo a los discípulos. La tradición cristiana ha destacado por ello su condición de testigo y mensajera de la Resurrección.\n\nSu identidad no debe confundirse con María de Betania, hermana de Marta y Lázaro, ni con la mujer anónima presentada como pecadora en otro relato evangélico. La revisión del calendario y del Martirologio Romano ha aclarado esa distinción, importante también al interpretar las imágenes penitentes que le dedicó el arte. En 2016 su celebración del 22 de julio recibió el rango litúrgico de fiesta; esa decisión no fue una canonización moderna. La procedencia de Magdala no basta para fijar una localidad natal exacta, y las fuentes consultadas no establecen sus fechas vitales.",
+      "sourceHash": "bc6a3c73b53ac36a047b5a9297eee94a",
+      "text": "玛利亚·玛达肋纳的称号来自加里肋亚的城镇玛格达拉。《若望福音》赋予她在复活节清晨的关键角色：她来到坟墓，遇见耶稣，认出他正在呼唤她的名字，并受命向门徒宣告他的消息。因此，基督宗教传统特别强调她作为复活见证人和报信者的身份。\n\n她不应与玛尔大和拉匝禄的姐妹、伯达尼的玛利亚混为一人，也不应与另一段福音叙事中那位被称为罪妇的无名女子混淆。教会日历和《罗马殉道录》的修订已澄清这一区别；在理解艺术中为她创作的悔罪形象时，这一点同样重要。2016年，她于7月22日的庆祝获得了礼仪上“庆日”的等级；这项决定并非现代意义上的册封圣人。她与玛格达拉的关联不足以确定具体出生地点，所查阅的来源也未确定她的出生和去世日期。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "22 de julio",
+      "sourceHash": "ddde0841156967be1547e7f7ae67c5ab",
+      "text": "7月22日",
+      "review": "assistant"
+    }
+  }
+}

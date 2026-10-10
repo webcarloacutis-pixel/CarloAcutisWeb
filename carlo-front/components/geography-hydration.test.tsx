@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/contexts/language-context'
 import { SaintsFilters } from './saints-filters'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {vi.restoreAllMocks();localStorage.clear();document.cookie='acutis_locale=; Path=/; Max-Age=0';window.history.replaceState(null,'','/')})
 
 it.each(['en', 'ar'])('hydrates continent options with saved %s when browser Intl returns numeric region codes', async (language) => {
   localStorage.setItem('language', language)

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-037-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "Curación infantil atribuida a la intercesión de Francisco",
+      "sourceHash": "4de530eefb18cb5c35786800f814c9e0",
+      "text": "A childhood healing attributed to Francis's intercession",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Tradición hagiográfica",
+      "sourceHash": "c78545ec004498181f3de6717e5c94f5",
+      "text": "Hagiographic tradition",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "La tradición biográfica relata que Giovanni, futuro Buenaventura, sanó de una enfermedad grave después de que su madre pidiera la intercesión de Francisco. Se presenta como tradición hagiográfica, sin expediente clínico moderno. Fuente consultada: https://www.vaticannews.va/fr/saint-du-jour/07/15/saint-bonaventure--cardinal--eveque-dalbano-et-docteur-de-leglis.html. Publicación editorial; no equivale a una certificación científica ni a un decreto eclesiástico moderno.",
+      "sourceHash": "81a480966d1e3c3ab96aa92ea2046edb",
+      "text": "Biographical tradition recounts that Giovanni, the future Bonaventure, recovered from a serious illness after his mother asked for Francis's intercession. It is presented as hagiographic tradition, without a modern clinical dossier. Source consulted: https://www.vaticannews.va/fr/saint-du-jour/07/15/saint-bonaventure--cardinal--eveque-dalbano-et-docteur-de-leglis.html. Editorial publication; it does not amount to scientific certification or a modern ecclesiastical decree.",
+      "review": "assistant"
+    }
+  }
+}

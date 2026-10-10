@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-002",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Pedro",
+      "sourceHash": "201a97a6409149f68fee2e20b2cc5f15",
+      "text": "圣伯多禄",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol y primer obispo de Roma",
+      "sourceHash": "9fd658036f10ff7897759cde85a3b77e",
+      "text": "宗徒与首任罗马主教",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Simón, llamado Pedro por Jesús, nació en Betsaida y trabajó como pescador en el lago de Galilea. Vivía en Cafarnaún, estaba casado y compartía el ambiente de la pesca con su hermano Andrés. Su trayectoria evangélica combina iniciativa y fragilidad: reconoce a Jesús como Mesías, presencia acontecimientos reservados a unos pocos discípulos y también niega conocerlo durante la Pasión.\n\nDespués de la Resurrección recibe de nuevo la responsabilidad de cuidar a la comunidad. Los Hechos lo muestran predicando y afrontando las autoridades de Jerusalén. La Iglesia católica reconoce en él al primero de los obispos de Roma. La tradición sitúa allí su martirio durante la persecución de Nerón y conserva el relato de una crucifixión invertida. La fecha de 67 pertenece a esa transmisión tradicional, no a un acta contemporánea. Su celebración del 29 de junio se comparte con Pablo, cuya misión fue diferente y complementaria.",
+      "sourceHash": "fd47f5483a80d16a4bc0fed627d98dc4",
+      "text": "西满被耶稣称为伯多禄，出生于贝特赛达，在加里肋亚湖以捕鱼为业。他居住在葛法翁，已经结婚，并与兄弟安德肋同处渔业生活圈。他在福音中的经历兼有主动与软弱：他承认耶稣是默西亚，见证只让少数门徒参与的事件，却也在耶稣受难期间否认认识他。\n\n复活之后，他再次受托照顾团体。《宗徒大事录》记述他宣讲，并面对耶路撒冷当局。天主教会承认他为首任罗马主教。传统将他的殉道置于罗马、尼禄迫害期间，并保存了倒钉十字架的叙述。公元67年这一日期来自传统传承，并非当时的记录。他于6月29日的庆日与保禄共同庆祝；保禄的使命与他的使命不同，却彼此互补。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de junio",
+      "sourceHash": "5b24f9c28c886bff2c03a4af3205e6c1",
+      "text": "6月29日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Betsaida, Galilea",
+      "sourceHash": "77661b3cc610bd78ec51b0f1af78fcc4",
+      "text": "加里肋亚贝特赛达",
+      "review": "assistant"
+    }
+  }
+}

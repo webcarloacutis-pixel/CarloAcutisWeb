@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-002",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Pedro",
+      "sourceHash": "201a97a6409149f68fee2e20b2cc5f15",
+      "text": "Saint Peter",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol y primer obispo de Roma",
+      "sourceHash": "9fd658036f10ff7897759cde85a3b77e",
+      "text": "Apostle and first bishop of Rome",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Simón, llamado Pedro por Jesús, nació en Betsaida y trabajó como pescador en el lago de Galilea. Vivía en Cafarnaún, estaba casado y compartía el ambiente de la pesca con su hermano Andrés. Su trayectoria evangélica combina iniciativa y fragilidad: reconoce a Jesús como Mesías, presencia acontecimientos reservados a unos pocos discípulos y también niega conocerlo durante la Pasión.\n\nDespués de la Resurrección recibe de nuevo la responsabilidad de cuidar a la comunidad. Los Hechos lo muestran predicando y afrontando las autoridades de Jerusalén. La Iglesia católica reconoce en él al primero de los obispos de Roma. La tradición sitúa allí su martirio durante la persecución de Nerón y conserva el relato de una crucifixión invertida. La fecha de 67 pertenece a esa transmisión tradicional, no a un acta contemporánea. Su celebración del 29 de junio se comparte con Pablo, cuya misión fue diferente y complementaria.",
+      "sourceHash": "fd47f5483a80d16a4bc0fed627d98dc4",
+      "text": "Simon, called Peter by Jesus, was born in Bethsaida and worked as a fisherman on the Lake of Galilee. He lived in Capernaum, was married and shared the fishing community with his brother Andrew. His Gospel story combines initiative and frailty: he recognizes Jesus as the Messiah, witnesses events reserved for a few disciples and also denies knowing him during the Passion.\n\nAfter the Resurrection, he again receives responsibility for caring for the community. Acts shows him preaching and confronting the authorities of Jerusalem. The Catholic Church recognizes him as the first of the bishops of Rome. Tradition places his martyrdom there during Nero's persecution and preserves the account of an upside-down crucifixion. The date of 67 belongs to that traditional transmission, rather than to a contemporary record. His celebration on June 29 is shared with Paul, whose mission was different and complementary.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de junio",
+      "sourceHash": "5b24f9c28c886bff2c03a4af3205e6c1",
+      "text": "June 29",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Betsaida, Galilea",
+      "sourceHash": "77661b3cc610bd78ec51b0f1af78fcc4",
+      "text": "Bethsaida, Galilee",
+      "review": "assistant"
+    }
+  }
+}

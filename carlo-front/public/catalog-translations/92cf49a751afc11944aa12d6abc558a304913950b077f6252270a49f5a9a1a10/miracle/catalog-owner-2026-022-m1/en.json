@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-022-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "La recuperación del habla al nombrar a Juan",
+      "sourceHash": "abf51ac6d4cb5bef821f35b1e15eaa6f",
+      "text": "Speech restored when John is named",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Relato bíblico",
+      "sourceHash": "333d9cc5a09ff8b51fcecc85621e5c51",
+      "text": "Biblical account",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Lucas 1,59–64 relata que, después de confirmar por escrito el nombre de su hijo, Zacarías vuelve a hablar y bendice a Dios. Se conserva la naturaleza narrativa y religiosa del testimonio. Fuente consultada: https://bible.usccb.org/bible/luke/1. Publicación editorial; no equivale a una certificación científica ni a un decreto eclesiástico moderno.",
+      "sourceHash": "35baf4d560348b37f155f255211b302e",
+      "text": "Luke 1:59–64 recounts that, after confirming his son's name in writing, Zechariah speaks again and blesses God. The narrative and religious nature of the testimony is preserved. Source consulted: https://bible.usccb.org/bible/luke/1. Editorial publication; it does not amount to scientific certification or a modern ecclesiastical decree.",
+      "review": "assistant"
+    }
+  }
+}

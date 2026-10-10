@@ -4,10 +4,14 @@ import { requireAdminKey } from "../lib/admin-key";
 import { prayerData } from "../lib/content-validation";
 import { id } from "../lib/validation";
 import { pageArgs, publicCache, sendPage } from "../lib/pagination";
+import { HttpError } from "../lib/errors";
 const router = Router();
 router.get(["/", "/approved"], async (req, res) => {
   const { limit, query } = pageArgs(req);
-  const where = { approved: true };
+  const saintName = req.query.saintName;
+  if (saintName !== undefined && (typeof saintName !== "string" || !saintName.trim() || saintName.length > 200)) throw new HttpError(400, "INVALID_FILTER");
+  const where = { approved: true, ...(typeof saintName === "string"
+    ? { saintName: { equals: saintName.trim(), mode: "insensitive" as const } } : {}) };
   const [rows, total] = await prisma.$transaction([prisma.prayer.findMany({ ...query, where }), prisma.prayer.count({ where })]);
   publicCache(req, res); res.json(sendPage(res, rows, total, limit));
 });

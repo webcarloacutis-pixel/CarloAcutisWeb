@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-025-m1",
+  "locale": "zh",
+  "fields": {
+    "title": {
+      "source": "La curación de Tobit en el relato bíblico",
+      "sourceHash": "e98804a7a1d0559c3d5422b70da0dfd1",
+      "text": "圣经叙事中托彼特的治愈",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Relato bíblico",
+      "sourceHash": "333d9cc5a09ff8b51fcecc85621e5c51",
+      "text": "圣经叙事",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "El libro de Tobit narra que Tobías, siguiendo las indicaciones de Rafael, atiende los ojos de su padre y este recupera la vista. El episodio expresa el cuidado divino dentro de una narración religiosa y no prescribe un tratamiento. Fuente consultada: https://www.vaticannews.va/en/saints/09/29/st--raphael--archangel.html. Publicación editorial; no equivale a una certificación científica ni a un decreto eclesiástico moderno.",
+      "sourceHash": "897cf760e1d2ea916cc1f936c759ec4e",
+      "text": "《多俾亚传》记述，多俾亚遵照辣法耳的指示照料父亲的眼睛，父亲因此恢复视力。这一情节在宗教叙事中表达天主的关怀，并非提供治疗处方。查阅来源：https://www.vaticannews.va/en/saints/09/29/st--raphael--archangel.html。此为编辑性发表，不等同于科学认证或现代教会法令。",
+      "review": "assistant"
+    }
+  }
+}

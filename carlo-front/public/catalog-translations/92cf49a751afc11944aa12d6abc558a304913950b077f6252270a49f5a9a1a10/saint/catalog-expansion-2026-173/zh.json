@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-173",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Juan Pablo II",
+      "sourceHash": "9c44072731fb04b20e5465feda19e108",
+      "text": "圣若望保禄二世",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Papa entre 1978 y 2005",
+      "sourceHash": "7e1a9431ac46f2bc1b7e138880ff63a3",
+      "text": "1978年至2005年在位的教宗",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Karol Wojtyła fue arzobispo de Cracovia antes de ser elegido papa Juan Pablo II en 1978. Su pontificado estuvo marcado por numerosos viajes, la Jornada Mundial de la Juventud y una fuerte presencia internacional.",
+      "sourceHash": "bfbfc3c6407522a25275d650be103538",
+      "text": "卡罗尔·沃伊蒂瓦在1978年当选教宗若望保禄二世之前，曾担任克拉科夫总主教。他的教宗任期以多次出访、世界青年日以及鲜明的国际影响为特点。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "22 de octubre",
+      "sourceHash": "1b77d3ee764fe3cfcc844aa31c3591ea",
+      "text": "10月22日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Wadowice, Polonia",
+      "sourceHash": "738a94fc45f3c854b7e22620bd48b4bf",
+      "text": "波兰瓦多维采",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Jóvenes",
+      "sourceHash": "6130e0980d274ce0982f4a1430f28687",
+      "text": "青年",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Báculo papal",
+      "sourceHash": "c911c85afcdbbea93d7d41f9e6004e4d",
+      "text": "教宗牧杖",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "本条目于2026年扩展时加入。未知资料保留为null；圣徒传记传统和奇迹分别标注，以免与教会正式认可混淆。",
+      "review": "assistant"
+    }
+  }
+}

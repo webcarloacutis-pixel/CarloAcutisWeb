@@ -6,7 +6,7 @@ import { languages } from '@/lib/i18n'
 import { translations } from '@/lib/translations'
 import { serviceTranslations } from '@/lib/service-translations'
 import { T } from './t'
-afterEach(()=>{cleanup();localStorage.clear();vi.unstubAllGlobals()})
+afterEach(()=>{cleanup();localStorage.clear();document.cookie='acutis_locale=; Path=/; Max-Age=0';window.history.replaceState(null,'','/');vi.unstubAllGlobals()})
 it.each(languages)('renders fixed chat labels immediately in $code without any request',({code})=>{
   const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher);localStorage.setItem('language',code)
   render(<LanguageProvider><T k="chat.quick.prayer" /></LanguageProvider>)

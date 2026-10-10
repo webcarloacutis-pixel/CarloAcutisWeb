@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-069-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "El niño auxiliado por Blas",
+      "sourceHash": "b1ec57f441824c9d7c918a5e7e1bb263",
+      "text": "The child helped by Blaise",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Tradición hagiográfica",
+      "sourceHash": "c78545ec004498181f3de6717e5c94f5",
+      "text": "Hagiographic tradition",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "La tradición hagiográfica cuenta que Blas bendijo a un niño que no podía respirar por una espina de pescado y que este quedó libre del peligro. Este relato dio forma a la devoción de la bendición de las gargantas. Fuente consultada: https://www.vaticannews.va/fr/saint-du-jour/02/03/saint-blaise--eveque-de-sebaste-et-martyr.html. Aprobado para publicación editorial; esta ficha no afirma una validación científica ni un decreto eclesiástico de reconocimiento del suceso.",
+      "sourceHash": "cb4bad19f977a02cf56347ac08dd755d",
+      "text": "Hagiographic tradition recounts that Blaise blessed a child unable to breathe because of a fishbone, and the child was freed from danger. This account shaped devotion to the blessing of throats. Source consulted: https://www.vaticannews.va/fr/saint-du-jour/02/03/saint-blaise--eveque-de-sebaste-et-martyr.html. Approved for editorial publication; this entry does not claim scientific validation or an ecclesiastical decree recognizing the event.",
+      "review": "assistant"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-003",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Pablo de Tarso",
+      "sourceHash": "794d0a837f913fef4ff4f3400750ed56",
+      "text": "圣保禄·塔尔索",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol de los gentiles",
+      "sourceHash": "a9bdbc6d283d97a16ecdaa4231249010",
+      "text": "外邦人的宗徒",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Pablo, también llamado Saulo, nació en Tarso de Cilicia, en la actual Turquía, dentro de una familia judía de la diáspora. Su formación vinculó los mundos judío, griego y romano. Estudió en Jerusalén en el entorno de Gamaliel y aprendió el oficio de fabricar tiendas, que le permitió trabajar mientras anunciaba el Evangelio. El año 8 se utiliza como cálculo aproximado de su nacimiento, dependiente de la cronología de sus cartas.\n\nAntes de ser cristiano persiguió a la Iglesia. El encuentro con Cristo asociado al camino de Damasco cambió su orientación y lo convirtió en misionero entre pueblos no judíos. Viajó, fundó comunidades y mantuvo con ellas una relación exigente mediante cartas que son fuentes directas del cristianismo temprano. Sus discusiones sobre la incorporación de los gentiles ayudaron a definir una comunidad abierta a distintos pueblos. Su memoria litúrgica se celebra con Pedro el 29 de junio; no se asigna aquí un día de muerte históricamente seguro.",
+      "sourceHash": "2934846dba82fb8628e2f750d45ccfbb",
+      "text": "保禄也被称为扫禄，出生于基里基雅的塔尔索，即今日土耳其境内，出身于一个散居外地的犹太家庭。他的教育连接了犹太、希腊和罗马世界。他曾在耶路撒冷的加玛里耳门下学习，也学会了制作帐幕，使他能够一边工作一边宣讲福音。公元8年被用作他出生年份的大致推算，这一估计取决于其书信的年代次序。\n\n在成为基督徒之前，他曾迫害教会。与大马士革道路有关的基督显现改变了他的方向，使他成为向非犹太民族传教的人。他四处旅行，建立团体，并通过书信与这些团体保持严格而深入的关系；这些书信是早期基督宗教的直接史料。他对接纳外邦人的讨论，帮助形成了一个向不同民族开放的团体。他的礼仪纪念于6月29日与伯多禄共同举行；这里不指定一个在历史上可以确定的去世日期。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de junio",
+      "sourceHash": "5b24f9c28c886bff2c03a4af3205e6c1",
+      "text": "6月29日",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Tarso de Cilicia",
+      "sourceHash": "9eade3dd6419686651122a33e08d748c",
+      "text": "基里基雅的塔尔索",
+      "review": "assistant"
+    }
+  }
+}

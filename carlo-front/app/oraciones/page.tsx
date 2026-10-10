@@ -9,20 +9,16 @@ import { PrayersResults } from "@/components/prayers-results"
 import { ScrollToResults } from "@/components/scroll-to-results"
 import { apiUrl } from "@/lib/api-url"
 import { fetchPublicCollection } from "@/lib/public-collection"
-import { getPopularityEstimates } from "@/lib/popularity-read"
 import { filterPrayers, PRAYER_CATEGORIES, queryValue, type PublicPrayer } from "@/lib/content-filters"
 export const dynamic = "force-dynamic"
 export default async function OracionesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const values = await searchParams
-  const [prayers, estimates] = await Promise.all([
-    fetchPublicCollection<PublicPrayer>(apiUrl("/prayers/approved"), { cache: "no-store" }),
-    getPopularityEstimates("prayer"),
-  ])
+  const prayers = await fetchPublicCollection<PublicPrayer>(apiUrl("/prayers/approved"), { cache: "no-store" })
   const query = queryValue(values, "q", "query", "busqueda"), saint = queryValue(values, "santo", "saint")
   const occasion = queryValue(values, "ocasion", "occasion"), category = queryValue(values, "categoria", "category")
   const unique = (items: (string | null | undefined)[]) => [...new Set(items.filter((item): item is string => Boolean(item)))].sort((a, b) => a.localeCompare(b, "es"))
   const filtered = filterPrayers(prayers, values)
-  const featured = [...prayers].sort((a, b) => (Date.parse(b.updatedAt || "") || 0) - (Date.parse(a.updatedAt || "") || 0)).slice(0, 4).map((prayer) => ({ ...prayer, popularityEstimate: estimates[prayer.id] }))
+  const featured = [...prayers].sort((a, b) => (Date.parse(b.updatedAt || "") || 0) - (Date.parse(a.updatedAt || "") || 0)).slice(0, 4)
   return <div className="min-h-screen bg-background"><Header />
     <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       <PrayersIntroduction />

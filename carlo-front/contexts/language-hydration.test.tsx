@@ -2,17 +2,32 @@
 import { Suspense } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { SiteProviders } from '@/components/site-providers'
 import { LanguageProvider, useLanguage } from './language-context'
 import { translations } from '@/lib/translations'
 
 afterEach(()=>vi.unstubAllGlobals())
+beforeEach(()=>{
+  // Each case represents a separate visitor. URL/cookie preference now correctly wins over legacy storage.
+  localStorage.clear()
+  document.cookie='acutis_locale=; Path=/; Max-Age=0'
+  window.history.replaceState(null,'','/')
+})
 const settle=()=>new Promise(resolve=>setTimeout(resolve,100))
 function Localized({name}:{name:string}){
   const {language,t,setLanguage}=useLanguage()
   return <div data-probe={name}><p>{t('saints.title')}</p><span data-language={name}>{language}</span><button type="button" onClick={()=>setLanguage(language==='ar'?'en':'ar')}>Switch language</button></div>
 }
+it('uses the same normalized URL locale in request SSR and hydration, ahead of cookie/storage',async()=>{
+  localStorage.setItem('language','en');document.cookie='acutis_locale=ar; Path=/'
+  window.history.replaceState(null,'','/santos?q=Jos%C3%A9&lang=CN')
+  const tree=<LanguageProvider initialLanguage="zh-CN"><Localized name="request"/></LanguageProvider>
+  const host=document.createElement('div');host.innerHTML=renderToString(tree);document.body.append(host)
+  expect(host.querySelector('[data-language="request"]')?.textContent).toBe('zh')
+  const errors:unknown[]=[];const root=hydrateRoot(host,tree,{onRecoverableError:error=>errors.push(error)})
+  try{await settle();expect(host.querySelector('[data-language="request"]')?.textContent).toBe('zh');expect(localStorage.getItem('language')).toBe('zh');expect(document.cookie).toContain('acutis_locale=zh');expect(window.location.search).toContain('q=Jos%C3%A9');expect(errors).toEqual([])}finally{root.unmount();host.remove()}
+})
 
 it.each(['en','ar'])('hydrates a deferred nested boundary with persisted %s without replacing server text',async(language)=>{
   localStorage.setItem('language',language)

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-016",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San Judas Tadeo",
+      "sourceHash": "0d8a75b834a76ac2f8d5fb39b40fbd22",
+      "text": "圣犹达·达陡",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol",
+      "sourceHash": "e423a4d72a22222e91e1fe5937c68246",
+      "text": "宗徒",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Judas Tadeo es el apóstol distinto de Judas Iscariote. La tradición armoniza el nombre Tadeo de algunas listas con Judas, relacionado con Santiago, de otras. El cuarto Evangelio conserva una pregunta suya durante la cena: desea comprender por qué Jesús se manifestará a los discípulos y no al mundo.\n\nA su nombre se atribuye también una breve carta del Nuevo Testamento, preocupada por la fidelidad comunitaria. Tradiciones posteriores lo unen a Simón en la evangelización y el martirio en Persia; la celebración común del 28 de octubre recoge esa memoria. Los detalles de esos relatos no permiten establecer aquí un nacimiento o una muerte con fecha cierta. Las dos menciones de Judas Tadeo en el listado del propietario corresponden a esta misma identidad.",
+      "sourceHash": "44327e345464a873c7cd7edc653fdd38",
+      "text": "犹达·达陡是有别于加略人犹达的宗徒。传统把某些宗徒名单中的达陡，与另一些名单中和雅各伯有关的犹达相对应。第四部福音保存了他在晚餐时提出的一个问题：他想明白，为什么耶稣要向门徒显现，而不向世界显现。\n\n《新约》中一封关切团体忠诚信仰的简短信函，也被归于他的名下。后来的传统将他与西满联系起来，记述他们在波斯传福音并殉道；10月28日共同举行的庆日承载着这份记忆。这些叙述的细节不足以在此确定他的出生或去世日期。所有者名单中两次提到的犹达·达陡，指的是同一位人物。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "28 de octubre",
+      "sourceHash": "c1489e932c439bb4884d36c6df0e60b0",
+      "text": "10月28日",
+      "review": "assistant"
+    }
+  }
+}

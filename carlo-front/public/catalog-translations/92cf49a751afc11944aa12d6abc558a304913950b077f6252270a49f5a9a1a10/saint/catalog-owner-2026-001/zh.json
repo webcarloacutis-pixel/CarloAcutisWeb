@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-001",
+  "locale": "zh",
+  "fields": {
+    "name": {
+      "source": "San José",
+      "sourceHash": "911249703eac5cfb9b339c50238b0252",
+      "text": "圣若瑟",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Esposo de María y custodio de Jesús",
+      "sourceHash": "663968897175124fd88047ab7144db48",
+      "text": "玛利亚的丈夫与耶稣的守护者",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "José aparece en los relatos de infancia de Mateo y Lucas como esposo de María y responsable del cuidado de Jesús. Su trabajo de artesano y sus decisiones familiares sitúan su vida en el mundo cotidiano de Nazaret. Mateo lo presenta como justo: acepta a María y actúa siguiendo las indicaciones recibidas en sueños. Lucas lo muestra acompañándola a Belén y participando en la búsqueda de Jesús cuando, a los doce años, permanece en Jerusalén.\n\nSu importancia cristiana está ligada a una paternidad ejercida mediante la protección, el trabajo y la disponibilidad. Los evangelios no conservan discursos suyos ni permiten reconstruir una cronología completa. Por eso no se asignan fechas de nacimiento o muerte, ni se convierte Nazaret automáticamente en su lugar natal. Su veneración alcanzó una expresión institucional cuando Pío IX lo declaró patrono de la Iglesia universal en 1870. La solemnidad del 19 de marzo celebra esa figura de esposo y custodio.",
+      "sourceHash": "26e5fe35d58f65a325825fbf590ad77b",
+      "text": "在玛窦和路加记述耶稣童年的叙事中，若瑟是玛利亚的丈夫，并负责照顾耶稣。他的工匠工作以及为家庭作出的决定，将他的生活置于纳匝肋的日常环境之中。玛窦称他为义人：他接纳玛利亚，并按照梦中得到的指示行事。路加记述他陪伴玛利亚前往白冷，也参与寻找十二岁时留在耶路撒冷的耶稣。\n\n他在基督信仰中的重要性，与通过保护、劳动和随时承担责任来履行父职有关。福音没有保存他的讲话，也不足以重建完整的生平年表。因此，这份资料不指定他的出生或去世日期，也不自动把纳匝肋视为他的出生地。1870年，庇护九世宣布他为普世教会的主保，使对他的敬礼获得了制度性的表达。3月19日的隆重庆日纪念他作为丈夫与守护者的形象。",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "19 de marzo",
+      "sourceHash": "589dac24724c7b738b744e03aa73e051",
+      "text": "3月19日",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Iglesia universal",
+      "sourceHash": "82a20b136ce11a7023c9b8e601305322",
+      "text": "普世教会",
+      "review": "assistant"
+    }
+  }
+}

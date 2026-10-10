@@ -3,6 +3,7 @@ import { SaintPagePagination } from "./saint-page-pagination"
 import { miraclePageUrl } from "@/lib/miracle-pages"
 import { useMiraclePage } from "@/lib/use-miracle-page"
 import { useSaintNames } from "@/lib/use-saint-names"
+import { LocalCatalogRecord } from "./local-catalog-record"
 import { T } from "@/components/t";
 import { apiUrl } from "@/lib/api-url";
 
@@ -34,10 +35,7 @@ export function MiraclesList() {
   const error = result.error || names.error
   const page = result.page || (loading ? result.previousPage : null)
   const saints = names.items
-  const filteredMiracles = (page?.items || []).map(miracle => ({
-    ...miracle, description: miracle.details || "", verified: miracle.approved,
-    witnesses: (miracle.witnesses || "").split(",").map(item => item.trim()).filter(Boolean),
-  }))
+  const filteredMiracles = page?.items || []
   function filterChanged(change: () => void) { change(); setCursor(null) }
 
   return (
@@ -125,8 +123,10 @@ export function MiraclesList() {
           </CardContent>
         </Card>
       ) : (
-        filteredMiracles.map((miracle) => (
-          <Card key={`${miracle.saintName}-${miracle.id}`} className="hover:shadow-lg transition-shadow">
+        filteredMiracles.map((source) => <LocalCatalogRecord key={source.id} kind="miracle" source={source}>{(content,state)=>{
+          const miracle={...content,description:content.details||"",verified:content.approved,witnesses:(content.witnesses||"").split(",").map(item=>item.trim()).filter(Boolean)}
+          return (
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -153,7 +153,7 @@ export function MiraclesList() {
             </CardHeader>
 
             <CardContent>
-              <p className="text-muted-foreground mb-4 leading-relaxed text-pretty whitespace-pre-wrap break-words">{miracle.description}</p>
+              <p lang={state.translated.includes("details")?state.language:"es"} className="text-muted-foreground mb-4 leading-relaxed text-pretty whitespace-pre-wrap break-words">{miracle.description}</p>{state.language!=="es"&&!state.translated.includes("details")&&<small>{t("content.originalSpanish")}</small>}
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                 {miracle.date && (
@@ -190,7 +190,7 @@ export function MiraclesList() {
               )}
             </CardContent>
           </Card>
-        ))
+        )}}</LocalCatalogRecord>)
       )}
       {page && <SaintPagePagination page={page} onCursor={setCursor} label="milagros" disabled={loading} />}
     </div>

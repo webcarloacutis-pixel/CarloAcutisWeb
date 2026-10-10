@@ -19,3 +19,41 @@ const rows: Record<string, string[]> = {
 export const serviceTranslations: Record<string, Record<string, string>> = Object.fromEntries(
   Object.entries(rows).map(([language, values]) => [language, Object.fromEntries(keys.map((key, index) => [key, values[index]]))]),
 )
+
+const prayerTranslationNotes: Record<string,string> = {
+  "es": "Traducción propia del texto histórico; no es una traducción litúrgica oficial.",
+  "en": "Our translation of the historical text; not an official liturgical translation.",
+  "zh": "本网站对历史文本的译文，并非官方礼仪译文。",
+  "fr": "Notre traduction du texte historique ; ce n’est pas une traduction liturgique officielle.",
+  "pt": "Tradução própria do texto histórico; não é uma tradução litúrgica oficial.",
+  "it": "Traduzione propria del testo storico; non è una traduzione liturgica ufficiale.",
+  "de": "Eigene Übersetzung des historischen Textes; keine offizielle liturgische Übersetzung.",
+  "hi": "ऐतिहासिक पाठ का हमारा अनुवाद; यह आधिकारिक धर्मविधिक अनुवाद नहीं है।",
+  "ar": "ترجمتنا للنص التاريخي؛ ليست ترجمة طقسية رسمية.",
+  "ru": "Наш перевод исторического текста; не официальный литургический перевод.",
+  "ja": "歴史的本文の当サイトによる翻訳であり、公式の典礼翻訳ではありません。",
+  "ko": "역사적 본문의 자체 번역이며 공식 전례 번역이 아닙니다.",
+  "tr": "Tarihî metnin kendi çevirimizdir; resmî bir litürjik çeviri değildir.",
+  "vi": "Bản dịch của chúng tôi từ văn bản lịch sử; không phải bản dịch phụng vụ chính thức.",
+  "pl": "Nasz przekład tekstu historycznego; nie jest oficjalnym tłumaczeniem liturgicznym."
+}
+for(const [language,note] of Object.entries(prayerTranslationNotes)) serviceTranslations[language]["content.unofficialPrayerTranslation"]=note
+
+const partialTranslationNotes: Record<string,string> = {
+  "es": "Algunos textos siguen en español.",
+  "en": "Some text remains in Spanish.",
+  "zh": "部分内容仍为西班牙语。",
+  "fr": "Certains textes restent en espagnol.",
+  "pt": "Alguns textos continuam em espanhol.",
+  "it": "Alcuni testi rimangono in spagnolo.",
+  "de": "Einige Texte bleiben auf Spanisch.",
+  "hi": "कुछ पाठ अभी स्पेनिश में हैं।",
+  "ar": "بعض النصوص ما زالت بالإسبانية.",
+  "ru": "Часть текста остаётся на испанском.",
+  "ja": "一部の本文はまだスペイン語です。",
+  "ko": "일부 내용은 아직 스페인어입니다.",
+  "tr": "Bazı metinler hâlâ İspanyolcadır.",
+  "vi": "Một số nội dung vẫn bằng tiếng Tây Ban Nha.",
+  "pl": "Niektóre teksty pozostają po hiszpańsku."
+}
+for(const [language,note] of Object.entries(partialTranslationNotes)) serviceTranslations[language]["content.partialTranslation"]=note

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-023",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Miguel Arcángel",
+      "sourceHash": "dce3143549ac02aec692c845f1941e16",
+      "text": "Saint Michael the Archangel",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Arcángel, defensor del pueblo de Dios",
+      "sourceHash": "3196ae9f77271d43c8e923fc93959552",
+      "text": "Archangel, defender of God's people",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Miguel es una figura angélica de las Escrituras, no una persona con una biografía terrestre. La tradición cristiana interpreta su nombre como una pregunta que reconoce la soberanía de Dios. Daniel lo vincula con la protección del pueblo; la carta de Judas y el Apocalipsis desarrollan otras escenas de su enfrentamiento con el mal.\n\nEn Apocalipsis 12, Miguel y sus ángeles combaten al dragón, identificado con el adversario que acusa y engaña. El pasaje pertenece al lenguaje simbólico de las visiones apocalípticas. Su representación con armas expresa esa función espiritual y no documenta una campaña militar humana. La Iglesia de Oriente y la de Occidente han mantenido su veneración mediante templos, celebraciones e imágenes.\n\nSu fiesta se celebra con Gabriel y Rafael el 29 de septiembre. La devoción asociada a Miguel invita a resistir el mal y a confiar en Dios. Por su condición angélica, los campos de nacimiento, muerte y geografía natal se clasifican como no aplicables.",
+      "sourceHash": "9dccaf96f876558fbcfafe9f8dd4fc1c",
+      "text": "Michael is an angelic figure in Scripture, not a person with an earthly biography. Christian tradition interprets his name as a question acknowledging God's sovereignty. Daniel associates him with the protection of the people; the Letter of Jude and Revelation develop other scenes of his confrontation with evil.\n\nIn Revelation 12, Michael and his angels fight the dragon, identified with the adversary who accuses and deceives. The passage belongs to the symbolic language of apocalyptic visions. His depiction with weapons expresses that spiritual role and does not document a human military campaign. The Eastern and Western Churches have maintained his veneration through churches, celebrations and images.\n\nHis feast is celebrated with Gabriel and Raphael on September 29. Devotion associated with Michael calls people to resist evil and trust in God. Because he is an angel, the fields for birth, death and birthplace geography are classified as not applicable.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de septiembre",
+      "sourceHash": "00b3cde671fca9a2c5eaf8c110e20308",
+      "text": "September 29",
+      "review": "assistant"
+    }
+  }
+}

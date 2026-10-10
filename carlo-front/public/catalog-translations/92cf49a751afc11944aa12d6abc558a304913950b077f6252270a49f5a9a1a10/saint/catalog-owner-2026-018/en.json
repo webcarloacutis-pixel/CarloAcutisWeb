@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-018",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "Santa María Magdalena",
+      "sourceHash": "6cf99446a5803f159493ae3aa7369508",
+      "text": "Saint Mary Magdalene",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Discípula de Jesús",
+      "sourceHash": "13ad63267e737aa966e0b01ec406c1ad",
+      "text": "Disciple of Jesus",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "María Magdalena debe su denominación a Magdala, una población de Galilea. El Evangelio de Juan le concede un papel decisivo en la mañana de Pascua: acude al sepulcro, encuentra a Jesús, reconoce que la llama por su nombre y recibe el encargo de anunciarlo a los discípulos. La tradición cristiana ha destacado por ello su condición de testigo y mensajera de la Resurrección.\n\nSu identidad no debe confundirse con María de Betania, hermana de Marta y Lázaro, ni con la mujer anónima presentada como pecadora en otro relato evangélico. La revisión del calendario y del Martirologio Romano ha aclarado esa distinción, importante también al interpretar las imágenes penitentes que le dedicó el arte. En 2016 su celebración del 22 de julio recibió el rango litúrgico de fiesta; esa decisión no fue una canonización moderna. La procedencia de Magdala no basta para fijar una localidad natal exacta, y las fuentes consultadas no establecen sus fechas vitales.",
+      "sourceHash": "bc6a3c73b53ac36a047b5a9297eee94a",
+      "text": "Mary Magdalene takes her designation from Magdala, a town in Galilee. The Gospel of John gives her a decisive role on Easter morning: she goes to the tomb, encounters Jesus, recognizes that he calls her by name and receives the task of announcing him to the disciples. Christian tradition has therefore emphasized her role as witness and messenger of the Resurrection.\n\nHer identity must not be confused with Mary of Bethany, sister of Martha and Lazarus, or with the unnamed woman presented as a sinner in another Gospel account. The revision of the calendar and the Roman Martyrology has clarified that distinction, which is also important when interpreting the penitential images dedicated to her in art. In 2016, her celebration on July 22 received the liturgical rank of feast; that decision was not a modern canonization. Her association with Magdala is not enough to establish an exact birthplace, and the consulted sources do not establish her birth or death dates.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "22 de julio",
+      "sourceHash": "ddde0841156967be1547e7f7ae67c5ab",
+      "text": "July 22",
+      "review": "assistant"
+    }
+  }
+}

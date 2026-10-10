@@ -15,7 +15,7 @@ type Page = { items: { id: string; popularityEstimate: { score: number } | null 
 describe.skipIf(!enabled).sequential("server-paged global ranking (disposable SQL, synthetic estimates)", () => {
   let server: Server, base: string;
   const query = "zzrankfixture";
-  const firstPath = "/saints?view=cards&q=" + query;
+  const firstPath = "/saints?view=cards&sort=ai-estimate&q=" + query;
   async function page(url = firstPath): Promise<Page> {
     const response = await fetch(base + url); expect(response.status).toBe(200); return response.json() as Promise<Page>;
   }

@@ -9,6 +9,7 @@ import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { SaintPagePagination } from "./saint-page-pagination"
 import { useLanguage } from '@/contexts/language-context'
+import { LocalCatalogRecord } from './local-catalog-record'
 
 export function SaintMiracles({ saintId }: { saintId: string }) {
   const { t } = useLanguage()
@@ -21,15 +22,16 @@ export function SaintMiracles({ saintId }: { saintId: string }) {
   return <Card className="mb-8" aria-busy={loading}>
     <CardHeader><CardTitle className="font-playfair flex items-center gap-2"><Sparkles className="h-5 w-5 text-secondary" />{t('nav.miracles')}</CardTitle></CardHeader>
     <CardContent><div className="space-y-6">
-      {display.items.map(miracle => <article key={miracle.id}>
+      {display.items.map(source => <LocalCatalogRecord key={source.id} kind="miracle" source={source}>{(miracle,state)=><article>
         <h4 className="font-playfair text-lg font-semibold mb-2">{miracle.title}</h4>
-        <p className="text-muted-foreground mb-3 whitespace-pre-wrap break-words">{miracle.details}</p>
+        <p lang={state.translated.includes("details")?state.language:"es"} className="text-muted-foreground mb-3 whitespace-pre-wrap break-words">{miracle.details}</p>
+        {state.language!=="es"&&!state.translated.includes("details")&&<small>{t("content.originalSpanish")}</small>}
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           {miracle.date && <span><strong>{t('miracles.date')}:</strong> {miracle.date}</span>}
           {miracle.location && <span><strong>{t('miracles.location')}:</strong> {miracle.location}</span>}
           {miracle.approved && <Badge variant="outline">{t('catalog.approved')}</Badge>}
         </div>
-      </article>)}
+      </article>}</LocalCatalogRecord>)}
     </div><SaintPagePagination page={display} onCursor={setCursor} label="relatos de milagros" disabled={loading} /></CardContent>
   </Card>
 }

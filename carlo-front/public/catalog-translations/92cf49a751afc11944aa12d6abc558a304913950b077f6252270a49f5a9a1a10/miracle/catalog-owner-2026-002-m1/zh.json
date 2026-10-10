@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-002-m1",
+  "locale": "zh",
+  "fields": {
+    "title": {
+      "source": "El hombre que vuelve a caminar junto al templo",
+      "sourceHash": "cb1116ff16ff67855d20ed5cf2ca6f12",
+      "text": "在圣殿旁重新行走的人",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Relato bíblico",
+      "sourceHash": "333d9cc5a09ff8b51fcecc85621e5c51",
+      "text": "圣经叙事",
+      "review": "assistant"
+    },
+    "date": {
+      "source": "Siglo I; sin fecha exacta en el relato",
+      "sourceHash": "1e5cc043c9786898a0b15d59a298578b",
+      "text": "公元1世纪；叙事中没有确切日期",
+      "review": "assistant"
+    },
+    "location": {
+      "source": "Puerta Hermosa del templo de Jerusalén",
+      "sourceHash": "e32c9db76719c885c11d8e8ddc9e75e4",
+      "text": "耶路撒冷圣殿的丽门",
+      "review": "assistant"
+    },
+    "witnesses": {
+      "source": "Pedro, Juan y personas presentes, según Hechos 3",
+      "sourceHash": "4984d206e9e073e021cc6097eb3f531b",
+      "text": "根据《宗徒大事录》第3章，伯多禄、若望及在场的人",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Relato bíblico (Hechos 3,1–16). Un hombre que no podía caminar desde su nacimiento pide ayuda junto al templo. Pedro, acompañado por Juan, invoca a Jesús y lo ayuda a levantarse; el hombre entra caminando y alabando a Dios. Pedro explica a los presentes que la curación no procede de su poder personal. Se publica como narración del Nuevo Testamento, no como expediente moderno de reconocimiento canónico. Fuente consultada: https://bible.usccb.org/bible/acts/3",
+      "sourceHash": "0a3b9e30449aeb40ac57df07b738f614",
+      "text": "圣经叙事（《宗徒大事录》3:1–16）。一个从出生起便不能行走的人在圣殿旁求助。伯多禄与若望同行，呼求耶稣的名，并扶他站起来；那人走进圣殿，赞美天主。伯多禄向在场者解释，治愈并非出自他个人的能力。本条目作为《新约》叙事发表，并非现代教会正式认可的档案。查阅来源：https://bible.usccb.org/bible/acts/3",
+      "review": "assistant"
+    }
+  }
+}

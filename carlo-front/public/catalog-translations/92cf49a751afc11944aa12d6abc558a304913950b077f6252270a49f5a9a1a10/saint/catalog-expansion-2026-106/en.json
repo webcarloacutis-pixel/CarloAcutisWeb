@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-106",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Francisco de Asís",
+      "sourceHash": "53cf33568bf97412739febe342ddb6f0",
+      "text": "Saint Francis of Assisi",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Fundador de los Hermanos Menores",
+      "sourceHash": "3b4930510a5181a268a3aba8f645473f",
+      "text": "Founder of the Friars Minor",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Francisco de Asís abrazó una vida de pobreza evangélica, fraternidad y predicación itinerante. Fundó la familia franciscana y su espiritualidad destacó la paz, la humildad y el cuidado de la creación.",
+      "sourceHash": "914193a46ca39fc51ef8192df9afa5e6",
+      "text": "Francis of Assisi embraced a life of evangelical poverty, fraternity and itinerant preaching. He founded the Franciscan family, and his spirituality emphasized peace, humility and care for creation.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "4 de octubre",
+      "sourceHash": "8eca42bb0967602240613bb1ab4b5b13",
+      "text": "October 4",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Asís, Italia",
+      "sourceHash": "e3ad7281c67dc24279009a86965cec6b",
+      "text": "Assisi, Italy",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Ecología",
+      "sourceHash": "11574a5718b1af71331a522f20c7db01",
+      "text": "Ecology",
+      "review": "assistant"
+    },
+    "patronOf.1": {
+      "source": "Animales",
+      "sourceHash": "0c5f607e50bd8c3dcd2bcfb9903c646b",
+      "text": "Animals",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Estigmas",
+      "sourceHash": "434a5e68f1867716a551d43230c05915",
+      "text": "Stigmata",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Hábito franciscano",
+      "sourceHash": "8c745533b4ee8f2f8fb83af6c4a0ccdb",
+      "text": "Franciscan habit",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "Entry added in the 2026 expansion. Unknown data remains null; hagiographic traditions and miracles are labelled separately so they are not confused with canonical recognition.",
+      "review": "assistant"
+    }
+  }
+}

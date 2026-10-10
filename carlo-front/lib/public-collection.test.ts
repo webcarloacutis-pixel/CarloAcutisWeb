@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest"
 import { fetchPublicCollection } from "./public-collection"
 function page(rows: { id: string }[], headers: Record<string, string> = {}) {
-  return new Response(JSON.stringify(rows), { headers })
+  return Response.json(rows, { headers })
 }
 it("collects later pages before exposing a catalogue", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(page([{ id: "1" }], { "X-Next-Cursor": "1", "X-Total-Count": "2" })).mockResolvedValueOnce(page([{ id: "2" }], { "X-Total-Count": "2" }))

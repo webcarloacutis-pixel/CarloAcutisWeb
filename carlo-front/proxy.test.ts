@@ -5,6 +5,13 @@ import { proxy } from './proxy'
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
 describe('saint detail existence before streaming', () => {
+  it('gives URL locale priority over cookie, discards a forged locale header, and does not probe other sections',async()=>{
+    const fetcher=vi.fn();vi.stubGlobal('fetch',fetcher)
+    const request=new NextRequest('http://localhost/milagros?lang=CN',{headers:{cookie:'acutis_locale=ar','x-acutis-locale':'private-forged'}})
+    const response=await proxy(request)
+    expect(response.headers.get('x-middleware-request-x-acutis-locale')).toBe('zh')
+    expect(fetcher).not.toHaveBeenCalled()
+  })
   function request(path = '/santos/santa-felicidad', method = 'GET') {
     vi.stubEnv('BACKEND_URL', 'http://127.0.0.1:4197')
     return new NextRequest('http://127.0.0.1:3197' + path, { method, headers: { cookie: 'private-session-must-not-be-forwarded' } })

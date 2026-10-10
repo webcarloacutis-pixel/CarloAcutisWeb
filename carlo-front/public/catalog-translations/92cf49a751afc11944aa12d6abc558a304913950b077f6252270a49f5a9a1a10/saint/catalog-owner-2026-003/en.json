@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-owner-2026-003",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Pablo de Tarso",
+      "sourceHash": "794d0a837f913fef4ff4f3400750ed56",
+      "text": "Saint Paul of Tarsus",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Apóstol de los gentiles",
+      "sourceHash": "a9bdbc6d283d97a16ecdaa4231249010",
+      "text": "Apostle to the Gentiles",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Pablo, también llamado Saulo, nació en Tarso de Cilicia, en la actual Turquía, dentro de una familia judía de la diáspora. Su formación vinculó los mundos judío, griego y romano. Estudió en Jerusalén en el entorno de Gamaliel y aprendió el oficio de fabricar tiendas, que le permitió trabajar mientras anunciaba el Evangelio. El año 8 se utiliza como cálculo aproximado de su nacimiento, dependiente de la cronología de sus cartas.\n\nAntes de ser cristiano persiguió a la Iglesia. El encuentro con Cristo asociado al camino de Damasco cambió su orientación y lo convirtió en misionero entre pueblos no judíos. Viajó, fundó comunidades y mantuvo con ellas una relación exigente mediante cartas que son fuentes directas del cristianismo temprano. Sus discusiones sobre la incorporación de los gentiles ayudaron a definir una comunidad abierta a distintos pueblos. Su memoria litúrgica se celebra con Pedro el 29 de junio; no se asigna aquí un día de muerte históricamente seguro.",
+      "sourceHash": "2934846dba82fb8628e2f750d45ccfbb",
+      "text": "Paul, also called Saul, was born in Tarsus in Cilicia, in present-day Turkey, into a Jewish family of the diaspora. His education connected the Jewish, Greek and Roman worlds. He studied in Jerusalem in Gamaliel's circle and learned the trade of making tents, which allowed him to work while proclaiming the Gospel. The year 8 is used as an approximate estimate of his birth, dependent on the chronology of his letters.\n\nBefore becoming a Christian, he persecuted the Church. The encounter with Christ associated with the road to Damascus changed his direction and made him a missionary among non-Jewish peoples. He travelled, founded communities and maintained a demanding relationship with them through letters that are direct sources for early Christianity. His discussions about the inclusion of the Gentiles helped define a community open to different peoples. His liturgical memorial is celebrated with Peter on June 29; no historically certain day of death is assigned here.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "29 de junio",
+      "sourceHash": "5b24f9c28c886bff2c03a4af3205e6c1",
+      "text": "June 29",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Tarso de Cilicia",
+      "sourceHash": "9eade3dd6419686651122a33e08d748c",
+      "text": "Tarsus in Cilicia",
+      "review": "assistant"
+    }
+  }
+}

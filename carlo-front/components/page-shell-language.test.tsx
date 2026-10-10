@@ -15,7 +15,7 @@ vi.mock('@/components/featured-verses',()=>({FeaturedVerses:()=>null}))
 vi.mock('@/components/emotional-categories',()=>({EmotionalCategories:()=>null}))
 vi.mock('@/lib/popularity-read',()=>({getPopularityEstimates:async()=>({})}))
 
-beforeEach(()=>localStorage.setItem('language','en'))
+beforeEach(()=>{document.cookie='acutis_locale=; Path=/; Max-Age=0';window.history.replaceState(null,'','/');localStorage.setItem('language','en')})
 afterEach(cleanup)
 const pages=[
   {Page:SaintsPage,title:'Catholic Saints',description:'Discover the extraordinary stories of men and women who devoted their lives to God and became examples of holiness for all humanity.',spanishTitle:'Santos Católicos',spanishDescription:'Descubre las historias extraordinarias de hombres y mujeres que dedicaron sus vidas a Dios y se convirtieron en ejemplos de santidad para toda la humanidad.'},

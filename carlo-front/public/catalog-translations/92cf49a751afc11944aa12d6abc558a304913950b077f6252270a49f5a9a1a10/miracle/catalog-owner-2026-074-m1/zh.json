@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-074-m1",
+  "locale": "zh",
+  "fields": {
+    "title": {
+      "source": "Licuación comunicada en la fiesta de san Genaro",
+      "sourceHash": "498aa5ea294ce1bdc9c89a184d00f9c6",
+      "text": "圣雅努阿略庆日公布的液化现象",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Fenómeno devocional comunicado",
+      "sourceHash": "7bcc34e0c791f38967869024527b7356",
+      "text": "报告中的敬礼现象",
+      "review": "assistant"
+    },
+    "date": {
+      "source": "2025-09-19",
+      "sourceHash": "31d9070bb66a87edbcea130716996081",
+      "text": "2025-09-19",
+      "review": "assistant"
+    },
+    "location": {
+      "source": "Catedral de Nápoles",
+      "sourceHash": "1f6c3f2fb58bcf33954a5179844f677a",
+      "text": "那不勒斯主教座堂",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Durante la celebración napolitana del 19 de septiembre de 2025 se anunció la licuación de la reliquia atribuida a Genaro. La noticia registra el acontecimiento litúrgico y su interpretación devocional, sin aportar una pericia científica del contenido de las ampollas. Fuente consultada: https://www.vaticannews.va/it/chiesa/news/2025-09/napoli-cardinale-battaglia-sangue-san-gennaro-bambini-gaza.html. Aprobado para publicación editorial; esta ficha no afirma una validación científica ni un decreto eclesiástico de reconocimiento del suceso.",
+      "sourceHash": "fbc48057cb4ad3e30c270c0900dd4dbb",
+      "text": "在2025年9月19日那不勒斯的庆祝活动中，主办者宣布归于雅努阿略的圣髑出现液化。报道记录了这一礼仪事件及其敬礼意义的解读，并未提供对小瓶内容物的科学鉴定。查阅来源：https://www.vaticannews.va/it/chiesa/news/2025-09/napoli-cardinale-battaglia-sangue-san-gennaro-bambini-gaza.html。获准作编辑性发表；本条目不声称事件已经科学验证，或获得教会正式认可该事件的法令。",
+      "review": "assistant"
+    }
+  }
+}

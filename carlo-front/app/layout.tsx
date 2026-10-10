@@ -5,6 +5,8 @@ import { VisitAnalytics } from "@/components/visit-analytics"
 import { SiteProviders } from "@/components/site-providers"
 import { DynamicMetadata } from "@/components/dynamic-metadata"
 import "./globals.css"
+import { cookies, headers } from "next/headers"
+import { normalizeContentLocale, htmlContentLocale } from "@/lib/content-locale"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -25,15 +27,18 @@ export const metadata: Metadata = {
   keywords: "catholic, saints, miracles, prayers, faith, tradition, eucharist",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const requestHeaders = await headers()
+  const preferences = await cookies()
+  const locale = normalizeContentLocale(requestHeaders.get("x-acutis-locale") || preferences.get("acutis_locale")?.value)
   return (
-    <html lang="es">
+    <html lang={htmlContentLocale(locale)} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body className={`font-sans ${playfair.variable} ${inter.variable} antialiased`}>
-        <SiteProviders>
+        <SiteProviders initialLanguage={locale}>
           <DynamicMetadata />
           {children}
           <VisitAnalytics />

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-135",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Pío de Pietrelcina",
+      "sourceHash": "b7a1be6d46efd709ede96923d127297f",
+      "text": "Saint Pio of Pietrelcina",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Sacerdote capuchino conocido como Padre Pío",
+      "sourceHash": "3965eb1bbcbd3e149863ad0b508abbaf",
+      "text": "Capuchin priest known as Padre Pio",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Pío de Pietrelcina fue sacerdote capuchino, confesor y director espiritual. Su ministerio estuvo asociado al santuario de San Giovanni Rotondo y a una intensa devoción popular.",
+      "sourceHash": "33d4c037313ac4283b0176c4ed7ed03b",
+      "text": "Pio of Pietrelcina was a Capuchin priest, confessor and spiritual director. His ministry was associated with the shrine of San Giovanni Rotondo and with intense popular devotion.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "23 de septiembre",
+      "sourceHash": "1055158f333373fc95444988db86d919",
+      "text": "September 23",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Pietrelcina, Italia",
+      "sourceHash": "bf34f74a05fc3d865161caf05ded5bea",
+      "text": "Pietrelcina, Italy",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Voluntarios de defensa civil",
+      "sourceHash": "140f68774dfb128201977685af722383",
+      "text": "Civil protection volunteers",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Estigmas",
+      "sourceHash": "434a5e68f1867716a551d43230c05915",
+      "text": "Stigmata",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Hábito capuchino",
+      "sourceHash": "3687d195bfdc158b7c256b433599852f",
+      "text": "Capuchin habit",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "Entry added in the 2026 expansion. Unknown data remains null; hagiographic traditions and miracles are labelled separately so they are not confused with canonical recognition.",
+      "review": "assistant"
+    }
+  }
+}

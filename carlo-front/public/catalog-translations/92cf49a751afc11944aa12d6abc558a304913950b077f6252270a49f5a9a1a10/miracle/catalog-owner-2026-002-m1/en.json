@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-002-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "El hombre que vuelve a caminar junto al templo",
+      "sourceHash": "cb1116ff16ff67855d20ed5cf2ca6f12",
+      "text": "The man who walks again beside the temple",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Relato bíblico",
+      "sourceHash": "333d9cc5a09ff8b51fcecc85621e5c51",
+      "text": "Biblical account",
+      "review": "assistant"
+    },
+    "date": {
+      "source": "Siglo I; sin fecha exacta en el relato",
+      "sourceHash": "1e5cc043c9786898a0b15d59a298578b",
+      "text": "First century; no exact date in the account",
+      "review": "assistant"
+    },
+    "location": {
+      "source": "Puerta Hermosa del templo de Jerusalén",
+      "sourceHash": "e32c9db76719c885c11d8e8ddc9e75e4",
+      "text": "Beautiful Gate of the temple in Jerusalem",
+      "review": "assistant"
+    },
+    "witnesses": {
+      "source": "Pedro, Juan y personas presentes, según Hechos 3",
+      "sourceHash": "4984d206e9e073e021cc6097eb3f531b",
+      "text": "Peter, John and people present, according to Acts 3",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "Relato bíblico (Hechos 3,1–16). Un hombre que no podía caminar desde su nacimiento pide ayuda junto al templo. Pedro, acompañado por Juan, invoca a Jesús y lo ayuda a levantarse; el hombre entra caminando y alabando a Dios. Pedro explica a los presentes que la curación no procede de su poder personal. Se publica como narración del Nuevo Testamento, no como expediente moderno de reconocimiento canónico. Fuente consultada: https://bible.usccb.org/bible/acts/3",
+      "sourceHash": "0a3b9e30449aeb40ac57df07b738f614",
+      "text": "Biblical account (Acts 3:1–16). A man unable to walk from birth asks for help beside the temple. Peter, accompanied by John, invokes Jesus and helps him stand; the man enters walking and praising God. Peter explains to those present that the healing does not come from his personal power. It is published as a New Testament narrative, rather than as a modern dossier of canonical recognition. Source consulted: https://bible.usccb.org/bible/acts/3",
+      "review": "assistant"
+    }
+  }
+}

@@ -65,3 +65,29 @@ it("retains the selected global country when it is absent from this card page", 
   expect(country.value).toBe("CO")
   expect([...country.options].some(option => option.value === "IT")).toBe(true)
 })
+
+it("shows the editorial label in all15 UI languages without claiming measured popularity", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ...page(), rankingMode: "editorial" })))
+  render(<SaintsCatalog />)
+  expect(await screen.findByText("Destacados · orden editorial")).toBeTruthy()
+  expect(screen.queryByText(/^Orden: popularidad estimada/)).toBeNull()
+  for (const locale of ["es", "en", "zh", "hi", "ar", "pt", "ru", "fr", "ja", "de", "ko", "it", "tr", "vi", "pl"]) {
+    expect(translations[locale]['catalog.orderEditorial']).toBeTruthy()
+    expect(translations[locale]['catalog.orderAlphabeticalExplicit']).toBeTruthy()
+  }
+})
+
+it("preserves an explicitly selected alphabetical order through filters and pagination", async () => {
+  navigation.query = "sort=alphabetical&country=IT"
+  const fetcher = vi.fn(async (_input: unknown) => Response.json({ ...page(), rankingMode: "alphabetical" }))
+  vi.stubGlobal("fetch", fetcher)
+  const push = vi.spyOn(window.history, "pushState").mockImplementation(() => {})
+  render(<SaintsCatalog />)
+  expect(await screen.findByText("Orden alfabético")).toBeTruthy()
+  expect(new URL(String(fetcher.mock.calls[0][0]), "http://fixture.invalid").searchParams.get("sort")).toBe("alphabetical")
+  fireEvent.click(screen.getByRole("button", { name: "Siguiente" }))
+  const target = new URL(String(push.mock.calls[0][2]), "http://fixture.invalid")
+  expect(target.searchParams.get("sort")).toBe("alphabetical")
+  expect(target.searchParams.get("country")).toBe("IT")
+  expect(target.searchParams.get("cursor")).toBe("opaque_next")
+})

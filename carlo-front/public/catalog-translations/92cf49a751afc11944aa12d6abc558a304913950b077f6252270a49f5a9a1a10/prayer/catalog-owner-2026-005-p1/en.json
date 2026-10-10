@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "kind": "prayer",
+  "id": "catalog-owner-2026-005-p1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "Padre nuestro — Mateo 6,9–13 (edición histórica)",
+      "sourceHash": "a1d3e94c82852fcd315ecd95eb546322",
+      "text": "Our Father — Matthew 6:9–13 (historical edition)",
+      "review": "assistant"
+    },
+    "category": {
+      "source": "Tradicionales",
+      "sourceHash": "ca338c7d166e641f0f4a5277d354bea5",
+      "text": "Traditional",
+      "review": "assistant"
+    },
+    "saintName": {
+      "source": "San Mateo",
+      "sourceHash": "7b638611c44945ecf3458feacb974b67",
+      "text": "Saint Matthew",
+      "review": "assistant"
+    },
+    "occasion": {
+      "source": "Oración cotidiana; versión histórica",
+      "sourceHash": "4e466f87497669e13b4008fd50ebdb81",
+      "text": "Daily prayer; historical version",
+      "review": "assistant"
+    },
+    "content": {
+      "source": "Padre nuestro, que estás en los cielos: santificado sea el tu nombre.\nVenga el tu reino. Hágase tu voluntad, como en el cielo, así también en la tierra.\nEl pan nuestro de cada día dánosle hoy.\nY perdónanos nuestras deudas, así como nosotros perdonamos a nuestros deudores.\nY no nos dejes caer en la tentación. Mas líbranos de mal. Amén.\n\nOración enseñada por Jesús y transmitida en el Evangelio de Mateo. Edición de Félix Torres Amat, 1836; texto histórico de dominio público, con acentos actualizados y corrección de una errata de transcripción. Fuente: https://es.wikisource.org/wiki/La_Sagrada_Biblia_(XIII)/Mateo",
+      "sourceHash": "15a3932606e1381f71fcbdf440d11f2e",
+      "text": "Our Father, who art in heaven: hallowed be thy name.\nThy kingdom come. Thy will be done, as in heaven, so also on earth.\nGive us today our daily bread.\nAnd forgive us our debts, as we forgive our debtors.\nAnd lead us not into temptation. But deliver us from evil. Amen.\n\nPrayer taught by Jesus and transmitted in the Gospel of Matthew. Edition by Félix Torres Amat, 1836; historical public-domain text, with updated accents and correction of a transcription error. Source: https://es.wikisource.org/wiki/La_Sagrada_Biblia_(XIII)/Mateo",
+      "review": "assistant"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-174",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "Santa Teresa de Calcuta",
+      "sourceHash": "880c45512b23406a4f61ca3753216ea6",
+      "text": "Saint Teresa of Calcutta",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Fundadora de las Misioneras de la Caridad",
+      "sourceHash": "e098b962692a300538fbe3506bd8f9c5",
+      "text": "Founder of the Missionaries of Charity",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Anjezë Gonxhe Bojaxhiu, conocida como Madre Teresa, fundó en Calcuta las Misioneras de la Caridad para servir a personas pobres, enfermas y abandonadas. Recibió el Premio Nobel de la Paz en 1979.",
+      "sourceHash": "5aa822630f6a12db658b73bd115a70fa",
+      "text": "Anjezë Gonxhe Bojaxhiu, known as Mother Teresa, founded the Missionaries of Charity in Calcutta to serve people who were poor, ill and abandoned. She received the Nobel Peace Prize in 1979.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "5 de septiembre",
+      "sourceHash": "c713b6071acd811706a8d93e1f60312d",
+      "text": "September 5",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Skopie, entonces Imperio otomano",
+      "sourceHash": "97e7d5dd5a52904f31c3204b4f9fabf2",
+      "text": "Skopje, then in the Ottoman Empire",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Misioneras de la Caridad",
+      "sourceHash": "237974f84837449d732a9d3872a0961f",
+      "text": "Missionaries of Charity",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Sari blanco con borde azul",
+      "sourceHash": "6bc44432d7167049bb2be70a706a341b",
+      "text": "White sari with a blue border",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "Entry added in the 2026 expansion. Unknown data remains null; hagiographic traditions and miracles are labelled separately so they are not confused with canonical recognition.",
+      "review": "assistant"
+    }
+  }
+}

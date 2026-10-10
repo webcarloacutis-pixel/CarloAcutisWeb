@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "miracle",
+  "id": "catalog-owner-2026-066-m1",
+  "locale": "en",
+  "fields": {
+    "title": {
+      "source": "El velo de Águeda y la colada del Etna",
+      "sourceHash": "b3828edb47b58f80db50218d1b9de2e6",
+      "text": "Agatha's veil and the lava flow of Etna",
+      "review": "assistant"
+    },
+    "type": {
+      "source": "Tradición hagiográfica",
+      "sourceHash": "c78545ec004498181f3de6717e5c94f5",
+      "text": "Hagiographic tradition",
+      "review": "assistant"
+    },
+    "details": {
+      "source": "La tradición relata que, al año siguiente del martirio, los habitantes de Catania llevaron el velo de Águeda ante la lava y atribuyeron a su intercesión que esta se detuviera. Se registra como narración hagiográfica y memoria local. Fuente consultada: https://www.vaticanstate.va/en/state-and-government/general-informations/saint-of-the-day/1502-5-february-saint-agatha-martyr.html. Aprobado para publicación editorial; esta ficha no afirma una validación científica ni un decreto eclesiástico de reconocimiento del suceso.",
+      "sourceHash": "35d3d597ce1aa2a41cb100d1d6331529",
+      "text": "Tradition recounts that, in the year after the martyrdom, the inhabitants of Catania carried Agatha's veil before the lava and attributed its stopping to her intercession. It is recorded as a hagiographic narrative and local memory. Source consulted: https://www.vaticanstate.va/en/state-and-government/general-informations/saint-of-the-day/1502-5-february-saint-agatha-martyr.html. Approved for editorial publication; this entry does not claim scientific validation or an ecclesiastical decree recognizing the event.",
+      "review": "assistant"
+    }
+  }
+}

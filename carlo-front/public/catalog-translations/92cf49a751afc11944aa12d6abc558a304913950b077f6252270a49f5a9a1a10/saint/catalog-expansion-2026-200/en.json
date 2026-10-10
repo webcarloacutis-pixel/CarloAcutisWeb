@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "kind": "saint",
+  "id": "catalog-expansion-2026-200",
+  "locale": "en",
+  "fields": {
+    "name": {
+      "source": "San Carlo Acutis",
+      "sourceHash": "1ae346befb26b6d048eb621fdd034502",
+      "text": "Saint Carlo Acutis",
+      "review": "assistant"
+    },
+    "title": {
+      "source": "Joven laico y testigo de la fe en la era digital",
+      "sourceHash": "55b3490518bcee6aecddb5d4b8c52092",
+      "text": "Young layman and witness to faith in the digital age",
+      "review": "assistant"
+    },
+    "biography": {
+      "source": "Carlo Acutis nació en Londres en 1991 y creció en Milán. Desarrolló desde joven una intensa devoción eucarística y utilizó herramientas digitales para catalogar contenidos religiosos; murió de leucemia en 2006 y fue canonizado en 2025.",
+      "sourceHash": "351024d9d4d1644f69c4acc11bc4c527",
+      "text": "Carlo Acutis was born in London in 1991 and grew up in Milan. From a young age, he developed a deep devotion to the Eucharist and used digital tools to catalogue religious content; he died of leukaemia in 2006 and was canonized in 2025.",
+      "review": "assistant"
+    },
+    "feastDay": {
+      "source": "12 de octubre",
+      "sourceHash": "8d92ea522bf99f7d9643272b946c4832",
+      "text": "October 12",
+      "review": "assistant"
+    },
+    "birthPlace": {
+      "source": "Londres, Reino Unido",
+      "sourceHash": "97ac48be9f70b2148a38adf81dbe1723",
+      "text": "London, United Kingdom",
+      "review": "assistant"
+    },
+    "patronOf.0": {
+      "source": "Jóvenes",
+      "sourceHash": "6130e0980d274ce0982f4a1430f28687",
+      "text": "Young people",
+      "review": "assistant"
+    },
+    "patronOf.1": {
+      "source": "Entorno digital",
+      "sourceHash": "49df5636a0735cecf680e67080372169",
+      "text": "Digital environment",
+      "review": "assistant"
+    },
+    "symbols.0": {
+      "source": "Computador",
+      "sourceHash": "578cdf4690eb82ed556cc8d1cea80ec4",
+      "text": "Computer",
+      "review": "assistant"
+    },
+    "symbols.1": {
+      "source": "Eucaristía",
+      "sourceHash": "16b82c9b9eb88dbcd6a6530ffd340eb2",
+      "text": "Eucharist",
+      "review": "assistant"
+    },
+    "editorial.notes": {
+      "source": "Ficha añadida en la ampliación 2026. Datos desconocidos se mantienen en null; las tradiciones hagiográficas y milagros se etiquetan por separado para no confundirlas con reconocimientos canónicos.",
+      "sourceHash": "435aa08998831148df74088173e71ace",
+      "text": "Entry added in the 2026 expansion. Unknown data remains null; hagiographic traditions and miracles are labelled separately so they are not confused with canonical recognition.",
+      "review": "assistant"
+    }
+  }
+}

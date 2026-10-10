@@ -1,15 +1,17 @@
+"use client"
 import { editorialForDisplay } from "@/lib/editorial-read";
 import { historicalYear, type Editorial } from "@/lib/editorial";
 import { T } from './t';
 import { GeographicName } from './geographic-name';
-import { TranslatedText } from "@/components/translated-text";
+import { useCatalogLocalization } from "@/lib/use-catalog-localization";
+import { useLanguage } from "@/contexts/language-context";
 import { CatalogImage as Image } from "@/components/catalog-image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { SaintMiracles } from "./saint-miracles";
+import { SaintPrayers } from "./saint-prayers";
 import { Calendar, MapPin, Crown, Heart, ArrowLeft } from "lucide-react";
 
 export type Saint = {
@@ -53,19 +55,23 @@ export type Saint = {
 
 interface SaintDetailProps {
   saint: Saint;
+  returnTo?: string;
 }
 
-export function SaintDetail({ saint: input }: SaintDetailProps) {
-  const saint = { ...input, editorial: editorialForDisplay(input.editorial) };
+export function SaintDetail({ saint: input, returnTo = "/santos" }: SaintDetailProps) {
+  const { t } = useLanguage();
+  const localized = useCatalogLocalization("saint", input);
+  const saint = { ...localized.content, editorial: editorialForDisplay(localized.content.editorial) };
   const patronOf = saint.patronOf ?? [];
-  const prayers = saint.prayers ?? [];
   const symbols = saint.symbols ?? [];
+  const backUrl = new URL(returnTo, "https://catalog.invalid");
+  if (localized.language !== "es" || backUrl.searchParams.has("lang")) backUrl.searchParams.set("lang", localized.language);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Navegación */}
       <Button asChild variant="ghost" className="mb-6">
-        <Link prefetch={false} href="/santos">
+        <Link prefetch={false} href={backUrl.pathname + backUrl.search}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           <T k="catalog.backSaints" />
         </Link>
@@ -140,8 +146,11 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed text-pretty whitespace-pre-wrap break-words">
-            {saint.biography ? <TranslatedText allowTranslation text={saint.biography} /> : <T k="catalog.notDocumented" />}
+            {saint.biography ? <span data-testid="saint-biography" lang={localized.translated.includes("biography") ? localized.language : "es"}>{saint.biography}</span> : <T k="catalog.notDocumented" />}
           </p>
+          {localized.language !== "es" && saint.biography && !localized.translated.includes("biography") && <p className="text-sm text-muted-foreground" role="status">{t("content.originalSpanish")}</p>}
+          {localized.language !== "es" && localized.translated.includes("biography") && localized.missing.length > 0 && <p className="text-sm text-muted-foreground" role="status">{t("content.partialTranslation")}</p>}
+          {localized.failed && <p role="alert">{t("content.translationUnavailable")} {localized.canRetry && <Button variant="outline" onClick={localized.retry}>{t("content.retry")}</Button>}</p>}
         </CardContent>
       </Card>
 
@@ -149,35 +158,8 @@ export function SaintDetail({ saint: input }: SaintDetailProps) {
 
       <SaintMiracles key={saint.id} saintId={saint.id} />
 
-      {/* Oraciones */}
-      {prayers.length > 0 && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="font-playfair flex items-center gap-2">
-              <Heart className="h-5 w-5 text-accent" />
-            <T k="nav.prayers" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {prayers.map((prayer, index) => (
-                <div key={prayer.id}>
-                  <h4 className="font-playfair text-lg font-semibold text-foreground mb-2">{prayer.title}</h4>
-                  {prayer.occasion && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      <strong><T k="catalog.occasion" />:</strong> {prayer.occasion}
-                    </p>
-                  )}
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <p className="text-muted-foreground italic leading-relaxed whitespace-pre-wrap break-words">"{prayer.text}"</p>
-                  </div>
-                  {index < prayers.length - 1 && <Separator className="mt-6" />}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Oraciones: recuperación independiente, sin bloquear la biografía. */}
+      <SaintPrayers saintName={input.name} initial={input.prayers} />
 
       {/* Símbolos */}
       {symbols.length > 0 && (

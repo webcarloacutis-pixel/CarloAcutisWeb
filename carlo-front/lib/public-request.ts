@@ -40,7 +40,7 @@ export function catalogErrorKey(error: unknown): string {
 }
 
 /** Do not log parse errors/bodies: provider responses may contain private information. */
-export function publicContractError(response: Response, code: "CATALOG_JSON_INVALID" | "CATALOG_CONTRACT_INVALID" = "CATALOG_CONTRACT_INVALID"): never {
+export function publicContractError(response: Response, code: "CATALOG_JSON_INVALID" | "CATALOG_CONTRACT_INVALID" | "CATALOG_CONTENT_TYPE_INVALID" = "CATALOG_CONTRACT_INVALID"): never {
   const context = responseContext.get(response) ?? { requestId: crypto.randomUUID(), started: performance.now() }
   if (typeof window === "undefined") console.error("PUBLIC_READ", { requestId: context.requestId, stage: "DECODE", code,
     httpStatus: response.status, durationMs: Math.round(performance.now() - context.started) })
@@ -48,5 +48,7 @@ export function publicContractError(response: Response, code: "CATALOG_JSON_INVA
 }
 
 export async function publicJson(response: Response): Promise<unknown> {
+  const media = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase()
+  if (!media || !(media === "application/json" || /^application\/[a-z0-9!#$&^_.+-]+\+json$/.test(media))) publicContractError(response, "CATALOG_CONTENT_TYPE_INVALID")
   try { return await response.json() } catch { return publicContractError(response, "CATALOG_JSON_INVALID") }
 }
