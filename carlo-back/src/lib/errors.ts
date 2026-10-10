@@ -11,6 +11,14 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
     ...(res.locals.requestId ? {requestId: res.locals.requestId} : {}) }); return; }
   const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   const status = typeof error === "object" && error !== null && "status" in error ? Number(error.status) : 0;
+  const errorCode = typeof error === "object" && error !== null && "errorCode" in error ? String(error.errorCode) : code;
+  const name = typeof error === "object" && error !== null && "name" in error ? String(error.name) : "";
+  if (["P1000", "P1001", "P1002", "P1008", "P1011", "P1017", "P2024"].includes(errorCode) || name === "PrismaClientInitializationError") {
+    res.locals.aiCode = "DATABASE_UNAVAILABLE";
+    console.error("DATABASE_REQUEST_FAILED", { ...safeErrorDiagnostics(), code: /^P\d{4}$/.test(errorCode) ? errorCode : null, requestId: res.locals.requestId ?? null });
+    res.set("Retry-After", "5");
+    res.status(503).json({ error: "DATABASE_UNAVAILABLE", ...(res.locals.requestId ? { requestId: res.locals.requestId } : {}) }); return;
+  }
   if (code === "P2002") { res.status(409).json({ error: "ALREADY_EXISTS" }); return; }
   if (code === "P2025") { res.status(404).json({ error: "NOT_FOUND" }); return; }
   if (code === "P2003") { res.status(400).json({ error: "INVALID_REFERENCE" }); return; }

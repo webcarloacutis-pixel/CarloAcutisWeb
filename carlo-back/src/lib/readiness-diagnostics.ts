@@ -77,6 +77,12 @@ export async function runReadinessDiagnostic(getDatabase: () => ReadinessDatabas
   };
   let stage: ReadinessStage = "ENV_CONFIGURATION";
   let socket: Socket | undefined;
+  const deadline = Date.now() + 15000;
+  const limit = (maximum: number) => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new DiagnosticFailure(stage, "ETIMEDOUT");
+    return Math.min(maximum, remaining);
+  };
   try {
     if (!report.databaseUrlDefined) throw new DiagnosticFailure(stage, "DATABASE_URL_MISSING");
     let url: URL;
@@ -133,17 +139,17 @@ export async function runReadinessDiagnostic(getDatabase: () => ReadinessDatabas
       if (!report.certificateCurrentlyValid) throw new DiagnosticFailure(stage, now < from ? "CERT_NOT_YET_VALID" : "CERT_EXPIRED");
 
       stage = "DNS_RESOLUTION";
-      const addresses = await bounded(deps.resolve(url.hostname), 3000, stage);
+      const addresses = await bounded(deps.resolve(url.hostname), limit(3000), stage);
       report.addressCount = addresses.length;
       report.ipv4Count = addresses.filter(address => address.family === 4).length;
       report.ipv6Count = addresses.filter(address => address.family === 6).length;
       report.dnsResolved = addresses.length > 0;
       if (!report.dnsResolved) throw new DiagnosticFailure(stage, "DNS_NO_ADDRESSES");
       stage = "TCP_CONNECTION";
-      socket = await deps.tcp(url.hostname, Number(url.port), 5000);
+      socket = await bounded(deps.tcp(url.hostname, Number(url.port), limit(5000)), limit(5000), stage);
       report.tcpConnected = true;
       stage = "TLS_HANDSHAKE";
-      const tls = await deps.tls(socket, url.hostname, bytes, 7000);
+      const tls = await bounded(deps.tls(socket, url.hostname, bytes, limit(7000)), limit(7000), stage);
       report.tlsConnected = true;
       report.tlsAuthorized = tls.authorized;
       report.protocol = ["TLSv1.2", "TLSv1.3"].includes(tls.protocol ?? "") ? tls.protocol : null;
@@ -157,13 +163,13 @@ export async function runReadinessDiagnostic(getDatabase: () => ReadinessDatabas
     report.prismaReached = true;
     const database = getDatabase();
     stage = "DATABASE_CONNECTION";
-    await bounded(database.connect(), 10000, stage);
+    await bounded(database.connect(), limit(10000), stage);
     report.databaseConnected = true;
     stage = "READY_QUERY";
-    await bounded(database.readyQuery(), 2000, stage);
+    await bounded(database.readyQuery(), limit(2000), stage);
     report.readyQueryPassed = true;
     stage = "SCHEMA_ACCESS";
-    await bounded(database.schemaQuery(), 2000, stage);
+    await bounded(database.schemaQuery(), limit(2000), stage);
     report.schemaAccessible = true;
     report.ready = true;
   } catch (error) {

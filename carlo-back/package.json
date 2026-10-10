@@ -32,6 +32,12 @@
     "prisma": "6.19.3",
     "zod": "3.25.76"
   },
+  "overrides": {
+    "deepmerge-ts": "8.0.0",
+    "proxy-addr": "2.0.8",
+    "shell-quote": "1.11.0",
+    "source-map-js": "1.2.2"
+  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/cookie-parser": "^1.4.10",

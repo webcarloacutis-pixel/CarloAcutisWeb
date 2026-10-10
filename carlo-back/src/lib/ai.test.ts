@@ -83,6 +83,17 @@ describe("AI provider safeguards with isolated provider mock", () => {
     expect(mocked.create).not.toHaveBeenCalled();
     expect(mocked.claim).toHaveBeenLastCalledWith(expect.objectContaining({data:{owner:null,expiresAt:new Date(0)}}));
   });
+  it("never starts provider work after cancellation during an uncertain late capacity claim", async () => {
+    const controller=new AbortController();let finishClaim!:(value:{count:number})=>void;
+    mocked.claim.mockImplementationOnce(()=>new Promise(resolve=>{finishClaim=resolve;}));
+    const call=runAiCompletion({...input,signal:controller.signal});
+    const rejection=expect(call).rejects.toThrow("AI_TIMEOUT");
+    await vi.waitFor(()=>expect(mocked.claim).toHaveBeenCalledOnce());
+    const claimed=mocked.claim.mock.calls[0][0];
+    expect(claimed.data.expiresAt.getTime()).toBeLessThanOrEqual(Date.now()+11000);
+    controller.abort();await rejection;finishClaim({count:1});await Promise.resolve();
+    expect(mocked.create).not.toHaveBeenCalled();expect(mocked.claim).toHaveBeenCalledOnce();
+  });
   it("counts an explicit retry against the same global daily quota before contacting the provider", async () => {
     mocked.create.mockRejectedValue({status:429});
     mocked.quota.mockResolvedValueOnce([{count:1}]).mockResolvedValueOnce([]);
@@ -119,5 +130,26 @@ describe("AI provider safeguards with isolated provider mock", () => {
     mocked.create.mockRejectedValue({status:429,code:"credit_balance_exhausted"});
     await expect(runAiCompletion({...input,maxRetries:1})).rejects.toThrow("AI_QUOTA_EXCEEDED");
     expect(mocked.create).toHaveBeenCalledOnce();
+  });
+  it("announces provider work only after capacity and SQL quota succeed", async () => {
+    const stages:string[]=[];
+    mocked.quota.mockRejectedValue(new Error("isolated SQL unavailable"));
+    await expect(runAiCompletion({...input,onStage:(stage)=>stages.push(stage)})).rejects.toThrow();
+    expect(stages).not.toContain("PROVIDER");expect(mocked.create).not.toHaveBeenCalled();
+  });
+  it("includes capacity acquisition in the total operation deadline", async () => {
+    vi.useFakeTimers();mocked.upsert.mockImplementation(()=>new Promise(()=>{}));
+    const call=runAiCompletion(input);const check=expect(call).rejects.toThrow("AI_TIMEOUT");
+    await vi.advanceTimersByTimeAsync(30001);await check;expect(mocked.create).not.toHaveBeenCalled();
+  });
+  it("preserves provider failure when releasing capacity also fails", async () => {
+    const warning=vi.spyOn(console,"warn").mockImplementation(()=>{});
+    process.env.RENDER_GIT_COMMIT="a".repeat(40);
+    mocked.create.mockRejectedValue({status:429,code:"insufficient_quota"});
+    mocked.claim.mockResolvedValueOnce({count:1}).mockRejectedValueOnce(new Error("isolated cleanup unavailable"));
+    try {
+      await expect(runAiCompletion({...input,requestId:"12345678-1234-1234-1234-123456789abc"})).rejects.toMatchObject({status:429,code:"AI_QUOTA_EXCEEDED"});
+      expect(warning).toHaveBeenCalledWith("AI_CAPACITY_RELEASE_FAILED",expect.objectContaining({requestId:"12345678-1234-1234-1234-123456789abc",revision:"a".repeat(40),stage:"PERSISTENCE",code:"AI_PERSISTENCE_FAILED"}));
+    } finally { warning.mockRestore(); }
   });
 });

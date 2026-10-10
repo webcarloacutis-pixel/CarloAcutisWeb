@@ -42,7 +42,7 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({
     origin: process.env.FRONTEND_ORIGIN || false, credentials: true,
-    exposedHeaders: ["X-Total-Count", "X-Next-Cursor"],
+    exposedHeaders: ["X-Total-Count", "X-Next-Cursor", "X-Request-Id", "X-Backend-Revision", "Retry-After", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"],
   }));
   app.use((_req, res, next) => {
     res.set("Cache-Control", "no-store");
@@ -71,6 +71,8 @@ export function createApp() {
   app.get("/ready", async (_req, res) => {
     const diagnostic = await checkReadiness();
     if (diagnostic.ready) { res.json({ ok: true }); return; }
+    res.locals.aiCode = "DATABASE_NOT_READY";
+    res.set("Retry-After", "5");
     res.status(503).json({ error: "DATABASE_NOT_READY", failureStage: diagnostic.failureStage, safeCode: diagnostic.safeCode });
   });
   app.get("/", (_req, res) => res.json({ service: "Acutis API", health: "/health" }));

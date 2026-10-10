@@ -32,6 +32,13 @@ describe.skipIf(!enabled)("AI coordination with real disposable PostgreSQL and s
     await expect(withAiIdempotency(key,inputHash("changed"),work)).rejects.toThrow("AI_REQUEST_CONFLICT");
     expect(work).toHaveBeenCalledOnce();
   });
+  it("atomically renews an expired completed result instead of replaying it indefinitely",async()=>{
+    const key=prefix+":expired";requests.push(key);const hash=inputHash("expired");
+    await prisma.aiRequest.create({data:{id:key,inputHash:hash,response:"Expired fixture",model:"fixture",leaseOwner:"synthetic-expired-owner",leaseUntil:new Date(0),expiresAt:new Date(0)}});
+    const work=vi.fn().mockResolvedValue({text:"Renewed fixture",model:"fixture"});
+    expect(await withAiIdempotency(key,hash,work)).toEqual({text:"Renewed fixture",model:"fixture"});expect(work).toHaveBeenCalledOnce();
+    expect((await prisma.aiRequest.findUnique({where:{id:key}}))?.expiresAt.getTime()).toBeGreaterThan(Date.now());
+  });
   it("allows only one owner of a pending duplicate request",async() => {
     const key=prefix+":pending"; requests.push(key);
     let release!:()=>void;

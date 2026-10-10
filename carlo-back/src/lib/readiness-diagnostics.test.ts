@@ -134,6 +134,15 @@ describe("deterministic readiness stages", () => {
       expect(log).toHaveBeenCalledExactlyOnceWith("DB_READINESS_DIAGNOSTIC", first);
     } finally { log.mockRestore(); }
   });
+  it("bounds the combined transport and SQL readiness probe to fifteen seconds",async()=>{
+    const test=setup();vi.useFakeTimers();
+    test.dependencies.resolve.mockImplementation(()=>new Promise(resolve=>setTimeout(()=>resolve([{address:"192.0.2.1",family:4}]),2999)));
+    test.dependencies.tcp.mockImplementation(()=>new Promise(resolve=>setTimeout(()=>resolve(test.socket),4999)));
+    test.dependencies.tls.mockImplementation(()=>new Promise(resolve=>setTimeout(()=>resolve({authorized:true,hostnameVerified:true,protocol:"TLSv1.3"}),6999)));
+    test.database.connect.mockImplementation(()=>new Promise(()=>{}));
+    try {const pending=test.run();await vi.advanceTimersByTimeAsync(15001);expect(await pending).toMatchObject({ready:false,failureStage:"DATABASE_CONNECTION",safeCode:"ETIMEDOUT",timeout:true});expect(test.database.readyQuery).not.toHaveBeenCalled();expect(test.socket.destroy).toHaveBeenCalled();}
+    finally {vi.useRealTimers();}
+  });
 });
 
 

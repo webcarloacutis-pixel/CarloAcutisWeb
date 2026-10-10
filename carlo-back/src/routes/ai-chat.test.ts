@@ -36,7 +36,7 @@ it("includes language in idempotency identity and uses controlled server instruc
 it("reports a persistence failure without sensitive diagnostics",async()=>{
   calls.quota.mockRejectedValue(new Error("private-password-SQL-message"));const response=await send({message:"private-user-prompt"});
   expect(response.status).toBe(503);expect((await response.json()).error).toBe("AI_PERSISTENCE_FAILED");
-  const log=vi.mocked(console.info).mock.calls[0][1];expect(Object.keys(log).sort()).toEqual(["requestId","stage","code","httpStatus","durationMs"].sort());expect(log.stage).toBe("PERSISTENCE");
+  const log=vi.mocked(console.info).mock.calls[0][1];expect(Object.keys(log).sort()).toEqual(["timestamp","revision","method","route","category","outcome","requestId","stage","code","httpStatus","durationMs"].sort());expect(log.stage).toBe("PERSISTENCE");
   expect(JSON.stringify(log)).not.toMatch(/private|password|prompt|SQL|credential/);
 });
 it("never returns provider auth failures as a user-session 401",async()=>{
@@ -56,4 +56,18 @@ it("rejects role injection and excessive recent context before quota or provider
     expect((await send({message:"OK",recentMessages})).status).toBe(400);
   }
   expect(calls.complete).not.toHaveBeenCalled();expect(calls.quota).not.toHaveBeenCalled();
+});
+it("does not charge user quota again for a completed idempotent request",async()=>{
+  calls.idempotency.mockResolvedValue({text:"Previously completed",model:"synthetic"});
+  const response=await send({message:"Same input",requestId:"same-operation"});
+  expect(response.status).toBe(200);expect(calls.quota).not.toHaveBeenCalled();expect(calls.complete).not.toHaveBeenCalled();
+});
+it("charges user quota only inside newly owned work",async()=>{
+  expect((await send({message:"New input",requestId:"new-operation"})).status).toBe(200);
+  expect(calls.quota).toHaveBeenCalledOnce();expect(calls.complete).toHaveBeenCalledOnce();
+});
+it("keeps database acquisition failures out of the provider stage",async()=>{
+  calls.complete.mockImplementation(async (input)=>{input.onStage?.("PERSISTENCE");throw new HttpError(503,"AI_PERSISTENCE_FAILED")});
+  const response=await send({message:"Synthetic"});expect(response.status).toBe(503);
+  expect(vi.mocked(console.info).mock.calls[0][1]).toMatchObject({stage:"PERSISTENCE",category:"DATABASE"});
 });

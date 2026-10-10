@@ -8,10 +8,12 @@ import { HttpError } from "../lib/errors";
 import { inputHash, withAiIdempotency } from "../lib/ai-idempotency";
 import { ensureAiConfigured } from "../lib/ai-errors";
 import { chatSystemInstruction, chatUserInput } from "../lib/chat-language";
+import { createAiBudget } from "../lib/ai-budget";
 export function registerAiChatRoute(app: Express) {
   const limiter = rateLimit(10, 60000);
   app.post(["/ai/chat", "/api/ai/chat"], limiter, async (req, res) => {
     const controller = new AbortController();
+    const budget = createAiBudget(controller.signal);
     const closed = () => { if (!res.writableEnded) controller.abort(); };
     res.on("close", closed);
     try {
@@ -25,11 +27,16 @@ export function registerAiChatRoute(app: Express) {
       res.locals.aiStage = "CONFIGURATION";
       ensureAiConfigured();
       res.locals.aiStage = "PERSISTENCE";
-      const userId = (await activeSession(req, "user"))?.uid;
+      const userId = (await budget.run(() => activeSession(req, "user")))?.uid;
       const scope = userId ? "user:" + userId : "ip:" + privateHash(clientAddress(req));
-      await consumeQuota("chat:" + scope, 20, 86400000);
-      const complete = () => { res.locals.aiStage = "PROVIDER"; return runAiCompletion({ system, user, maxTokens: 500, signal: controller.signal }); };
-      const answer = requestId ? await withAiIdempotency(privateHash("chat:" + scope + ":" + requestId), inputHash(JSON.stringify({user,lang})), complete) : await complete();
+      const complete = async () => {
+        // Completed/pending duplicates do not consume a second user quota unit.
+        await budget.run(() => consumeQuota("chat:" + scope, 20, 86400000));
+        return runAiCompletion({ system, user, maxTokens: 500, signal: budget.signal, budget, requestId: res.locals.requestId,
+          onStage: stage => { res.locals.aiStage = stage; } });
+      };
+      const answer = requestId ? await withAiIdempotency(privateHash("chat:" + scope + ":" + requestId), inputHash(JSON.stringify({user,lang})), complete,
+        { budget, onStage: () => { res.locals.aiStage = "PERSISTENCE"; } }) : await complete();
       res.locals.aiStage = "COMPLETE";
       res.json({ answer: answer.text, requestId: res.locals.requestId });
     } catch (error) {
@@ -39,6 +46,6 @@ export function registerAiChatRoute(app: Express) {
       }
       res.locals.aiStage = "PERSISTENCE";
       throw new HttpError(503, "AI_PERSISTENCE_FAILED");
-    } finally { res.removeListener("close", closed); }
+    } finally { budget.dispose(); res.removeListener("close", closed); }
   });
 }

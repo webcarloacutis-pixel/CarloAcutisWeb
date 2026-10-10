@@ -70,12 +70,13 @@ describe("safe TLS file diagnostics", () => {
     vi.stubEnv("DATABASE_URL", url(`sslcert=${encodeURIComponent(path)}`));
     expect(safeErrorDiagnostics()).toMatchObject({ sslcertConfigured: true, sslcertMatchesExpectedPath: false });
   });
-  it("logs only safe metadata and keeps the public response generic", () => {
+  it("logs only safe metadata and reports database unavailability without private diagnostics", () => {
     const logger = vi.spyOn(console, "error").mockImplementation(() => {});
-    const res = { headersSent: false, status: vi.fn().mockReturnThis(), json: vi.fn() };
+    const res = { headersSent: false, locals:{}, set:vi.fn(), status: vi.fn().mockReturnThis(), json: vi.fn() };
     errorHandler({ name: "PrismaClientInitializationError", message: secret, stack: secret }, {} as Request, res as unknown as Response, vi.fn() as NextFunction);
-    expect(logger).toHaveBeenCalledExactlyOnceWith("REQUEST_FAILED", { ...expected, code: null, requestId: null });
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: "INTERNAL_ERROR" });
+    expect(logger).toHaveBeenCalledExactlyOnceWith("DATABASE_REQUEST_FAILED", { ...expected, code: null, requestId: null });
+    expect(res.status).toHaveBeenCalledWith(503);expect(res.set).toHaveBeenCalledWith("Retry-After","5");
+    expect(res.json).toHaveBeenCalledWith({ error: "DATABASE_UNAVAILABLE" });
+    expect(JSON.stringify(logger.mock.calls)).not.toContain(secret);
   });
 });
