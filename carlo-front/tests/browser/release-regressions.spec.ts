@@ -120,7 +120,7 @@ for (const failure of ["upstream503", "nonJson", "invalidContract"] as const) {
     await expect(page.getByRole("alert").filter({ hasText: failureMessage })).toBeVisible()
     await expect(page.getByText("0 santos encontrados", { exact: true })).toHaveCount(0)
     expect(attempts, "No hidden retry storm").toBe(1)
-    await page.getByRole("button", { name: "Reintentar", exact: true }).click()
+    await page.getByRole("button", { name: translations.es["content.retry"], exact: true }).click()
     await expect(page.getByRole("heading", { name: example.name, exact: true })).toBeVisible()
     await expect(page.getByText("1 santos encontrados", { exact: true })).toBeVisible()
     expect(attempts).toBe(2)

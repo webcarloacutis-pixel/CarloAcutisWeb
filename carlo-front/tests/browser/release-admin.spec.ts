@@ -106,7 +106,7 @@ async function sqlCatalog(baseURL: string): Promise<SqlCatalog> {
   const client = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
   try {
     const [identity] = await client.$queryRaw<Array<{ database: string; address: string; port: number; ssl: boolean }>>`
-      SELECT current_database() AS database, inet_server_addr()::text AS address,
+      SELECT current_database() AS database, host(inet_server_addr()) AS address,
         inet_server_port() AS port, ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()`
     expect(Boolean(identity && identity.database === 'acutis_catalog_browser_test' &&
       identity.address === '127.0.0.1' && identity.port === 55439 && identity.ssl), 'SQL must use the owned loopback TLS fixture').toBe(true)
