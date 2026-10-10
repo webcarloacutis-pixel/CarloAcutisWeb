@@ -46,6 +46,58 @@ describe.skipIf(!enabled).sequential("saint edits preserve existing editorial JS
     const updated = await updateSaint(id("null"), { title: "New title" });
     expect(updated).toMatchObject({ editorial: null, birthYear: null, deathYear: null, birthLat: null, birthLng: null });
   });
+  it("patches only biography while preserving a SQL-null source list and every other persisted field", async () => {
+    // The historical production shape is reproduced only in this owned local fixture.
+    // Check the SQL representation directly; a display adapter cannot prove preservation.
+    expect(await prisma.$executeRaw`UPDATE "Saint" SET "birthSources" = NULL WHERE "id" = ${id("legacy")}`).toBe(1);
+    const readRaw = () => prisma.$queryRaw<Array<{ sourceListIsSqlNull: boolean; persisted: Record<string, unknown> }>>`
+      SELECT "birthSources" IS NULL AS "sourceListIsSqlNull", to_jsonb(s) - 'updatedAt' AS persisted
+      FROM "Saint" s WHERE "id" = ${id("legacy")}`;
+    const [before] = await readRaw();
+    expect(before.sourceListIsSqlNull).toBe(true);
+    expect(before.persisted.editorial).toEqual(legacy);
+    expect((await prisma.saint.findUniqueOrThrow({ where: { id: id("legacy") } })).birthSources).toBeNull();
+    await updateSaint(id("legacy"), { biography: "Only this biography is explicitly changed." });
+    const [after] = await readRaw();
+    expect(after.sourceListIsSqlNull, "An untouched SQL NULL must not become an empty array").toBe(true);
+    expect(after.persisted).toEqual({ ...before.persisted, biography: "Only this biography is explicitly changed." });
+    expect(after.persisted.editorial).toEqual(legacy);
+  });
+  it("preserves JSON null distinctly from SQL null during an unrelated edit", async () => {
+    expect(await prisma.$executeRaw`UPDATE "Saint" SET "birthSources" = 'null'::jsonb, "editorial" = 'null'::jsonb WHERE "id" = ${id("null")}`).toBe(1);
+    await updateSaint(id("null"), { biography: "Only the explicit biography changes." });
+    const [raw] = await prisma.$queryRaw<Array<{ sourcesSqlNull: boolean; editorialSqlNull: boolean; sourcesType: string; editorialType: string }>>`
+      SELECT "birthSources" IS NULL AS "sourcesSqlNull", "editorial" IS NULL AS "editorialSqlNull",
+        jsonb_typeof("birthSources") AS "sourcesType", jsonb_typeof("editorial") AS "editorialType"
+      FROM "Saint" WHERE "id" = ${id("null")}`;
+    expect(raw).toEqual({ sourcesSqlNull: false, editorialSqlNull: false, sourcesType: "null", editorialType: "null" });
+  });
+  it("validates a coordinate-only patch against persisted provenance without rewriting it", async () => {
+    await prisma.saint.update({ where: { id: id("strict") }, data: {
+      birthLat: 10, birthLng: 20, birthCountryCode: "CO", birthContinent: "south-america",
+      birthPrecision: "approximate", birthSources: ["https://example.invalid/local-fixture-source"],
+    } });
+    const readRaw = () => prisma.$queryRaw<Array<{ persisted: Record<string, unknown> }>>`
+      SELECT to_jsonb(s) - 'updatedAt' AS persisted FROM "Saint" s WHERE "id" = ${id("strict")}`;
+    const [before] = await readRaw();
+    await updateSaint(id("strict"), { birthLat: 11 });
+    expect((await readRaw())[0].persisted).toEqual({ ...before.persisted, birthLat: 11 });
+    for (const patch of [{ birthLat: null }, { birthSources: [] }, { birthCountryCode: null }]) {
+      await expect(updateSaint(id("strict"), patch)).rejects.toMatchObject({ status: 400 });
+    }
+    expect((await readRaw())[0].persisted).toEqual({ ...before.persisted, birthLat: 11 });
+  });
+  it("rejects empty, protected and unknown PATCH fields without changing the persisted record", async () => {
+    const readRaw = () => prisma.$queryRaw<Array<{ persisted: Record<string, unknown> }>>`
+      SELECT to_jsonb(s) AS persisted FROM "Saint" s WHERE "id" = ${id("legacy")}`;
+    const before = await readRaw();
+    for (const [patch, code] of [[{}, "EMPTY_UPDATE"], [{ title: undefined }, "EMPTY_UPDATE"],
+      [{ id: "forged" }, "UNKNOWN_FIELD"], [{ createdAt: new Date().toISOString() }, "UNKNOWN_FIELD"],
+      [{ hiddenApproval: true }, "UNKNOWN_FIELD"], [{ name: "" }, "REQUIRED_FIELD"]] as const) {
+      await expect(updateSaint(id("legacy"), patch)).rejects.toMatchObject({ status: 400, code });
+    }
+    expect(await readRaw()).toEqual(before);
+  });
   it.each(["archangel", "collective"])("keeps %s legacy metadata and rejects invented human birth data", async kind => {
     const current = await prisma.saint.findUniqueOrThrow({ where: { id: id(kind) } });
     const updated = await updateSaint(id(kind), { title: "Unrelated title" });
