@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readFileSync, realpathSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { test, expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import { backendOrigin } from '../../lib/backend-origin'
 import { editorialForDisplay } from '../../lib/editorial-read'
@@ -17,6 +18,19 @@ const backend = 'http://127.0.0.1:3198'
 const privateFolder = resolve('C:/Users/sebas/AppData/Local/Temp/acutis-local-20261009-233138/private')
 type Row = Record<string, unknown> & { id: string; slug?: string; name?: string }
 type Catalog = { Saint: Row[]; Miracle: Row[]; Prayer: Row[] }
+type SaintJsonStorage = {
+  id: string; birthSourcesSqlNull: boolean; birthSourcesJsonType: string | null;
+  editorialSqlNull: boolean; editorialJsonType: string | null;
+}
+type SqlCatalog = { catalog: Catalog; saintJsonStorage: SaintJsonStorage[] }
+type SqlClient = {
+  $queryRaw<T>(query: TemplateStringsArray, ...values: unknown[]): Promise<T>
+  $disconnect(): Promise<void>
+}
+type LocalPrismaModule = {
+  PrismaClient: new (options: { datasourceUrl: string }) => SqlClient
+  Prisma: { prismaVersion: { client: string } }
+}
 const basicFields = ['slug', 'name', 'title', 'feastDay', 'country', 'continent', 'imageUrl',
   'birthYear', 'deathYear', 'canonizationYear', 'birthPlace', 'birthCountryCode', 'birthContinent',
   'birthLat', 'birthLng', 'birthPrecision', 'lat', 'lng', 'biography', 'patronOf', 'symbols', 'birthSources'] as const
@@ -56,8 +70,13 @@ function canonical(value: unknown): unknown {
 
 function content(row: Row): Row {
   const { updatedAt: _updatedAt, ...rest } = row
-  // PostgreSQL JSON and Prisma encode the same timestamp in different ISO forms.
-  if (typeof rest.createdAt === 'string') rest.createdAt = new Date(rest.createdAt).toISOString()
+  // Prisma's timestamp(3) columns contain UTC without a timezone suffix in
+  // PostgreSQL JSON. Parse those explicitly as UTC, preserving offset-aware ISO.
+  if (typeof rest.createdAt === 'string') {
+    const timestamp = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(rest.createdAt)
+      ? rest.createdAt.replace(' ', 'T') + 'Z' : rest.createdAt
+    rest.createdAt = new Date(timestamp).toISOString()
+  }
   return rest as Row
 }
 
@@ -67,6 +86,43 @@ function digest(rows: Row[]): string {
 
 function summary(rows: Catalog) {
   return Object.fromEntries((['Saint', 'Miracle', 'Prayer'] as const).map(kind => [kind, { count: rows[kind].length, contentSha256: digest(rows[kind]) }]))
+}
+
+function sqlSummary(rows: SqlCatalog) {
+  return { tables: summary(rows.catalog), saintJsonStorageSha256: createHash('sha256')
+    .update(JSON.stringify(canonical(rows.saintJsonStorage))).digest('hex') }
+}
+
+async function sqlCatalog(baseURL: string): Promise<SqlCatalog> {
+  // This independent proof only runs after the exact local/TLS target guard.
+  // All statements are SELECTs; no SQL restoration or timestamp writes are used.
+  guardLocalTarget(baseURL)
+  // Keep this fixture-only dependency out of the independent frontend build.
+  const clientUrl = pathToFileURL(resolve(__dirname, '../../../carlo-back/node_modules/@prisma/client/default.js')).href
+  const loaded = await import(clientUrl) as LocalPrismaModule & { default?: LocalPrismaModule }
+  const { PrismaClient, Prisma } = loaded.default ?? loaded
+  expect(/^6\./.test(Prisma.prismaVersion.client), 'Use the reviewed local Prisma 6 client').toBe(true)
+  const client = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
+  try {
+    const [identity] = await client.$queryRaw<Array<{ database: string; address: string; port: number; ssl: boolean }>>`
+      SELECT current_database() AS database, inet_server_addr()::text AS address,
+        inet_server_port() AS port, ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()`
+    expect(Boolean(identity && identity.database === 'acutis_catalog_browser_test' &&
+      identity.address === '127.0.0.1' && identity.port === 55439 && identity.ssl), 'SQL must use the owned loopback TLS fixture').toBe(true)
+    const [saints, miracles, prayers, saintJsonStorage] = await Promise.all([
+      client.$queryRaw<Array<{ row: Row }>>`SELECT to_jsonb(s) AS row FROM "Saint" s ORDER BY "id"`,
+      client.$queryRaw<Array<{ row: Row }>>`SELECT to_jsonb(m) AS row FROM "Miracle" m ORDER BY "id"`,
+      client.$queryRaw<Array<{ row: Row }>>`SELECT to_jsonb(p) AS row FROM "Prayer" p ORDER BY "id"`,
+      client.$queryRaw<SaintJsonStorage[]>`SELECT "id", "birthSources" IS NULL AS "birthSourcesSqlNull",
+        jsonb_typeof("birthSources") AS "birthSourcesJsonType", "editorial" IS NULL AS "editorialSqlNull",
+        jsonb_typeof("editorial") AS "editorialJsonType" FROM "Saint" ORDER BY "id"`,
+    ])
+    const catalog = { Saint: saints.map(item => item.row), Miracle: miracles.map(item => item.row), Prayer: prayers.map(item => item.row) }
+    expect([catalog.Saint.length, catalog.Miracle.length, catalog.Prayer.length]).toEqual([179, 7, 1])
+    // to_jsonb captures every persisted column. Separate JSON null descriptors
+    // distinguish SQL NULL from JSON null, which to_jsonb alone cannot prove.
+    return { catalog, saintJsonStorage }
+  } finally { await client.$disconnect() }
 }
 
 function snapshot(row: Row) {
@@ -129,7 +185,8 @@ async function editorMatches(dialog: Locator, row: Row) {
   const actual = await dialog.evaluate(node => Object.fromEntries(Array.from(node.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input[id],textarea[id],select[id]')).map(input => [input.id, input.value])))
   for (const key of basicFields) {
     const raw = row[key]
-    const expected = arrayFields.has(key) ? (raw as string[]).join('\n') : String(raw ?? '')
+    // Null becomes an empty control only for display, never in a save snapshot.
+    const expected = arrayFields.has(key) ? ((raw ?? []) as string[]).join('\n') : String(raw ?? '')
     if (numericFields.has(key) && raw !== null && raw !== undefined) {
       expect(actual[key], 'Numeric editor field must be present: ' + key).not.toBe('')
       expect(Number(actual[key]), 'Numeric editor field: ' + key).toBeCloseTo(Number(raw), 10)
@@ -155,28 +212,37 @@ async function editorMatches(dialog: Locator, row: Row) {
   expect(editorialActual, 'Editorial display must match the tolerant read adapter').toEqual(expected)
 }
 
-test('real admin reads 179 existing editors and saves, reloads and restores one local biography', async ({ page, request, browser, baseURL }, testInfo) => {
+test('real admin reads 179 editors and preserves raw SQL while editing complete and partial local biographies', async ({ page, request, browser, baseURL }, testInfo) => {
   guardLocalTarget(baseURL)
   const expected = fixture()
   const incomplete = expected.Saint.filter(row => !completeEditorial(row)).length
   expect(incomplete).toBe(100)
-  const before = await catalog(request)
-  expect(summary(before), 'Frontend catalog must equal the owned local fixture').toEqual(summary(expected))
   for (const target of [origin + '/api/ready', backend + '/ready']) {
     const ready = await request.get(target)
     expect(ready.status()).toBe(200)
     expect(ready.headers()['x-backend-revision']).toBe(process.env.RENDER_GIT_COMMIT)
   }
-  const selected = before.Saint.find(row => completeEditorial(row) && (row.editorial as { kind: string }).kind === 'person' && typeof row.biography === 'string')!
-  expect(Boolean(selected), 'A complete existing person is required for the write').toBe(true)
-  const [frontDetail, backDetail] = await Promise.all([
-    json(request, origin + '/api/saints/' + selected.id), json(request, backend + '/saints/' + selected.id),
-  ])
-  expect(digest([frontDetail])).toBe(digest([selected]))
-  expect(digest([backDetail]), 'Backend must serve the same local fixture').toBe(digest([selected]))
-  const original = snapshot(selected)
-  const marker = 'Verificación temporal de la copia local ' + randomUUID()
-  const temporaryBiography = String(selected.biography) + '\n\n' + marker
+  const sqlBefore = await sqlCatalog(baseURL ?? origin)
+  expect(summary(sqlBefore.catalog), 'Every persisted catalog column must equal the raw fixture').toEqual(summary(expected))
+  const before = await catalog(request)
+  // Prisma 6 returns birthSources:null here. Keep the actual transport contract;
+  // only editor controls adapt null to blank, and the independent SQL proof
+  // additionally records SQL NULL versus JSON null for both JSON columns.
+  expect(summary(before), 'Frontend transport must equal the full raw fixture').toEqual(summary(expected))
+  const selectedRows = [
+    before.Saint.find(row => completeEditorial(row) && (row.editorial as { kind: string }).kind === 'person' && typeof row.biography === 'string'),
+    before.Saint.find(row => !completeEditorial(row) && row.birthSources === null && (row.editorial as { kind?: string })?.kind === 'person' && typeof row.biography === 'string'),
+  ]
+  expect(selectedRows.every(Boolean), 'Existing complete and partial people are required for the two local writes').toBe(true)
+  const selected = selectedRows as Row[]
+  expect(new Set(selected.map(row => row.id)).size).toBe(2)
+  for (const row of selected) {
+    const [frontDetail, backDetail] = await Promise.all([
+      json(request, origin + '/api/saints/' + row.id), json(request, backend + '/saints/' + row.id),
+    ])
+    expect(digest([frontDetail])).toBe(digest([row]))
+    expect(digest([backDetail]), 'Backend must serve the same local fixture').toBe(digest([row]))
+  }
   const pageErrors: string[] = []
   page.on('pageerror', error => pageErrors.push(error.name))
   await page.addInitScript(() => localStorage.setItem('language', 'es'))
@@ -192,10 +258,11 @@ test('real admin reads 179 existing editors and saves, reloads and restores one 
   expect(Boolean(adminCookie), 'Real admin session cookie is required').toBe(true)
   // Retained only in memory so restoration survives a page/context failure.
   const cookieHeader = 'carlo_admin=' + adminCookie!.value
-  let writeAttempted = false
+  const writeAttempted = new Set<string>()
   let checkedEditors = 0
   let after: Catalog | undefined
-  let restoredUpdatedAt: unknown
+  let sqlAfter: SqlCatalog | undefined
+  const restoredUpdatedAt = new Map<string, unknown>()
   try {
     await page.getByRole('button', { name: 'Santos', exact: true }).click()
     for (const row of before.Saint) {
@@ -208,55 +275,74 @@ test('real admin reads 179 existing editors and saves, reloads and restores one 
     expect(checkedEditors).toBe(179)
     // Use the independent anonymous request context, then the real authenticated
     // cookie with a different local Origin. Neither denial may mutate content.
-    writeAttempted = true
-    const anonymous = await request.patch(origin + '/api/saints/' + selected.id, { headers: { Origin: origin }, data: { biography: temporaryBiography } })
+    const denialTarget = selected[0]
+    const deniedBiography = String(denialTarget.biography) + '\n\n' + 'Unauthorized local edit ' + randomUUID()
+    // Arm restoration before a denial probe: an auth regression may commit the
+    // request before its unexpected status causes this assertion to fail.
+    writeAttempted.add(denialTarget.id)
+    const anonymous = await request.patch(origin + '/api/saints/' + denialTarget.id, { headers: { Origin: origin }, data: { biography: deniedBiography } })
     expect(anonymous.status()).toBe(401)
-    const crossOrigin = await page.request.patch(origin + '/api/saints/' + selected.id, { headers: { Origin: 'http://127.0.0.1:3199' }, data: { biography: temporaryBiography } })
+    const crossOrigin = await page.request.patch(origin + '/api/saints/' + denialTarget.id, { headers: { Origin: 'http://127.0.0.1:3199' }, data: { biography: deniedBiography } })
     expect(crossOrigin.status()).toBe(403)
-    expect(snapshot(await json(request, origin + '/api/saints/' + selected.id))).toEqual(original)
-    const dialog = await openEditor(page, selected)
-    await dialog.locator('#biography').fill(temporaryBiography)
-    const saved = page.waitForResponse(response => new URL(response.url()).pathname === '/api/saints/' + selected.id && response.request().method() === 'PATCH')
-    await dialog.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
-    const response = await saved
-    const sent = response.request().postDataJSON() as Record<string, unknown>
-    expect(Object.keys(sent).every(key => basicFields.includes(key as typeof basicFields[number]))).toBe(true)
-    expect(Object.hasOwn(sent, 'editorial'), 'Untouched editorial must not be written').toBe(false)
-    expect(sent.biography).toBe(temporaryBiography)
-    expect(response.status()).toBe(200)
-    await expect(dialog).toBeHidden()
-    const persisted = await json(request, origin + '/api/saints/' + selected.id)
-    expect(snapshot(persisted), 'Only biography may change in the copied record').toEqual({ ...original, biography: temporaryBiography })
-    await page.reload()
-    await page.getByRole('button', { name: 'Santos', exact: true }).click()
-    const reloaded = await openEditor(page, selected)
-    await editorMatches(reloaded, persisted)
-    await reloaded.getByRole('button', { name: 'Cancelar', exact: true }).click()
-    const publicContext = await browser.newContext({ baseURL: origin })
-    try {
-      await publicContext.addInitScript(() => localStorage.setItem('language', 'es'))
-      const visitor = await publicContext.newPage()
-      await visitor.goto('/santos/' + selected.slug)
-      await expect(visitor.getByRole('heading', { level: 1, name: selected.name!, exact: true })).toBeVisible()
-      await expect(visitor.getByText(marker, { exact: false })).toBeVisible()
-    } finally { await publicContext.close() }
+    expect(snapshot(await json(request, origin + '/api/saints/' + denialTarget.id))).toEqual(snapshot(denialTarget))
+    expect(sqlSummary(await sqlCatalog(baseURL ?? origin)), 'Denied writes must not change any persisted value or JSON null class').toEqual(sqlSummary(sqlBefore))
+    const changedBiographies = new Map<string, string>()
+    for (const row of selected) {
+      const marker = 'Verificación temporal de la copia local ' + randomUUID()
+      const temporaryBiography = String(row.biography) + '\n\n' + marker
+      const dialog = await openEditor(page, row)
+      await dialog.locator('#biography').fill(temporaryBiography)
+      const saved = page.waitForResponse(response => new URL(response.url()).pathname === '/api/saints/' + row.id && response.request().method() === 'PATCH')
+      writeAttempted.add(row.id)
+      await dialog.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
+      const response = await saved
+      const sent = response.request().postDataJSON() as Record<string, unknown>
+      expect(sent, 'The UI must submit only the explicitly changed biography').toEqual({ biography: temporaryBiography })
+      expect(response.status()).toBe(200)
+      await expect(dialog).toBeHidden()
+      const persisted = await json(request, origin + '/api/saints/' + row.id)
+      expect(content(persisted), 'Every transport field except local updatedAt is conserved').toEqual({ ...content(row), biography: temporaryBiography })
+      changedBiographies.set(row.id, temporaryBiography)
+      const expectedSql = { ...sqlBefore, catalog: { ...sqlBefore.catalog, Saint: sqlBefore.catalog.Saint.map(original => changedBiographies.has(original.id)
+        ? { ...original, biography: changedBiographies.get(original.id) } : original) } }
+      expect(sqlSummary(await sqlCatalog(baseURL ?? origin)), 'All raw SQL fields and SQL/JSON null classes must be conserved apart from the two explicit biographies').toEqual(sqlSummary(expectedSql))
+      await page.reload()
+      await page.getByRole('button', { name: 'Santos', exact: true }).click()
+      const reloaded = await openEditor(page, row)
+      await editorMatches(reloaded, persisted)
+      await reloaded.getByRole('button', { name: 'Cancelar', exact: true }).click()
+      const publicContext = await browser.newContext({ baseURL: origin })
+      try {
+        await publicContext.addInitScript(() => localStorage.setItem('language', 'es'))
+        const visitor = await publicContext.newPage()
+        await visitor.goto('/santos/' + row.slug)
+        await expect(visitor.getByRole('heading', { level: 1, name: row.name!, exact: true })).toBeVisible()
+        await expect(visitor.getByText(marker, { exact: false })).toBeVisible()
+      } finally { await publicContext.close() }
+    }
     expect(pageErrors).toEqual([])
   } finally {
     guardLocalTarget(baseURL)
     const cleanupErrors: unknown[] = []
     // Attempt each cleanup independently, then rethrow any failed assertion.
     // A failed restore must not prevent checking conservation or ending login.
-    try {
-      if (writeAttempted) {
-        const restored = await fetch(origin + '/api/saints/' + selected.id, {
+    for (const row of selected) try {
+      if (writeAttempted.size > 0) {
+        const restored = await fetch(origin + '/api/saints/' + row.id, {
           method: 'PATCH', headers: { Origin: origin, Cookie: cookieHeader, 'Content-Type': 'application/json' },
-          body: JSON.stringify(original), signal: AbortSignal.timeout(20_000), redirect: 'error',
+          // Roll back only the field this test changed; never rewrite a legacy
+          // null, source array or tolerant editorial display value in cleanup.
+          body: JSON.stringify({ biography: row.biography }), signal: AbortSignal.timeout(20_000), redirect: 'error',
         })
-        expect(restored.status, 'Restore all original allowed fields in the local copy').toBe(200)
+        expect(restored.status, 'Restore the original biography in the local copy').toBe(200)
         const restoredRow = await restored.json() as Row
-        expect(snapshot(restoredRow), 'Local rollback must preserve exact raw values including nulls, arrays and editorial').toEqual(original)
-        restoredUpdatedAt = restoredRow.updatedAt
+        expect(content(restoredRow), 'Rollback must preserve every original transport field including nulls, arrays and editorial').toEqual(content(row))
+        restoredUpdatedAt.set(row.id, restoredRow.updatedAt)
       }
+    } catch (error) { cleanupErrors.push(error) }
+    try {
+      sqlAfter = await sqlCatalog(baseURL ?? origin)
+      expect(sqlSummary(sqlAfter), 'Every persisted column and SQL/JSON null class must be restored; only updatedAt is excluded').toEqual(sqlSummary(sqlBefore))
     } catch (error) { cleanupErrors.push(error) }
     try {
       after = await catalog(request)
@@ -270,8 +356,12 @@ test('real admin reads 179 existing editors and saves, reloads and restores one 
       frontendOrigin: origin, backendOrigin: backend, database: 'acutis_catalog_browser_test',
       checkedEditors, incompleteEditorialEditors: incomplete, catalogCreates: 0, catalogDeletes: 0, paidAiCalls: 0,
       contentHashExcludes: ['updatedAt'], before: summary(before), after: after ? summary(after) : null,
+      independentSqlBefore: sqlSummary(sqlBefore), independentSqlAfter: sqlAfter ? sqlSummary(sqlAfter) : null,
+      biographyWriteTargets: selected.length, biographyWritesAttempted: writeAttempted.size,
+      biographyRollbackTargets: writeAttempted.size > 0 ? selected.length : 0,
+      originalPartialEditorialAndNullStorageConserved: sqlAfter ? JSON.stringify(sqlSummary(sqlAfter)) === JSON.stringify(sqlSummary(sqlBefore)) : false,
       cleanupFailureCount: cleanupErrors.length,
-      localUpdatedAtExpectedChanged: writeAttempted && restoredUpdatedAt !== selected.updatedAt,
+      localUpdatedAtExpectedChanged: writeAttempted.size > 0 && selected.every(row => restoredUpdatedAt.has(row.id) && restoredUpdatedAt.get(row.id) !== row.updatedAt),
     }, null, 2) })
     if (cleanupErrors.length) throw cleanupErrors[0]
   }

@@ -17,7 +17,7 @@ for (const language of ['en', 'ar'] as const) {
       database.pathname === '/acutis_catalog_browser_test' && database.searchParams.get('sslaccept') === 'strict'), 'Exact disposable TLS database required').toBe(true)
     const errors: string[] = []
     const network = observeReleaseNetwork(page)
-    page.on('pageerror', error => errors.push(error.name))
+    page.on('pageerror', error => errors.push(error.name + ': ' + error.message))
     await page.addInitScript(code => localStorage.setItem('language', code), language)
     const cat = (key: string) => catalogTranslations[language]['catalog.' + key]
     const ui = (key: string) => supplementalUiTranslations[language]['supplemental.' + key]
