@@ -5,7 +5,7 @@ import { editorialData } from "./editorial-validation";
 import { slugify } from "./slugify";
 export const birthContinents = ["europe", "asia", "africa", "north-america", "south-america", "oceania", "antarctica"] as const;
 export const saintFields = ["name","slug","country","title","feastDay","imageUrl","biography","continent","lat","lng","deathYear","birthCountryCode","birthContinent","birthPlace","birthLat","birthLng","birthPrecision","birthSources","birthYear","canonizationYear","patronOf","symbols","editorial"] as const;
-export function saintData(input: unknown, partial = false): Prisma.SaintUncheckedCreateInput {
+function saintValues(input: unknown, partial: boolean, validateRelations: boolean): Prisma.SaintUncheckedCreateInput {
   const body = objectBody(input, saintFields);
   const data: Record<string, unknown> = {};
   if (!partial || body.name !== undefined) data.name = text(body.name, 200, true)!;
@@ -26,11 +26,11 @@ export function saintData(input: unknown, partial = false): Prisma.SaintUnchecke
   if (body.editorial !== undefined) {
     data.editorial = body.editorial === null ? Prisma.DbNull : editorialData(body.editorial);
     const editorial = body.editorial === null ? null : editorialData(body.editorial);
-    if (editorial && editorial.kind !== "person" && [body.birthYear, body.deathYear, body.birthLat, body.birthLng, body.birthCountryCode, body.birthPlace].some(value => value != null)) throw new HttpError(400, "NON_PERSON_BIRTH_NOT_APPLICABLE");
+    if (validateRelations && editorial && editorial.kind !== "person" && [body.birthYear, body.deathYear, body.birthLat, body.birthLng, body.birthCountryCode, body.birthPlace].some(value => value != null)) throw new HttpError(400, "NON_PERSON_BIRTH_NOT_APPLICABLE");
   }
   for (const key of ["lat","birthLat"] as const) if (body[key] !== undefined) data[key] = finite(body[key], -90, 90);
   for (const key of ["lng","birthLng"] as const) if (body[key] !== undefined) data[key] = finite(body[key], -180, 180);
-  if ((body.birthLat === null) !== (body.birthLng === null) || (body.birthLat === undefined) !== (body.birthLng === undefined)) throw new HttpError(400, "COORDINATE_PAIR_REQUIRED");
+  if (validateRelations && ((body.birthLat === null) !== (body.birthLng === null) || (body.birthLat === undefined) !== (body.birthLng === undefined))) throw new HttpError(400, "COORDINATE_PAIR_REQUIRED");
   if (body.birthCountryCode !== undefined) {
     const value = text(body.birthCountryCode, 2);
     if (value && !/^[A-Z]{2}$/.test(value)) throw new HttpError(400, "INVALID_COUNTRY_CODE");
@@ -54,9 +54,41 @@ export function saintData(input: unknown, partial = false): Prisma.SaintUnchecke
     }
     data.birthSources = values;
   }
-  if (typeof body.birthLat === "number" && (!data.birthPrecision || !Array.isArray(data.birthSources) || data.birthSources.length === 0 || !data.birthCountryCode || !data.birthContinent)) throw new HttpError(400, "BIRTH_PROVENANCE_REQUIRED");
+  if (validateRelations && typeof body.birthLat === "number" && (!data.birthPrecision || !Array.isArray(data.birthSources) || data.birthSources.length === 0 || !data.birthCountryCode || !data.birthContinent)) throw new HttpError(400, "BIRTH_PROVENANCE_REQUIRED");
   if (Object.keys(data).length === 0) throw new HttpError(400, "EMPTY_UPDATE");
   return data as Prisma.SaintUncheckedCreateInput;
+}
+export function saintData(input: unknown, partial = false): Prisma.SaintUncheckedCreateInput {
+  return saintValues(input, partial, true);
+}
+const birthLocationFields = ["birthLat", "birthLng", "birthCountryCode", "birthContinent", "birthPrecision", "birthSources"] as const;
+const nonPersonBirthFields = ["birthYear", "deathYear", "birthLat", "birthLng", "birthCountryCode", "birthPlace"] as const;
+export function saintPatchData(input: unknown, current: Record<string, unknown>): Prisma.SaintUncheckedCreateInput {
+  const submitted = objectBody(input, saintFields);
+  const body = Object.fromEntries(Object.entries(submitted).filter(([, value]) => value !== undefined));
+  const values = { ...body };
+  // Name is a dependency only when an explicitly blank slug needs deriving.
+  // It never becomes an implicit PATCH write or changes an omitted slug.
+  if (body.slug !== undefined && body.name === undefined &&
+      (body.slug === null || typeof body.slug === "string" && !body.slug.trim())) values.name = current.name;
+  const validated = saintValues(values, true, false);
+  const touched = (key: string) => Object.prototype.hasOwnProperty.call(body, key);
+  if (birthLocationFields.some(touched)) {
+    // Recheck the whole touched location group, including a persisted partner
+    // and its provenance. Defaults are for validation only, never persistence.
+    const location = Object.fromEntries(birthLocationFields.map(key => [key,
+      touched(key) ? body[key] : current[key] ?? (key === "birthSources" ? [] : null)]));
+    saintValues(location, true, true);
+  }
+  if (touched("editorial") || [...nonPersonBirthFields, ...birthLocationFields].some(touched)) {
+    const editorial = touched("editorial") ? body.editorial : current.editorial;
+    const merged = { ...current, ...body };
+    if (editorial && typeof editorial === "object" && !Array.isArray(editorial) &&
+        ["archangel", "collective"].includes(String((editorial as Record<string, unknown>).kind)) &&
+        nonPersonBirthFields.some(key => merged[key] != null)) throw new HttpError(400, "NON_PERSON_BIRTH_NOT_APPLICABLE");
+  }
+  // Only the submitted keys may be written, including after context checks.
+  return Object.fromEntries(Object.entries(validated).filter(([key]) => touched(key))) as Prisma.SaintUncheckedCreateInput;
 }
 export function prayerData(input: unknown, partial = false): Prisma.PrayerUncheckedCreateInput {
   const body = objectBody(input, ["title","content","category","approved","saintName","occasion"]);
