@@ -39,6 +39,7 @@ function LocalizedSaintCard({source,returnTo}:{source:Saint;returnTo?:string}){
   if(returnTo)detailQuery.set("returnTo",returnTo)
   if(localized.language!=="es" || returnTo && new URL(returnTo,"https://catalog.invalid").searchParams.has("lang"))detailQuery.set("lang",localized.language)
   return <Link prefetch={false}
+        tabIndex={0}
         onNavigate={rememberCatalogScroll}
         href={"/santos/" + encodeURIComponent(saint.slug) + (detailQuery.size ? "?" + detailQuery : "")}
         aria-label={formatTranslation(t('catalog.readBiography'), { name: saint.name })}

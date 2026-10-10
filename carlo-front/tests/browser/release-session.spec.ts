@@ -29,6 +29,7 @@ function guardLocalTarget(baseURL: string | undefined) {
 }
 
 async function openHistory(page: Page) {
+  await expect(page.getByTestId('chat-section')).toBeVisible()
   const history = page.locator('#chat-history')
   if (!(await history.isVisible())) await page.getByRole('button', { name: 'Abrir historial', exact: true }).click()
   await expect(history).toBeVisible()
@@ -121,7 +122,8 @@ test('real registration, session reload, logout and two-account history isolatio
     await page.getByRole('link', { name: 'Volver a Santos', exact: true }).click()
     await page.getByLabel('Buscar santos', { exact: true }).filter({ visible: true }).fill(name)
     await page.getByRole('link', { name: 'Ver biografía de ' + name, exact: true }).click()
-    await expect(page).toHaveURL(new RegExp('/santos/' + slug + '$'))
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/santos/' + slug)
+    expect(new URL(new URL(page.url()).searchParams.get('returnTo')!, origin).searchParams.get('q')).toBe(name)
     await expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible()
   }
   const missing = await page.goto('/santos/release-saint-that-does-not-exist')

@@ -53,9 +53,12 @@ test('image, heading, biography and free card space open one canonical detail an
   await expect(link).toBeVisible()
   const href=await link.getAttribute('href');expect(new URL(href!,'http://localhost').pathname).toBe('/santos/san-jose')
   const target=zone==='image'?link.locator('img'):zone==='heading'?link.locator('h3'):zone==='biography'?link.locator('p').filter({hasText:'José aparece'}):link
-  await target.scrollIntoViewIfNeeded();const box=await target.boundingBox();expect(box).toBeTruthy()
+  await target.scrollIntoViewIfNeeded()
+  if(zone==='space')await link.evaluate(node=>{const bounds=node.getBoundingClientRect();window.scrollBy(0,Math.max(0,bounds.bottom-innerHeight+12))})
+  const box=await target.boundingBox();expect(box).toBeTruthy()
   const before=await page.evaluate(()=>scrollY)
   const point=zone==='space'?{x:box!.x+box!.width-5,y:box!.y+box!.height-5}:{x:box!.x+box!.width/2,y:box!.y+Math.min(box!.height/2,30)}
+  expect(point.y).toBeGreaterThan(0);expect(point.y).toBeLessThan(page.viewportSize()!.height)
   if(test.info().project.use.hasTouch)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y)
   await expect(page.getByRole('heading',{level:1,name:'San José',exact:true})).toBeVisible()
   const back=page.getByRole('link',{name:'Volver a Santos',exact:true})
